@@ -77,6 +77,7 @@ EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
   (`docs/PLAN.md` section 7).
 - **Data governance:** no PII/PHI in code or logs; never store passwords or keys.
 - **Design:** Nematostella in light mode is the default for new users (Gothic Cream remains the house style); every theme passes WCAG AA in light and dark. The app always opens on the home page.
-- **Licence:** not yet chosen (MIT or BSD-3, pending Stowers tech transfer); don't add one.
+- **Licence:** MIT (copyright line names Helen R Horkan; Stowers tech transfer may ask for the Institute). Third-party files keep their licences, listed in `THIRD_PARTY_NOTICES.md`.
+- **Version:** one place, `everyome/__init__.py`. First PyPI release prepared as 0.1.0a1.
 - Comments state intent; keep UI text plain-language and written for biologists.
 - Literature references include a DOI or URL.

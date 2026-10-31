@@ -1,0 +1,3 @@
+# Intent: the source package carries the tests (and their helper), the citation and the licences.
+include LICENSE THIRD_PARTY_NOTICES.md CITATION.cff README.md
+recursive-include tests *.py

@@ -3,7 +3,7 @@
 *Every -ome, for everyone.*
 
 Created by **Helen R Horkan PhD** (Stowers Institute). If you use Everyome, adapt its
-code, or reuse its text or figures, please cite it (see `CITATION.cff`).
+code, or reuse its text or figures, please cite it (see [`CITATION.cff`](https://github.com/Everyome/everyome/blob/main/CITATION.cff)).
 
 Everyome is a free, open-source platform for omics analysis. It gives biologists a
 simple point-and-click interface while keeping every setting visible and editable.
@@ -19,7 +19,7 @@ which becomes its first single-cell module and keeps its own citation.
 
 ## Status
 
-The core is in place (phase 1 of [`docs/PLAN.md`](docs/PLAN.md)): connect to a
+The core is in place (phase 1 of [`docs/PLAN.md`](https://github.com/Everyome/everyome/blob/main/docs/PLAN.md)): connect to a
 cluster or the built-in demo cluster, create projects, choose an analysis, fill
 in its settings, check the exact job scripts, submit them, follow the jobs, and
 explore the results in a live session. Every run then gets a lab-book
@@ -35,18 +35,30 @@ Modules so far:
 - **Sequence summary**, getting started: a small worked example of how every
   module runs.
 
-## Try it
+## Install
 
 ```bash
-pip install -e ".[test,singlecell]"
-everyome            # opens http://127.0.0.1:8777
+pip install --pre everyome            # the app and the tutorial
+pip install --pre "everyome[all]"     # plus SPLiT-seq and bulk RNA-seq (Scanpy, PyDESeq2, ...)
+everyome                              # opens http://127.0.0.1:8777
+```
+
+Everyome needs Python 3.10 or newer and runs on macOS and Linux. Choose **Demo
+cluster** to try everything on your own computer, with example data and a
+pretend job scheduler; demo data lives in `~/.everyome/demo_cluster` (delete it
+to start fresh). To use your own cluster, Everyome also needs to be installed in
+a Python environment there (ask IT for a shared one), and the readiness checks
+tell you what is missing.
+
+## Develop
+
+```bash
+git clone https://github.com/Everyome/everyome && cd everyome
+pip install -e ".[test,all]"
 pytest
 ```
 
-Choose **Demo cluster** to try everything on your own computer, with example
-data and a pretend job scheduler. Demo data lives in `~/.everyome/demo_cluster`;
-delete that folder to start fresh.
-
 ## Licence
 
-To be confirmed (MIT or BSD-3) with Stowers tech transfer.
+MIT (see `LICENSE`). Fonts, UMAP-JS and the nf-core/rnaseq schemas that ship
+with Everyome keep their own licences; see `THIRD_PARTY_NOTICES.md`.

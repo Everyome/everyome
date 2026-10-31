@@ -6,7 +6,9 @@ from everyome.core.server import app
 
 
 def test_version():
-    assert everyome.__version__ == "0.0.1"
+    # Intent: the version lives in one place and is a valid release number.
+    import re
+    assert re.fullmatch(r"\d+\.\d+\.\d+((a|b|rc)\d+)?", everyome.__version__)
 
 
 def test_health():
