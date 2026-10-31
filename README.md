@@ -22,14 +22,19 @@ which becomes its first single-cell module and keeps its own citation.
 The core is in place (phase 1 of [`docs/PLAN.md`](docs/PLAN.md)): connect to a
 cluster or the built-in demo cluster, create projects, choose an analysis, fill
 in its settings, check the exact job scripts, submit them, follow the jobs, and
-explore the results in a live session. One tutorial module, *Sequence summary*,
-shows every part of a module. Real analysis modules come next, starting with
-SPLiTscape.
+explore the results in a live session.
+
+Modules so far:
+- **SPLiT-seq (SPLiTscape)**, single cell: SPLiT-seq sublibraries from raw reads
+  to annotated cell types, on their own (for example, to build a first atlas) or
+  merged with an existing atlas or dataset. Includes a playground.
+- **Sequence summary**, getting started: a small worked example of how every
+  module runs.
 
 ## Try it
 
 ```bash
-pip install -e ".[test]"
+pip install -e ".[test,singlecell]"
 everyome            # opens http://127.0.0.1:8777
 pytest
 ```

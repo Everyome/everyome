@@ -8,13 +8,15 @@ Nothing secret is stored: SSH keys stay with ssh, session tokens stay in memory.
 """
 from __future__ import annotations
 
+import importlib
 import json
+import re
 import shlex
 import sys
 from pathlib import Path
 
 import httpx
-from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
@@ -69,6 +71,11 @@ def _module(mid: str):
     if mid not in S.modules:
         raise HTTPException(404, f"No module called {mid}.")
     return S.modules[mid]
+
+
+def _function(spec: str):
+    mod, _, fn = spec.partition(":")
+    return getattr(importlib.import_module(mod), fn)
 
 
 def _load_settings():
@@ -188,6 +195,16 @@ def module_manual(mid: str):
     return {"markdown": (m.dir / m.learn["manual"]).read_text()}
 
 
+@app.get("/api/modules/{mid}/playground/{n}")
+def module_playground_script(mid: str, n: int):
+    # Intent: serve only the scripts the manifest lists for the playground, by position.
+    m = _module(mid)
+    scripts = m.learn.get("playground", {}).get("scripts", [])
+    if not 0 <= n < len(scripts):
+        raise HTTPException(404, "No such playground script.")
+    return Response((m.dir / scripts[n]).read_text(), media_type="text/javascript")
+
+
 @app.get("/api/modules/{mid}/ui.js")
 def module_ui(mid: str):
     # Intent: serve only the file the manifest names, from inside that module's folder.
@@ -195,6 +212,30 @@ def module_ui(mid: str):
     if not m.ui:
         raise HTTPException(404, "This module has no views of its own.")
     return Response((m.dir / m.ui).read_text(), media_type="text/javascript")
+
+
+@app.post("/api/modules/{mid}/helpers/{name}")
+def module_helper(mid: str, name: str, b: dict = Body(default={})):
+    """Run a helper a module declares (for example, scanning a folder to fill a table)."""
+    m, be = _module(mid), _need_backend()
+    if name not in m.helpers:
+        raise HTTPException(404, f"{m.name} has no helper called {name}.")
+    try:
+        return _function(m.helpers[name])(be, **b)
+    except (FileNotFoundError, ValueError) as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/modules/{mid}/check")
+def module_check(mid: str):
+    """Can the cluster's Python import what this module needs?"""
+    m, be = _module(mid), _need_backend()
+    missing = []
+    for pkg in m.requires:
+        rc, _, _ = be.run(f"{shlex.quote(S.conn['python'])} -c {shlex.quote('import ' + pkg)}", timeout=120)
+        if rc:
+            missing.append(pkg)
+    return {"requires": m.requires, "missing": missing}
 
 
 # ------------------------------------------------------------------ projects
@@ -229,7 +270,7 @@ def run_create(b: dict = Body(...)):
     p, be, m = _need_project(), _need_backend(), _module(b.get("module", ""))
     res = {**(b.get("resources") or {}), "partition": (b.get("resources") or {}).get("partition") or S.conn.get("partition", "")}
     try:
-        S.run = runs.create(be, p, m, b.get("values") or {}, res)
+        S.run = runs.create(be, p, m, b.get("values") or {}, res, demo=S.demo)
     except ValueError as e:
         raise HTTPException(400, str(e))
     S.session = None
@@ -244,6 +285,26 @@ def run_open(b: dict = Body(...)):
         raise HTTPException(404, "That run could not be found.")
     S.session = None
     return S.run
+
+
+@app.get("/api/run/report")
+def run_report():
+    """The module's summary of finished batch stages (for example, read QC)."""
+    r = _need_run()
+    m = _module(r["module"])
+    if not m.report:
+        raise HTTPException(404, "This analysis has no batch report.")
+    return _function(m.report)(_need_backend(), r)
+
+
+@app.post("/api/run/upload")
+async def run_upload(file: UploadFile = File(...)):
+    """Save a small file (for example, a barcode sheet) into the run folder."""
+    r = _need_run()
+    name = re.sub(r"[^A-Za-z0-9_.-]+", "_", file.filename or "upload")
+    path = f"{r['dir']}/uploads/{name}"
+    S.backend.write_bytes(path, await file.read())
+    return {"path": path, "name": name}
 
 
 @app.post("/api/run/close")

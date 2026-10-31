@@ -22,6 +22,7 @@ current when decisions change.
 | `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
+| `everyome/modules/singlecell/splitseq/` | SPLiTscape as a module: `workflow/` (the SPLiTscape bash and Python stages), `stage.py` (writes `reads.env` from settings, runs a stage or its demo stand-in), `helpers.py` (folder scan, read-QC report), `engine.py` (part 2), `ui.js`, `demo_data.py` |
 | `everyome/static/` | App shell (`app.js`: home page, suite pages, views, shared viewers, markdown), `app.css`, `themes.json`, fonts |
 | `design/themes/` | 67 cnidarian themes; `python design/themes/export_app_themes.py` regenerates `everyome/static/themes.json` |
 | `tests/` | Manifest, Slurm naming, and an end-to-end demo flow (real session process) |
@@ -37,7 +38,13 @@ with `$EVERYOME_PARAMS` (settings as JSON) and `$EVERYOME_RUN_DIR`. An interacti
 engine subclasses `BaseEngine`, lists callable methods in `API`, and records
 decisions with `_record()`. `ui.js` registers views with
 `Everyome.registerViews(id, {stepId: async el => ...})` and calls the engine with
-`Everyome.call(method, args)`.
+`Everyome.call(method, args)`. Other manifest hooks: `type: table` inputs (with
+`columns`, optional `pattern`) and `fill` from a module `helpers` function;
+`batch.report` (shown on the Run page via the `report` view); `demo.build`
+(generates demo data once); `requires` (Python packages checked on the cluster);
+`learn.playground` (scripts loaded in order that define an object with `mount`,
+`presetsHtml`, `applyPreset`, plus lede, intro, caveats and credit text).
+Stages see `$EVERYOME_CPUS`, and `$EVERYOME_DEMO=1` on the demo cluster.
 
 ## Running
 
@@ -45,8 +52,9 @@ Python 3.10 or newer (3.9 is end-of-life and no longer on GitHub's Ubuntu runner
 CI tests 3.10 and 3.12 on Linux and macOS.
 
 ```bash
-pip install -e ".[test]" && everyome     # http://127.0.0.1:8777
-pytest
+pip install -e ".[test,singlecell]" && everyome     # http://127.0.0.1:8777
+pytest          # the SPLiT-seq end-to-end test is skipped without the singlecell extra
+EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 ```
 
 ## Rules to keep

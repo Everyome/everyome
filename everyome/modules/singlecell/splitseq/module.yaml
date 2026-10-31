@@ -1,0 +1,151 @@
+# SPLiT-seq (SPLiTscape): SPLiT-seq sublibraries from raw FASTQ to annotated cell types,
+# on their own or merged with an existing atlas or dataset. Created by Helen R Horkan PhD; please cite SPLiTscape.
+spec: 1
+id: singlecell.splitseq
+name: SPLiT-seq (SPLiTscape)
+suite: singlecell
+version: 1.0.0
+summary: >
+  Takes SPLiT-seq sublibraries from raw reads to annotated cell types. Use it
+  on its own data, for example to build a first atlas, or merge in an existing
+  atlas or dataset if you have one. Eight cluster stages turn reads into a count
+  matrix; a live session then combines, labels, filters, clusters and names cell types.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Horkan H.R. (2026). SPLiTscape: from SPLiT-seq reads to annotated, explorable cell atlases. Version 1.0.0."
+    url: ""
+  - text: "Rosenberg A.B. et al. (2018). Single-cell profiling of the developing mouse brain and spinal cord with split-pool barcoding. Science 360:176–182."
+    url: https://doi.org/10.1126/science.aam8999
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+  - text: "Korsunsky I. et al. (2019). Fast, sensitive and accurate integration of single-cell data with Harmony. Nature Methods 16:1289–1296."
+    url: https://doi.org/10.1038/s41592-019-0619-0
+  - text: "Traag V.A., Waltman L., van Eck N.J. (2019). From Louvain to Leiden: guaranteeing well-connected communities. Scientific Reports 9:5233."
+    url: https://doi.org/10.1038/s41598-019-41695-z
+kind: [batch, interactive]
+requires: [scanpy, anndata, harmonypy, leidenalg, openpyxl, seaborn]
+
+inputs:
+  - id: raw_dir
+    label: Raw reads folder
+    type: folder
+    required: true
+    help: "Folder with paired reads named <sublibrary>_<run>_R1.fq.gz and _R2.fq.gz."
+    demo: raw
+  - id: sublibraries
+    label: Sublibraries
+    type: table
+    required: true
+    help: "One row per sublibrary. The library ID becomes part of every cell's name and must look like lib_01_1."
+    columns:
+      - {id: sublibrary, label: Sublibrary, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: library_id, label: Library ID used in cell names, pattern: "lib_\\d+_\\d+", pattern_help: "should look like lib_01_1"}
+    fill: {helper: scan, from: raw_dir, label: Find sublibraries in the reads folder}
+  - id: ref_fasta
+    label: Genome FASTA
+    type: file
+    required: true
+    demo: refs/genome.fasta
+  - id: star_index
+    label: STAR index folder
+    type: folder
+    required: true
+    demo: refs/star_index
+  - id: toolbox
+    label: Split-seq toolbox script
+    type: file
+    required: true
+    help: "Split-seq_pipeline.sh from the Split-seq toolbox (not on conda)."
+    demo: refs/splitseq_toolbox/Split-seq_pipeline.sh
+  - id: pairfq
+    label: pairfq_lite
+    type: file
+    required: true
+    help: "Restores read pairs after filtering (not on conda)."
+    demo: refs/pairfq_lite
+  - id: atlas_dir
+    label: Atlas or other dataset to merge in (optional)
+    type: folder
+    help: "Leave empty to analyse your sublibraries on their own, for example to build a first atlas. To merge, give a 10x folder (matrix.mtx.gz, features.tsv.gz, barcodes.tsv.gz); you can still choose to leave it out in the live session."
+    demo: atlas_10x
+  - id: annotation_table
+    label: Gene annotation table (optional)
+    type: file
+    help: "DIAMOND-style table that gives genes readable names in marker lists."
+    demo: refs/annotation.tsv
+
+params:
+  - {id: r1_adapter, label: R1 adapter, type: text, default: AGATCGGAAGAG, group: Read processing,
+     help: "TruSeq adapter trimmed from the cDNA read."}
+  - {id: r1_min_len, label: Shortest R1 kept, type: int, default: 60, min: 1, group: Read processing,
+     help: "Reads shorter than this after trimming are dropped."}
+  - {id: r2_adapter, label: R2 adapter, type: text, default: CTGTCTCTTATA, group: Read processing,
+     help: "Nextera / Tn5 adapter trimmed from the barcode read."}
+  - {id: r2_min_len, label: Shortest R2 kept, type: int, default: 94, min: 1, group: Read processing,
+     help: "Must cover the UMI and all barcode rounds."}
+  - {id: r2_truncate, label: R2 length after trimming, type: int, default: 100, min: 1, group: Read processing,
+     help: "Fixes the anchor's distance from the read end."}
+  - {id: dephase_regex, label: Dephasing pattern, type: text, default: "ATTCG..............$", group: Read processing,
+     help: "Anchor plus the exact number of bases to the read end."}
+  - {id: expected_cells, label: Expected cells, type: int, default: 25000, min: 1, group: Read processing,
+     help: "Passed to the Split-seq toolbox."}
+  - {id: min_genes_per_cell, label: Minimum genes per cell, type: int, default: 50, min: 1, group: Read processing,
+     help: "Barcodes below this are not counted as cells."}
+  - {id: locus_function_list, label: Extra regions to count, type: text, default: INTRONIC, group: Read processing,
+     help: "Count intronic reads as well as coding and UTR."}
+  - {id: preferred_species, label: Preferred species for gene names, type: text, default: "", group: Gene names,
+     help: "When a gene has several matches in the annotation table, prefer one naming this species (for example Hydra). Leave empty to use the most informative match."}
+  - {id: preferred_species_ncbi, label: Preferred species for NCBI names, type: text, default: "", group: Gene names,
+     help: "The same choice for NCBI names (for example Hydractinia). Leave empty to use the most informative match."}
+
+batch:
+  engine: staged
+  resources: {cpus: 8, mem: 32G, time: "24:00:00", session: {cpus: 4, mem: 32G, time: "08:00:00"}}
+  report: everyome.modules.singlecell.splitseq.helpers:qc_report
+  stages:
+    - {id: "01", name: qc, title: Check raw read quality, run: "{python} -m everyome.modules.singlecell.splitseq.stage 01 qc"}
+    - {id: "02", name: trim, title: Trim adapters and fix R2 length, run: "{python} -m everyome.modules.singlecell.splitseq.stage 02 trim"}
+    - {id: "03", name: dephase, title: Keep R2 reads in the right register, run: "{python} -m everyome.modules.singlecell.splitseq.stage 03 dephase"}
+    - {id: "04", name: repair, title: Restore read pairs, run: "{python} -m everyome.modules.singlecell.splitseq.stage 04 repair"}
+    - {id: "05", name: tobam, title: Package pairs as unaligned BAM, run: "{python} -m everyome.modules.singlecell.splitseq.stage 05 tobam"}
+    - {id: "06", name: align, title: "Extract barcodes, align and tag", resources: {mem: 64G},
+       run: "{python} -m everyome.modules.singlecell.splitseq.stage 06 align"}
+    - {id: "07", name: merge, title: Merge runs and see where reads land, run: "{python} -m everyome.modules.singlecell.splitseq.stage 07 merge"}
+    - {id: "08", name: dge, title: Count molecules per gene per cell, run: "{python} -m everyome.modules.singlecell.splitseq.stage 08 dge"}
+
+helpers:
+  scan: everyome.modules.singlecell.splitseq.helpers:scan
+
+interactive:
+  engine: everyome.modules.singlecell.splitseq.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: merge, title: Combine and label}
+    - {id: qc, title: Filter cells}
+    - {id: cluster, title: Integrate and cluster}
+    - {id: markers, title: Explore markers}
+    - {id: annotate, title: Name clusters}
+    - {id: compare, title: Compare and export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/umap-js.min.js, docs/playground/play_core.js, docs/playground/play_ui.js]
+    object: Playground
+    lede: >
+      A toy dataset you can push through simplified versions of filtering,
+      clustering, markers and composition, to see how each setting changes the result.
+    intro:
+      - "The data are simulated, so the true cell type of every cell is known. That lets the panels score each result: how well clusters match the true types, how well batches mix, and whether a real treatment effect survives batch correction. About 1,200 barcodes: eight cell types (one of them a stem-to-neural continuum and one present only in treated samples), two conditions, two batches, plus 5% doublets and 4% near-empty barcodes."
+      - "Pick a scenario below or move the sliders yourself. Sliders recompute when you release them; the map re-lays itself out whenever the neighbour graph changes. Everything runs in your browser; nothing is sent to the cluster."
+    caveats:
+      - "Batch correction shifts each batch's centre in PC space. It behaves like Harmony for this demo, but Harmony corrects cluster by cluster and is less blunt."
+      - "Highly variable genes are ranked by variance of log-normalised expression rather than Scanpy's binned dispersion."
+      - "Clustering uses Louvain on an unweighted neighbour graph. Leiden, used by the module, gives similar partitions with better-connected clusters."
+      - "Clusters are named after their majority true type. In real data you name them from their markers."
+      - "Numbers here are for intuition about the direction and size of effects. Do not copy parameter values from the toy data to real data."
+    credit: "The playground was created by Helen R Horkan PhD for SPLiTscape. It uses UMAP-JS (Apache License 2.0)."
+
+demo:
+  build: everyome.modules.singlecell.splitseq.demo_data:build

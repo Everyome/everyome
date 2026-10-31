@@ -10,11 +10,13 @@ readme = "README.md"
 authors = [{ name = "Helen R Horkan" }]
 requires-python = ">=3.10"
 # Intent: keep the core light; heavy scientific packages belong to the modules that need them.
-dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24", "pyyaml", "setproctitle"]
+dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24", "python-multipart", "pyyaml", "setproctitle"]
 # Licence still to be confirmed with Stowers tech transfer (MIT or BSD-3); add it here and as LICENSE once decided.
 
 [project.optional-dependencies]
 test = ["pytest"]
+# Intent: what the SPLiT-seq module needs on the cluster (and on this computer for the demo).
+singlecell = ["numpy", "pandas", "scipy", "scanpy>=1.9", "anndata>=0.9", "harmonypy", "leidenalg", "igraph", "openpyxl", "seaborn", "matplotlib"]
 
 [project.scripts]
 everyome = "everyome.__main__:main"
@@ -23,4 +25,5 @@ everyome = "everyome.__main__:main"
 include = ["everyome*"]
 
 [tool.setuptools.package-data]
-everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/docs/*"]
+everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/docs/*", "modules/*/*/docs/*/*",
+  "modules/*/*/workflow/*/*", "modules/*/*/templates/*"]

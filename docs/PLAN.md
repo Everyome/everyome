@@ -321,6 +321,32 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Phase 2 notes (2026-10-31)
+
+SPLiTscape is now the module `singlecell.splitseq` (version 1.0.0). The SPLiTscape
+bash and Python stages are copied unchanged except one fix: with no preferred
+species set, gene names fall back to the most informative match. The original
+SPLiTscape repository is untouched.
+
+- Settings come from the manifest; `stage.py` writes `reads.env` per run and
+  finds the sequencing runs from the reads folder. Threads follow the job's CPUs.
+- The Hydra and Hydractinia name preferences (`DIAMOND_CFG`) are now two
+  settings, empty by default.
+- The engine reads the count matrices named by *Minimum genes per cell*
+  (SPLiTscape always read `G50`), and records each decision in order.
+- Core additions this needed: table inputs filled by a module helper (folder
+  scan), a batch report hook (read QC), file upload into the run, a check that
+  the cluster's Python has the module's packages, generated demo data, and
+  shared viewers (embedding map, log histograms, stacked bars, knee plot, dot plot).
+- Tested end to end on the demo cluster in pytest (about a minute) and in the
+  browser. Not yet run on real reads or on Cerebro.
+- Follow-up (same day): the SPLiTscape playground is back, as the module's
+  Playground page under *Learn* (theme-aware, runs in the browser, UMAP-JS under
+  Apache 2.0). Merging with an atlas or other dataset is now optional at both
+  points: the input can be left empty, and the Combine step has a tick box. With
+  no atlas the sublibraries are analysed on their own, for example to build a
+  first atlas or a standalone dataset.
+
 ### Phase 1 notes (2026-10-31)
 
 Built: backends, Slurm calls, projects, staged runs with a script preview before

@@ -31,7 +31,7 @@ suites:
     name: Single cell
     blurb: Cell types and states, one cell at a time.
     tools:
-      - {id: singlecell.splitseq, name: SPLiT-seq (SPLiTscape)}
+      - {id: singlecell.splitseq, name: SPLiT-seq (SPLiTscape), module: singlecell.splitseq}
       - {id: singlecell.scrna, name: Single-cell RNA-seq (10x and similar)}
       - {id: singlecell.scatac, name: Single-cell ATAC-seq}
       - {id: singlecell.multiome, name: Multiome (RNA and ATAC together)}

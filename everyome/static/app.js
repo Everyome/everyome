@@ -60,7 +60,8 @@ function pages() {
   ];
   if (m && hasSession(m)) groups.push({ group: m.name, medal: "II", items: m.steps.map(st => (
     { id: "step:" + st.id, title: st.title, ok: ST.sess === "READY", done: false })) });
-  if (m) groups.push({ group: "Learn", medal: "?", items: [{ id: "manual", title: "Manual", ok: m.has_manual, done: false }] });
+  if (m) groups.push({ group: "Learn", medal: "?", items: [{ id: "manual", title: "Manual", ok: m.has_manual, done: false },
+    ...(m.playground ? [{ id: "playground", title: "Playground", ok: true, done: false }] : [])] });
   return groups;
 }
 
@@ -90,7 +91,7 @@ async function go(id) {
   clearTimers(); ST.page = id; renderSide();
   const page = $("#page");
   page.innerHTML = "";
-  try { await (id.startsWith("step:") ? moduleStep(page, id.slice(5)) : id.startsWith("manual:") ? VIEWS.manual(page, id.slice(7)) : id.startsWith("suite:") ? suitePage(page, id.slice(6)) : VIEWS[id](page)); }
+  try { await (id.startsWith("step:") ? moduleStep(page, id.slice(5)) : id.startsWith("manual:") ? VIEWS.manual(page, id.slice(7)) : id.startsWith("playground:") ? VIEWS.playground(page, id.slice(11)) : id.startsWith("suite:") ? suitePage(page, id.slice(6)) : VIEWS[id](page)); }
   catch (e) { page.innerHTML += `<div class="notice warn">${esc(e.message)}</div>`; }
   $("#main").scrollTop = 0;
 }
@@ -151,7 +152,8 @@ const fmtSize = b => b > 1e9 ? (b / 1e9).toFixed(1) + " GB" : b > 1e6 ? (b / 1e6
 
 // ------------------------------------------------------------------ shared viewers (any module may use these)
 function barChart(items, { w = 520, h = 180, color = COL.golddk, label = v => fmt(v), title = "" } = {}) {
-  const max = Math.max(...items.map(d => d[1]), 1), left = 120, bh = Math.min(26, (h - 10) / items.length - 6);
+  // Intent: make room for the longest label (about 7 px per character), up to half the chart.
+  const max = Math.max(...items.map(d => d[1]), 1), left = Math.min(w / 2, Math.max(120, 14 + 7 * Math.max(...items.map(d => String(d[0]).length)))), bh = Math.min(26, (h - 10) / items.length - 6);
   return `<svg class="chart" viewBox="0 0 ${w} ${items.length * (bh + 6) + 12}" role="img" aria-label="${esc(title)}">${items.map(([k, v], i) => {
     const y = i * (bh + 6) + 4, ww = (w - left - 90) * v / max;
     return `<text x="${left - 8}" y="${y + bh / 2 + 4}" text-anchor="end" class="ax">${esc(k)}</text><rect x="${left}" y="${y}" width="${ww}" height="${bh}" fill="${color}"/>
@@ -171,6 +173,128 @@ function histChart(edges, counts, { lo, hi, w = 560, h = 200, xlab = "", digits 
     <line x1="${L}" x2="${w - 8}" y1="${h - B}" y2="${h - B}" stroke="${COL.muted}"/><text x="${L - 6}" y="${Y(max) + 4}" text-anchor="end" class="ax">${max}</text>${ticks}
     ${lo != null ? line(lo, "min") + line(hi, "max", true) : ""}<text x="${(w + L) / 2}" y="${h - 2}" text-anchor="middle" class="ax">${esc(xlab)}</text></svg>`;
 }
+// Recolour categorical data with the active theme's palette (annotation colours are the user's own).
+function themed(c) {
+  if (!c || c.kind !== "cat" || c.userColours) return c;
+  return { ...c, colors: c.categories.map((_, i) => PALETTE[i % PALETTE.length]) };
+}
+function legendFor(c) {
+  if (!c) return "";
+  c = themed(c);
+  if (c.kind === "num") return `<div class="row small"><span>${esc(c.gene)}${c.label ? " · " + esc(c.label) : ""}</span><span class="muted">0</span><span class="colorbar"></span><span class="muted">${c.max.toFixed(1)}</span></div>`;
+  return `<div class="legend">${c.categories.slice(0, 40).map((k, i) => `<span><i style="background:${c.colors[i]}"></i>${esc(k)}</span>`).join("")}</div>`;
+}
+// Stacked horizontal bars: rows of [label, fractions], one colour per category.
+function stacked(rows, cats, colors, { w = 560, left = 130, bh = 22, title = "" } = {}) {
+  return `<svg class="chart" viewBox="0 0 ${w} ${rows.length * (bh + 10) + 6}" role="img" aria-label="${esc(title)}">${rows.map(([k, fr], i) => {
+    let x = left; const y = i * (bh + 10) + 3;
+    return `<text x="${left - 8}" y="${y + bh / 2 + 4}" text-anchor="end" class="ax">${esc(k)}</text>` + fr.map((f, j) => {
+      const ww = f * (w - left - 4), r = ww > 0.5 ? `<rect x="${x}" y="${y}" width="${ww}" height="${bh}" fill="${colors[j]}" stroke="${COL.card}" stroke-width=".5"><title>${esc(cats[j])}: ${(f * 100).toFixed(1)}%</title></rect>` : "";
+      x += ww; return r; }).join(""); }).join("")}</svg>` +
+    `<div class="legend">${cats.map((c, j) => `<span><i style="background:${colors[j]}"></i>${esc(c)}</span>`).join("")}</div>`;
+}
+const sup = e => String(e).split("").map(c => "⁰¹²³⁴⁵⁶⁷⁸⁹"["0123456789".indexOf(c)] || (c === "-" ? "⁻" : c)).join("");
+// Log-log lines, e.g. knee plots: series = {name: [[x, y], ...]}.
+function logLine(series, { w = 560, h = 260, xlab = "", ylab = "" } = {}) {
+  const pts = Object.values(series).flat(); if (!pts.length) return "";
+  const lx = v => Math.log10(Math.max(v, 1)), xs = pts.map(p => lx(p[0])), ys = pts.map(p => lx(p[1]));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), L = 52, B = 34;
+  const X = v => L + (lx(v) - x0) / (x1 - x0 || 1) * (w - L - 10), Y = v => (h - B) - (lx(v) - y0) / (y1 - y0 || 1) * (h - B - 10);
+  const cols = [COL.golddk, COL.ox, COL.plum, COL.gold];
+  let ticks = ""; for (let e = Math.ceil(x0); e <= x1; e++) ticks += `<text x="${X(10 ** e)}" y="${h - B + 16}" text-anchor="middle" class="ax">10${sup(e)}</text>`;
+  for (let e = Math.ceil(y0); e <= y1; e++) ticks += `<text x="${L - 6}" y="${Y(10 ** e) + 4}" text-anchor="end" class="ax">10${sup(e)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(ylab)} against ${esc(xlab)}">${ticks}
+    <line x1="${L}" x2="${w - 10}" y1="${h - B}" y2="${h - B}" stroke="${COL.muted}"/><line x1="${L}" x2="${L}" y1="10" y2="${h - B}" stroke="${COL.muted}"/>
+    ${Object.entries(series).map(([k, p], i) => `<polyline fill="none" stroke="${cols[i % 4]}" stroke-width="2" points="${p.map(q => `${X(q[0]).toFixed(1)},${Y(q[1]).toFixed(1)}`).join(" ")}"/>`).join("")}
+    <text x="${(w + L) / 2}" y="${h - 4}" text-anchor="middle" class="ax">${esc(xlab)}</text><text x="12" y="${h / 2}" transform="rotate(-90 12 ${h / 2})" text-anchor="middle" class="ax">${esc(ylab)}</text></svg>
+    <div class="legend">${Object.keys(series).map((k, i) => `<span><i style="background:${cols[i % 4]}"></i>${esc(k)}</span>`).join("")}</div>`;
+}
+// Histogram on a log scale, stacked by group, with optional min/max lines.
+function logHist(edges, groups, { lo, hi, w = 540, h = 170, xlab = "" } = {}) {
+  const L = 10, B = 30, n = edges.length - 1, tot = Array.from({ length: n }, (_, i) => Object.values(groups).reduce((a, g) => a + g[i], 0));
+  const max = Math.max(...tot, 1), le = edges.map(v => Math.log10(v)), X = v => L + (Math.log10(Math.max(v, edges[0])) - le[0]) / (le[n] - le[0]) * (w - L - 4);
+  const cols = [COL.golddk, COL.ox, COL.plum]; let out = "";
+  for (let i = 0; i < n; i++) { let y = h - B; Object.values(groups).forEach((g, k) => { const hh = g[i] / max * (h - B - 14); y -= hh;
+    if (hh > 0) out += `<rect x="${X(edges[i])}" y="${y}" width="${Math.max(0.5, X(edges[i + 1]) - X(edges[i]) - 1)}" height="${hh}" fill="${cols[k % 3]}"/>`; }); }
+  const line = (v, t, end) => `<line x1="${X(v)}" x2="${X(v)}" y1="4" y2="${h - B}" stroke="${COL.ox}" stroke-dasharray="4 3" stroke-width="1.5"/><text x="${X(v) + (end ? -4 : 4)}" y="14" text-anchor="${end ? "end" : "start"}" class="ax">${t}</text>`;
+  let ticks = ""; for (let e = Math.ceil(le[0]); e <= le[n]; e++) ticks += `<text x="${X(10 ** e)}" y="${h - B + 15}" text-anchor="middle" class="ax">${fmt(10 ** e)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(xlab)} histogram">${out}<line x1="${L}" x2="${w}" y1="${h - B}" y2="${h - B}" stroke="${COL.muted}"/>${ticks}
+    ${lo != null ? line(lo, "min") : ""}${hi != null ? line(hi, "max", true) : ""}<text x="${w / 2}" y="${h - 2}" text-anchor="middle" class="ax">${esc(xlab)} (log scale)</text></svg>
+    <div class="legend">${Object.keys(groups).map((k, i) => `<span><i style="background:${cols[i % 3]}"></i>${esc(k)}</span>`).join("")}</div>`;
+}
+// Dot plot: dot size = share of cells expressing, colour = mean expression scaled per gene.
+function dotplot(d) {
+  const cw = 26, rh = 22, left = 44, top = 110, W = left + d.genes.length * cw + 20, H = top + d.groups.length * rh + 8;
+  const lo = d.genes.map((_, j) => Math.min(...d.mean.map(r => r[j]))), hi = d.genes.map((_, j) => Math.max(...d.mean.map(r => r[j])));
+  const mix = t => { const a = hexRgb(COL.parch), b = hexRgb(COL.ox); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t))})`; };
+  let s = `<svg class="chart" style="min-width:${W}px" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dotplot">`;
+  d.genes.forEach((g, j) => s += `<text transform="translate(${left + j * cw + cw / 2 + 4},${top - 8}) rotate(-60)" class="ax" style="font-size:11px">${esc(g)}<title>${esc(d.names[j])}</title></text>`);
+  d.groups.forEach((g, r) => { s += `<text x="${left - 8}" y="${top + r * rh + rh / 2 + 4}" text-anchor="end" class="axb">${esc(g)}</text>`;
+    d.genes.forEach((_, j) => { const f = d.frac[r][j]; if (f > .02) s += `<circle cx="${left + j * cw + cw / 2}" cy="${top + r * rh + rh / 2}" r="${1.5 + 8 * f}" fill="${mix((d.mean[r][j] - lo[j]) / ((hi[j] - lo[j]) || 1))}" stroke="${COL.rule}" stroke-width=".5"/>`; }); });
+  return s + "</svg>";
+}
+// Embedding map (UMAP and similar) on a canvas: colour by category or value, hover, click to pick, labels at centroids.
+class EmbeddingPlot {
+  constructor(canvas, tip) { this.cv = canvas; this.tip = tip; this.xy = null; this.col = null; this.onPick = null;
+    canvas.addEventListener("click", e => this.pick(e)); canvas.addEventListener("mousemove", e => this.hover(e));
+    canvas.addEventListener("mouseleave", () => { if (this.tip) this.tip.style.display = "none"; });
+    this._rs = () => this.draw(); window.addEventListener("resize", this._rs); }
+  setXY(flat) { this.xy = flat; this.n = flat.length / 2; this.draw(); }
+  setColour(c) { this.col = themed(c); this.draw(); }
+  colourOf(i) {
+    const c = this.col; if (!c) return COL.golddk;
+    if (c.kind === "cat") return c.colors[c.codes[i]] || COL.rule;
+    const t = Math.min(1, c.values[i] / (c.max || 1)), a = hexRgb(COL.parch), m = hexRgb(COL.gold), b = hexRgb(COL.ox);
+    const mix = (p, q, s) => p.map((v, k) => Math.round(v + (q[k] - v) * s));
+    return `rgb(${t < .5 ? mix(a, m, t * 2) : mix(m, b, (t - .5) * 2)})`;
+  }
+  layout() {
+    const W = this.cv.clientWidth, H = this.cv.clientHeight, xy = this.xy;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let i = 0; i < this.n; i++) { const x = xy[2 * i], y = xy[2 * i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const pad = 18, s = Math.min((W - 2 * pad) / (x1 - x0 || 1), (H - 2 * pad) / (y1 - y0 || 1));
+    return { W, H, s, ox: (W - s * (x1 - x0)) / 2 - x0 * s, oy: (H - s * (y1 - y0)) / 2 + y1 * s };
+  }
+  draw() {
+    if (!this.xy || !this.cv.isConnected) return;
+    const dpr = devicePixelRatio || 1, L = this.L = this.layout();
+    this.cv.width = L.W * dpr; this.cv.height = L.H * dpr;
+    const g = this.cv.getContext("2d"); g.scale(dpr, dpr); g.fillStyle = COL.card; g.fillRect(0, 0, L.W, L.H);
+    const r = this.n > 40000 ? 1.2 : this.n > 10000 ? 1.8 : 2.6, xy = this.xy;
+    // Intent: draw numeric colours low-to-high so expressing cells sit on top.
+    let order = [...Array(this.n).keys()];
+    if (this.col?.kind === "num") order.sort((a, b) => this.col.values[a] - this.col.values[b]);
+    g.globalAlpha = .85;
+    for (const i of order) { g.fillStyle = this.colourOf(i); g.beginPath(); g.arc(L.ox + xy[2 * i] * L.s, L.oy - xy[2 * i + 1] * L.s, r, 0, 6.283); g.fill(); }
+    g.globalAlpha = 1;
+    if (this.labels) {
+      g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 3.5; g.strokeStyle = COL.card; g.fillStyle = COL.ink;
+      g.font = `600 14px ${getComputedStyle(document.documentElement).getPropertyValue("--body")}`;
+      for (const [t, x, y] of this.labels) { const px = L.ox + x * L.s, py = L.oy - y * L.s; g.strokeText(t, px, py); g.fillText(t, px, py); }
+    }
+  }
+  nearest(e) {
+    if (!this.L) return -1;
+    const b = this.cv.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, L = this.L, xy = this.xy;
+    let best = -1, bd = 64;
+    for (let i = 0; i < this.n; i++) { const dx = L.ox + xy[2 * i] * L.s - mx, dy = L.oy - xy[2 * i + 1] * L.s - my, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = i; } }
+    return best;
+  }
+  pick(e) { const i = this.nearest(e); if (i >= 0 && this.onPick) this.onPick(i); }
+  hover(e) {
+    if (!this.tip || !this.col) return; const i = this.nearest(e);
+    if (i < 0) { this.tip.style.display = "none"; return; }
+    const c = this.col, txt = c.kind === "cat" ? c.categories[c.codes[i]] : `${c.gene}: ${c.values[i].toFixed(2)}`;
+    const b = this.cv.getBoundingClientRect(); this.tip.textContent = txt; this.tip.style.display = "block";
+    this.tip.style.left = (e.clientX - b.left + 12) + "px"; this.tip.style.top = (e.clientY - b.top + 12) + "px";
+  }
+  centroids(codes, names) {
+    const acc = new Map();
+    for (let i = 0; i < this.n; i++) { const k = codes[i], a = acc.get(k) || [0, 0, 0]; a[0] += this.xy[2 * i]; a[1] += this.xy[2 * i + 1]; a[2]++; acc.set(k, a); }
+    this.labels = [...acc].map(([k, a]) => [names[k], a[0] / a[2], a[1] / a[2]]); this.draw();
+  }
+}
+
 // Minimal Markdown for module manuals: headings, paragraphs, lists, tables, **bold**, *italic*, `code`.
 function md(src) {
   const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/\*([^*]+)\*/g, "<i>$1</i>");
@@ -207,7 +331,7 @@ async function followTask(box) {
   for (;;) {
     const s = await api("/api/s/status"); ST.eng = s;
     if (box) box.innerHTML = `<div class="progress"><i style="width:${s.task.progress}%"></i></div><span class="small muted">${esc(s.task.message || "")}</span>`;
-    if (!s.task.running) { renderSide(); if (s.task.error) throw new Error(s.task.error); return s; }
+    if (!s.task.running) { renderSide(); if (s.task.error) throw new Error(s.task.error); if (box) box.innerHTML = ""; return s; }
     await sleep(600);
   }
 }
@@ -218,7 +342,13 @@ window.Everyome = {
   registerViews(moduleId, views) { MODULE_VIEWS[moduleId] = views; },
   call: (method, body = {}) => api("/api/s/call/" + method, { method: "POST", body }),
   status: () => api("/api/s/status"),
-  helpers: { $, $$, esc, fmt, toast, guarded, followTask, barChart, histChart, COL: () => COL, PALETTE: () => PALETTE, every },
+  state: () => ST.state,
+  // Save a small file (for example, a barcode sheet) into the run folder; returns {path, name}.
+  upload: async file => { const f = new FormData(); f.append("file", file);
+    const r = await fetch("/api/run/upload", { method: "POST", body: f }), d = await r.json(); if (!r.ok) throw new Error(d.detail || "Upload failed."); return d; },
+  downloadUrl: name => "/api/s/download?name=" + encodeURIComponent(name),
+  helpers: { $, $$, esc, fmt, fmtSize, sleep, toast, guarded, followTask, barChart, histChart, logHist, logLine, stacked, dotplot, legendFor, themed,
+    EmbeddingPlot, hexRgb: h => hexRgb(h), COL: () => COL, PALETTE: () => PALETTE, every, go },
 };
 async function loadModuleUi(m) {
   if (!m.has_ui || MODULE_VIEWS[m.id]) return;
@@ -311,7 +441,7 @@ VIEWS.project = async el => {
 const suiteName = id => ST.suites?.suites.find(s => s.id === id)?.name || id;
 const moduleCard = m => `<div class="choice" aria-pressed="${curModule()?.id === m.id}"><div class="label">${esc(suiteName(m.suite))} · v${esc(m.version)}</div><h3>${esc(m.name)}</h3><p>${esc(m.summary)}</p>
   <div class="tags">${m.kind.map(k => `<span class="tag">${{ batch: "Cluster jobs", interactive: "Live session", local: "Runs here" }[k]}</span>`).join("")}</div>
-  <div class="acts"><button class="btn primary small" data-pick="${esc(m.id)}">Start a new run</button>${m.has_manual ? `<button class="btn small" data-man="${esc(m.id)}">Read the manual</button>` : ""}</div></div>`;
+  <div class="acts"><button class="btn primary small" data-pick="${esc(m.id)}">Start a new run</button>${m.has_manual ? `<button class="btn small" data-man="${esc(m.id)}">Read the manual</button>` : ""}${m.playground ? `<button class="btn small" data-go="playground:${esc(m.id)}">Try the playground</button>` : ""}</div></div>`;
 function wireModuleCards(el) {
   el.addEventListener("click", e => {
     const mn = e.target.closest("[data-man]"); if (mn) return go("manual:" + mn.dataset.man);
@@ -398,7 +528,13 @@ async function suitePage(el, id) {
   wireModuleCards(el);
 }
 
+const tableRow = (f, r = {}) => `<tr>${f.columns.map(c => `<td><input type="text" class="mono" data-col="${esc(c.id)}" aria-label="${esc(c.label)}" value="${esc(r[c.id] ?? "")}"></td>`).join("")}
+  <td class="num"><button type="button" class="btn small" data-delrow>Remove</button></td></tr>`;
 const fieldHtml = (f, val) => {
+  if (f.type === "table") return `<div class="field" data-f="${f.id}"><span>${esc(f.label)}${f.required ? ' <span class="muted small">(required)</span>' : ""}</span>
+    <table data-table="${f.id}"><thead><tr>${f.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}<th></th></tr></thead><tbody>${(val?.length ? val : [{}]).map(r => tableRow(f, r)).join("")}</tbody></table>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn small" data-addrow="${f.id}">Add row</button>${f.fill?.helper ? `<button type="button" class="btn small" data-fill="${f.id}">${esc(f.fill.label || "Fill in")}</button>` : ""}</div>
+    ${f.help ? `<small>${esc(f.help)}</small>` : ""}<div data-fillmsg="${f.id}"></div></div>`;
   const help = f.help ? `<small>${esc(f.help)}${f.min != null || f.max != null ? ` (${f.min != null ? "from " + f.min : ""}${f.min != null && f.max != null ? " " : ""}${f.max != null ? "up to " + f.max : ""})` : ""}</small>` : "";
   const req = f.required ? ' <span class="muted small">(required)</span>' : "";
   if (f.type === "bool") return `<label class="field" data-f="${f.id}"><span><input type="checkbox" name="${f.id}" ${val ? "checked" : ""}>${esc(f.label)}</span>${help}</label>`;
@@ -409,7 +545,13 @@ const fieldHtml = (f, val) => {
   return `<label class="field" data-f="${f.id}"><span>${esc(f.label)}${req}</span><input type="${num ? "number" : "text"}" name="${f.id}" value="${esc(val ?? "")}"
     ${num && f.min != null ? `min="${f.min}"` : ""} ${num && f.max != null ? `max="${f.max}"` : ""} ${f.type === "float" ? 'step="any"' : ""}>${help}</label>`;
 };
-const readField = (el, f) => { const i = $(`[name=${f.id}]`, el); return f.type === "bool" ? i.checked : i.value.trim(); };
+const readField = (el, f) => {
+  if (f.type === "table") return $$(`[data-table=${f.id}] tbody tr`, el).map(tr => Object.fromEntries($$("[data-col]", tr).map(i => [i.dataset.col, i.value.trim()])))
+    .filter(r => Object.values(r).some(Boolean));
+  const i = $(`[name=${f.id}]`, el); return f.type === "bool" ? i.checked : i.value.trim();
+};
+const paramCards = ps => { const groups = [...new Set(ps.map(f => f.group || "Settings"))];
+  return groups.map(g => `<div class="card" style="margin-bottom:18px"><div class="label">${esc(g)}</div><div class="grid g2">${ps.filter(f => (f.group || "Settings") === g).map(f => fieldHtml(f, f._val)).join("")}</div></div>`).join(""); };
 
 VIEWS.settings = async el => {
   const m = curModule(), s = ST.state, run = s.run;
@@ -418,27 +560,45 @@ VIEWS.settings = async el => {
   const res = run?.resources || { ...m.resources, partition: s.conn.partition };
   el.innerHTML = head("I", m.name, "Inputs and settings", esc(m.summary)) +
     (run ? `<div class="notice">These are the settings of run <b class="mono">${esc(run.id)}</b>. To change them, start a new run below; the old one is kept.</div>` : "") +
-    (s.demo && !run ? `<div class="notice">Demo inputs are filled in for you. Browse to see the demo data.</div>` : "") +
+    (s.demo && !run ? `<div class="notice">Demo inputs are filled in for you. Browse to see the demo data.</div>` : "") + `<div id="needs"></div>` +
     `<div class="grid g-side"><div>
       ${m.inputs.length ? `<div class="card" style="margin-bottom:18px"><div class="label">Inputs</div>${m.inputs.map(f => fieldHtml(f, val(f))).join("")}</div>` : ""}
-      ${m.params.length ? `<div class="card"><div class="label">Settings</div><div class="grid g2">${m.params.map(f => fieldHtml(f, val(f))).join("")}</div></div>` : ""}
+      ${paramCards(m.params.map(f => ({ ...f, _val: val(f) })))}
     </div>${hasBatch(m) ? `<div class="card"><div class="label">Cluster resources</div>
       ${[["partition", "Partition", "Leave empty for the default queue."], ["cpus", "CPUs per job", ""], ["mem", "Memory per job", "e.g. 4G"], ["time", "Time limit per job", "hours:minutes:seconds"]]
         .map(([k, l, h]) => `<label class="field"><span>${l}</span><input type="text" class="mono" name="res_${k}" value="${esc(res[k] ?? "")}">${h ? `<small>${h}</small>` : ""}</label>`).join("")}</div>` : ""}</div>
     <div class="row" style="margin-top:18px"><button class="btn primary" id="save">${run ? "Start a new run with these settings →" : "Create the run →"}</button><button class="btn" id="reset">Restore defaults</button></div>`;
+  // Intent: say early if the cluster's Python lacks what this analysis needs, rather than at the session.
+  if (m.requires?.length) api(`/api/modules/${encodeURIComponent(m.id)}/check`).then(c => { if (c.missing.length) $("#needs", el).innerHTML =
+    `<div class="notice warn">The Python on <b>${esc(s.label)}</b> is missing ${c.missing.map(x => `<code>${esc(x)}</code>`).join(", ")}, which this analysis needs. Ask IT, or install them in that environment, before the live session.</div>`; }).catch(() => {});
+  const fill = async (id, quiet) => {
+    const f = m.fields_all.find(x => x.id === id), from = $(`[name=${f.fill.from}]`, el).value.trim(), msg = $(`[data-fillmsg=${id}]`, el);
+    try {
+      const r = await api(`/api/modules/${encodeURIComponent(m.id)}/helpers/${f.fill.helper}`, { method: "POST", body: { path: from } });
+      $(`[data-table=${id}] tbody`, el).innerHTML = r.rows.map(row => tableRow(f, row)).join("");
+      msg.innerHTML = r.message ? `<div class="notice" style="margin-top:8px">${esc(r.message)}</div>` : "";
+    } catch (err) { if (!quiet) msg.innerHTML = `<div class="notice warn" style="margin-top:8px">${esc(err.message)}</div>`; }
+  };
+  el.addEventListener("click", e => {
+    const add = e.target.closest("[data-addrow]"); if (add) { const f = m.fields_all.find(x => x.id === add.dataset.addrow); $(`[data-table=${f.id}] tbody`, el).insertAdjacentHTML("beforeend", tableRow(f)); }
+    const del = e.target.closest("[data-delrow]"); if (del) del.closest("tr").remove();
+    const fl = e.target.closest("[data-fill]"); if (fl) guarded(fl, () => fill(fl.dataset.fill));
+  });
+  // On the demo, fill tables straight away from the demo inputs.
+  if (s.demo && !run) m.fields_all.filter(f => f.fill?.helper).forEach(f => fill(f.id, true));
   el.addEventListener("click", async e => {
     const b = e.target.closest("[data-browse]"); if (!b) return;
     const inp = $(`[name=${b.dataset.browse}]`, el), mode = inp.dataset.path, cur = inp.value || s.conn.data_root || s.conn.projects_root;
     const v = await browse(mode === "file" ? cur.replace(/\/[^/]*$/, "") : cur, mode, mode === "dir" ? "Choose a folder" : "Choose a file");
     if (v) inp.value = v;
   });
-  $("#reset", el).onclick = () => m.fields_all.forEach(f => { const i = $(`[name=${f.id}]`, el); if (f.type === "bool") i.checked = !!f.default; else i.value = demoVal(f) ?? ""; });
+  $("#reset", el).onclick = () => m.fields_all.forEach(f => { if (f.type === "table") return; const i = $(`[name=${f.id}]`, el); if (f.type === "bool") i.checked = !!f.default; else i.value = demoVal(f) ?? ""; });
   $("#save", el).onclick = e => guarded(e.currentTarget, async () => {
     $$(".field.bad", el).forEach(x => x.classList.remove("bad"));
     const values = {}, resources = {};
     m.fields_all.forEach(f => values[f.id] = readField(el, f));
     ["partition", "cpus", "mem", "time"].forEach(k => { const i = $(`[name=res_${k}]`, el); if (i) resources[k] = i.value.trim(); });
-    const missing = m.fields_all.filter(f => f.required && values[f.id] === "");
+    const missing = m.fields_all.filter(f => f.required && (values[f.id] === "" || (f.type === "table" && !values[f.id].length)));
     if (missing.length) { missing.forEach(f => $(`[data-f=${f.id}]`, el).classList.add("bad")); throw new Error("Please fill in: " + missing.map(f => f.label).join(", ")); }
     await api("/api/run/create", { method: "POST", body: { module: m.id, values, resources } }); await refreshState();
     toast("Run created. Nothing has been submitted yet.", true); go(hasBatch(m) ? "run" : "session");
@@ -455,7 +615,7 @@ VIEWS.run = async el => {
       ${m.stages.map(s => `<li data-sid="${s.id}"><span class="n">${s.id}</span><span>${esc(s.title)}</span><span class="state" data-st="${s.id}">Not run</span><span class="small muted mono" data-el="${s.id}"></span></li>`).join("")}</ol></div>
     <div class="card"><div class="label">Job log</div><p class="small muted" id="logtitle">Select a stage to see its log.</p><pre class="log" id="log">–</pre></div></div>
     <div id="next"></div>`;
-  let sel = null;
+  let sel = null, shownNext = false;
   async function poll() {
     if (!Object.keys(ST.state.run.jobs || {}).length) return;
     const r = await api("/api/run/status");
@@ -472,8 +632,14 @@ VIEWS.run = async el => {
     if (failed && !sel) select(failed.id);
     if (sel) $("#log", el).textContent = (await api("/api/run/log?stage=" + sel)).log || "(no output yet)";
     if (r.done && !ST.state.run.done) { ST.state.run.done = true; renderSide(); }
-    $("#next", el).innerHTML = r.done ? `<div class="notice" style="margin-top:18px">All stages finished. Results are in <span class="mono">${esc(run.dir)}/results</span>.</div>
-      ${hasSession(m) ? `<div class="row"><button class="btn primary" data-go="session">Continue to the live session →</button></div>` : ""}` : "";
+    if (r.done && !shownNext) {
+      shownNext = true;
+      $("#next", el).innerHTML = `<div class="notice" style="margin-top:18px">All stages finished. Outputs are in <span class="mono">${esc(run.dir)}</span>.</div><div id="report"></div>
+        ${hasSession(m) ? `<div class="row" style="margin-top:18px"><button class="btn primary" data-go="session">Continue to the live session →</button></div>` : ""}`;
+      // Intent: modules can summarise their batch output (for example, read QC) before the live session.
+      if (m.has_report) { await loadModuleUi(m); const view = MODULE_VIEWS[m.id]?.report;
+        if (view) await view($("#report", el), await api("/api/run/report")); }
+    }
   }
   function select(id) {
     sel = id; $$("#stages li", el).forEach(x => x.classList.toggle("sel", x.dataset.sid === sel)); $("#rerun", el).disabled = false;
@@ -487,7 +653,7 @@ VIEWS.run = async el => {
       p.scripts.map(s => `<div class="label" style="margin-top:12px">Stage ${esc(s.stage)} · ${esc(s.title)}</div><pre class="script">${esc(s.script)}</pre>`).join(""),
       [{ text: "Cancel", value: false }, { text: `Submit ${p.scripts.length} job${p.scripts.length > 1 ? "s" : ""}`, value: true, primary: true }]);
     if (!ok) return;
-    await api("/api/run/submit", { method: "POST", body: { start_at: from } }); await refreshState(); toast("Jobs submitted.", true); poll();
+    await api("/api/run/submit", { method: "POST", body: { start_at: from } }); await refreshState(); shownNext = false; $("#next", el).innerHTML = ""; toast("Jobs submitted.", true); poll();
   };
   $("#runall", el).onclick = e => guarded(e.currentTarget, () => submit(null));
   $("#rerun", el).onclick = e => guarded(e.currentTarget, () => submit(sel));
@@ -522,8 +688,33 @@ VIEWS.session = async el => {
 
 VIEWS.manual = async (el, mid) => {
   const m = ST.modules.find(x => x.id === mid) || curModule(), r = await api(`/api/modules/${encodeURIComponent(m.id)}/manual`);
-  el.innerHTML = head("?", "Learn", m.name + " manual", "") + `<div class="card manual">${md(r.markdown)}</div>` +
+  el.innerHTML = head("?", "Learn", m.name + " manual", "") +
+    (m.playground ? `<div class="notice">See what each setting does on a toy dataset in the <button class="btn small" data-go="playground:${esc(m.id)}">Playground →</button></div>` : "") +
+    `<div class="card manual">${md(r.markdown)}</div>` +
     (mid ? `<div class="row" style="margin-top:18px"><button class="btn" data-go="modules">← Back to analyses</button></div>` : "");
+};
+
+// A module's playground: its own scripts (listed in the manifest, loaded once, in order) run a toy analysis in the browser.
+const PLAYGROUND_LOADED = {};
+async function loadScript(src) {
+  await new Promise((ok, bad) => { const s = document.createElement("script"); s.src = src; s.onload = ok;
+    s.onerror = () => bad(new Error("The playground could not be loaded.")); document.head.appendChild(s); });
+}
+VIEWS.playground = async (el, mid) => {
+  const m = ST.modules.find(x => x.id === mid) || curModule(), pg = m.playground;
+  if (!PLAYGROUND_LOADED[m.id]) {
+    for (let i = 0; i < pg.n_scripts; i++) await loadScript(`/api/modules/${encodeURIComponent(m.id)}/playground/${i}`);
+    PLAYGROUND_LOADED[m.id] = true;
+  }
+  const P = window[pg.object];
+  el.innerHTML = head("?", "Learn · " + m.name, "Playground", esc(pg.lede || "")) +
+    (pg.intro || []).map(p => `<p>${esc(p)}</p>`).join("") +
+    `<h2>Things to try</h2>${P.presetsHtml()}<div id="pg-root"></div>` +
+    (pg.caveats?.length ? `<h2>What is simplified</h2><ul>${pg.caveats.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : "") +
+    (pg.credit ? `<p class="small muted" style="margin-top:18px">${esc(pg.credit)}</p>` : "") +
+    `<div class="row" style="margin-top:18px">${m.has_manual ? `<button class="btn" data-go="manual:${esc(m.id)}">Read the manual</button>` : ""}<button class="btn" data-go="modules">← Back to analyses</button></div>`;
+  el.addEventListener("click", e => { const b = e.target.closest("[data-preset]"); if (b) P.applyPreset(+b.dataset.preset); });
+  P.mount($("#pg-root", el));
 };
 
 // ------------------------------------------------------------------ themes

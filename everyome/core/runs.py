@@ -21,7 +21,7 @@ from . import projects, slurm
 from .manifest import Manifest, check_values
 
 
-def create(backend, project: dict, m: Manifest, values: dict, resources: dict) -> dict:
+def create(backend, project: dict, m: Manifest, values: dict, resources: dict, demo: bool = False) -> dict:
     """Check the settings and write a new run folder; nothing is submitted."""
     vals, errors = check_values(m, values)
     if errors:
@@ -32,7 +32,7 @@ def create(backend, project: dict, m: Manifest, values: dict, resources: dict) -
            "user": project["user"], "values": vals,
            # Intent: inputs are always the user's own files; only settings have meaningful defaults.
            "defaults_changed": sorted(f.id for f in m.params if vals.get(f.id) != f.default),
-           "resources": {**m.resources, **{k: v for k, v in resources.items() if v}}, "jobs": {}}
+           "resources": {**m.resources, **{k: v for k, v in resources.items() if v}}, "jobs": {}, "demo": demo}
     backend.run(f"mkdir -p {shlex.quote(d)}/jobs {shlex.quote(d)}/logs {shlex.quote(d)}/results")
     backend.write_text(f"{d}/params.json", json.dumps(vals, indent=1))
     save(backend, run)
@@ -55,7 +55,9 @@ def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
     body = ["set -euo pipefail", f'echo "[$(date)] {m.id} stage {stage.id} ({stage.name}) on $(hostname)"',
             f"cd {shlex.quote(d)}",
             f"export EVERYOME_RUN_DIR={shlex.quote(d)}", f"export EVERYOME_PARAMS={shlex.quote(d + '/params.json')}",
-            f"export EVERYOME_STAGE={shlex.quote(stage.id)}",
+            f"export EVERYOME_STAGE={shlex.quote(stage.id)}", f"export EVERYOME_CPUS={int(res.get('cpus', 1))}",
+            # Intent: on the demo cluster, modules stand in for tools that are not installed there.
+            *(["export EVERYOME_DEMO=1"] if run.get("demo") else []),
             # Intent: module commands name the cluster's Python as {python}; nothing else is substituted.
             stage.run.replace("{python}", shlex.quote(python)),
             f'echo "[$(date)] stage {stage.id} done"']
