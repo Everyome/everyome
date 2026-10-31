@@ -22,6 +22,9 @@ The source for porting is SPLiTscape in `~/Desktop/helomics` (`app/splitscape_ap
 
 ## Running
 
+Python 3.10 or newer (3.9 is end-of-life and no longer on GitHub's Ubuntu runners);
+CI tests 3.10 and 3.12 on Linux and macOS.
+
 ```bash
 pip install -e ".[test]" && everyome     # http://127.0.0.1:8777
 pytest

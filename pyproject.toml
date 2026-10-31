@@ -8,7 +8,7 @@ version = "0.0.1"
 description = "Everyome: every -ome, for everyone. Omics analysis with a simple GUI and every setting in reach."
 readme = "README.md"
 authors = [{ name = "Helen R Horkan" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 # Intent: keep the core light; heavy scientific packages belong to the modules that need them.
 dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "pyyaml", "setproctitle"]
 # Licence still to be confirmed with Stowers tech transfer (MIT or BSD-3); add it here and as LICENSE once decided.
