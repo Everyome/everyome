@@ -30,6 +30,8 @@ Modules so far:
 - **SPLiT-seq (SPLiTscape)**, single cell: SPLiT-seq sublibraries from raw reads
   to annotated cell types, on their own (for example, to build a first atlas) or
   merged with an existing atlas or dataset. Includes a playground.
+- **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
+  gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **Sequence summary**, getting started: a small worked example of how every
   module runs.
 

@@ -321,6 +321,38 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Phase 4 notes (2026-10-31)
+
+New module `rna.bulk_de` (0.1.0): nf-core/rnaseq **3.27.0** turns reads into gene
+counts on the cluster, then a live session checks samples (library sizes, PCA,
+sample correlation), compares two conditions with DESeq2 via PyDESeq2, explores
+results (volcano, MA, searchable table, per-gene counts) and exports them.
+
+- **Nextflow engine** in the core: the module names a pipeline, a pinned
+  release and the pipeline's own `nextflow_schema.json` (bundled, MIT, from that
+  release). All 123 analysis parameters become editable fields in the pipeline's
+  groups (specialist ones under *Advanced*); only changed values reach the
+  pipeline. One head job runs `nextflow run … -r 3.27.0 -profile apptainer
+  -resume`; a generated `nextflow.config` sends the pipeline's tasks to Slurm,
+  each named `Claude_<user>_everyome_rna_bulk_de_<task>`. Progress comes from the
+  trace file; the MultiQC report opens sandboxed from the Run page.
+- The samplesheet is a table filled from a reads folder (condition guessed from
+  sample names, then checked by the user); extra columns stay out of the CSV.
+- Records name the pipeline release and profile; methods text covers the
+  pipeline, any changed settings, filtering, the DESeq2 design and the results.
+- Tested on the demo cluster (a stand-in writes the pipeline's outputs): DESeq2
+  recovers the planted changes with few false calls, and a rerun from the bundle
+  reproduces the significant-gene table exactly.
+
+**Not done from the "done when":** a real run on a small public dataset. This
+Mac has no Nextflow, Java runtime or Apptainer, so the pipeline has not run for
+real anywhere yet. That needs a cluster with those three (Cerebro, once IT
+confirms) and a small public dataset such as nf-core's own test data.
+
+Also fixed: a colour helper (`hexRgb`) missing since Phase 2, which broke the
+SPLiT-seq dot plot and colour-by-gene, and the new correlation heatmap. Nothing
+tests the browser code automatically yet, which is how it slipped through.
+
 ### Phase 3 notes (2026-10-31)
 
 Every run now has a **Record and write-up** page. *Build the record* gathers the

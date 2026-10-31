@@ -262,3 +262,11 @@ svg .ax.it{font-style:italic}
 @media (max-width:1250px){.pg{grid-template-columns:1fr;grid-template-areas:"umap" "met" "ctl" "qc" "pca" "dot" "comp"}.tries{grid-template-columns:1fr}.a-umap canvas{height:340px}}
 .manual code{overflow-wrap:anywhere;font-size:12.5px}
 .manual td{overflow-wrap:anywhere}
+details.card.fold>summary{cursor:pointer;list-style:none;margin:0}
+details.card.fold>summary::before{content:"▸ ";color:var(--golddk)}
+details.card.fold[open]>summary::before{content:"▾ "}
+details.card.fold[open]>summary{margin-bottom:12px}
+.tablewrap{overflow-x:auto;max-width:100%}
+.tablewrap table{width:auto;min-width:100%}
+.tablewrap td input{min-width:110px}
+.tablewrap td input.wide{min-width:300px}

@@ -51,6 +51,8 @@ def prepare(bundle: Path, new: Path, submit: bool) -> dict:
                "defaults_changed": sorted(f.id for f in m.params if vals.get(f.id) != f.default),
                "resources": info.get("resources", {}), "jobs": {}, "demo": bool(info.get("demo"))}
         (new / "params.json").write_text(json.dumps(vals, indent=1))
+        for name, text in runs.pipeline_files(run, m).items():
+            (new / name).write_text(text)
         (new / "run.json").write_text(json.dumps(run, indent=1))
     if not m.stages:
         _say("This module has no cluster stages; go straight to --session.")

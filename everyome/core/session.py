@@ -69,9 +69,10 @@ def create_app(run_dir: str, engine_spec: str, token: str, idle_minutes: float) 
     def download(name: str):
         res = (Path(run_dir) / "results").resolve()
         path = (res / name).resolve()
-        if path.parent != res or not path.exists():
+        # Intent: anything inside results/ (including sub-folders), nothing outside it.
+        if not path.is_relative_to(res) or not path.is_file():
             raise HTTPException(404)
-        return FileResponse(path, filename=name)
+        return FileResponse(path, filename=path.name)
 
     @app.post("/stop")
     def stop():

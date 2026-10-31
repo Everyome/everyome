@@ -94,6 +94,7 @@ def build(backend, conn: dict, project: dict, run: dict, m: Manifest) -> dict:
     return {
         "record_version": 1, "created": time.strftime("%Y-%m-%d %H:%M:%S"), "everyome": __version__,
         "module": {"id": m.id, "name": m.name, "version": m.version, "suite": m.suite},
+        "pipeline": {k: m.nextflow.get(k) for k in ("pipeline", "revision", "profile")} if m.nextflow else None,
         "run": {"id": run["id"], "created": run.get("created"), "submitted": run.get("submitted"), "user": run.get("user"),
                 "demo": bool(run.get("demo")), "project": project["name"], "dir": run["dir"]},
         "computer": "demo cluster" if conn.get("mode") == "demo" else conn.get("host", ""),
@@ -152,6 +153,7 @@ def protocol(rec: dict) -> str:
          f"- **Run created:** {r['created']}" + (f"; jobs submitted {r['submitted']}" if r.get("submitted") else ""),
          f"- **Where it ran:** {rec['computer']}" + (" (practice data, not real results)" if r["demo"] else ""),
          f"- **Software:** Everyome {rec['everyome']}, module {mod['id']} version {mod['version']}",
+         *([f"- **Pipeline:** {rec['pipeline']['pipeline']} release {rec['pipeline']['revision']}, profile {rec['pipeline']['profile']}"] if rec.get("pipeline") else []),
          f"- **Run folder:** `{r['dir']}`", "", "## Inputs", "", "| Input | Path | Size | SHA-256 |", "|---|---|---|---|"]
     for i in rec["inputs"]:
         info = i.get("info") or {}

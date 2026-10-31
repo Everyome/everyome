@@ -19,10 +19,12 @@ current when decisions change.
 | `everyome/core/projects.py`, `runs.py` | Project folders; runs (params, job scripts, afterok chain, status, logs) |
 | `everyome/core/engine.py`, `session.py`, `sessions.py` | Interactive engines (base class), the compute-node session server, and the app side (start, tunnel, ping, stop) |
 | `everyome/suites.yaml`, `everyome/core/suites.py` | The suites, their tools (ready = has a module; otherwise planned), and the data-type and aim rules behind "Find the right analysis". A module's `suite` must be one of these ids and it must be listed as a tool |
+| `everyome/core/nfschema.py` | Every parameter in a Nextflow pipeline's `nextflow_schema.json` becomes a field (its groups, defaults, choices; hidden ones under Advanced) |
 | `everyome/core/records.py`, `rerun.py` | Run record (inputs with checksums, settings, jobs, versions, session steps) and the write-ups made from it: protocol, methods, references, rerun bundle. `python -m everyome.core.rerun BUNDLE NEW_DIR [--submit / --session]` repeats a run; the user runs it |
 | `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
+| `everyome/modules/rna/bulk_de/` | Bulk RNA-seq: nf-core/rnaseq 3.27.0 (pinned; schemas in `pipeline/`) for reads to counts, then a PyDESeq2 live session; `demo_pipeline.py` stands in for Nextflow on the demo cluster |
 | `everyome/modules/singlecell/splitseq/` | SPLiTscape as a module: `workflow/` (the SPLiTscape bash and Python stages), `stage.py` (writes `reads.env` from settings, runs a stage or its demo stand-in), `helpers.py` (folder scan, read-QC report), `engine.py` (part 2), `ui.js`, `demo_data.py` |
 | `everyome/static/` | App shell (`app.js`: home page, suite pages, views, shared viewers, markdown), `app.css`, `themes.json`, fonts |
 | `design/themes/` | 67 cnidarian themes; `python design/themes/export_app_themes.py` regenerates `everyome/static/themes.json` |
@@ -46,7 +48,11 @@ decisions with `_record()`. `ui.js` registers views with
 `tools` (version commands recorded in the run record); `methods`
 (function writing the draft methods text from the record); engines list in
 `REPLAY` the calls that change the analysis, which are logged with their
-arguments so `rerun --session` can replay them; `learn.playground` (scripts loaded in order that define an object with `mount`,
+arguments so `rerun --session` can replay them; `batch.engine: nextflow` (pipeline, pinned revision, bundled schema,
+samplesheet from a table input, profile, skip list, demo stand-in, demo_values):
+one head job runs the pipeline with a generated `nextflow.config` that names
+every task `Claude_<user>_everyome_<module>_<task>`; only changed settings go in
+`nf_params.json`; `learn.playground` (scripts loaded in order that define an object with `mount`,
 `presetsHtml`, `applyPreset`, plus lede, intro, caveats and credit text).
 Stages see `$EVERYOME_CPUS`, and `$EVERYOME_DEMO=1` on the demo cluster.
 
@@ -56,7 +62,7 @@ Python 3.10 or newer (3.9 is end-of-life and no longer on GitHub's Ubuntu runner
 CI tests 3.10 and 3.12 on Linux and macOS.
 
 ```bash
-pip install -e ".[test,singlecell]" && everyome     # http://127.0.0.1:8777
+pip install -e ".[test,singlecell,rna]" && everyome     # http://127.0.0.1:8777
 pytest          # the SPLiT-seq end-to-end test is skipped without the singlecell extra
 EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 ```

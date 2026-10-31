@@ -16,6 +16,8 @@ dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24", "python-multip
 [project.optional-dependencies]
 test = ["pytest"]
 # Intent: what the SPLiT-seq module needs on the cluster (and on this computer for the demo).
+# Intent: what the bulk RNA module's live session needs.
+rna = ["numpy", "pandas", "matplotlib", "pydeseq2"]
 singlecell = ["numpy", "pandas", "scipy", "scanpy>=1.9", "anndata>=0.9", "harmonypy", "leidenalg", "igraph", "openpyxl", "seaborn", "matplotlib"]
 
 [project.scripts]
@@ -26,4 +28,4 @@ include = ["everyome*"]
 
 [tool.setuptools.package-data]
 everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/docs/*", "modules/*/*/docs/*/*",
-  "modules/*/*/workflow/*/*", "modules/*/*/templates/*"]
+  "modules/*/*/workflow/*/*", "modules/*/*/templates/*", "modules/*/*/pipeline/*"]

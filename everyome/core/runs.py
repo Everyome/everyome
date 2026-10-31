@@ -35,6 +35,8 @@ def create(backend, project: dict, m: Manifest, values: dict, resources: dict, d
            "resources": {**m.resources, **{k: v for k, v in resources.items() if v}}, "jobs": {}, "demo": demo}
     backend.run(f"mkdir -p {shlex.quote(d)}/jobs {shlex.quote(d)}/logs {shlex.quote(d)}/results")
     backend.write_text(f"{d}/params.json", json.dumps(vals, indent=1))
+    for name, text in pipeline_files(run, m).items():
+        backend.write_text(f"{d}/{name}", text)
     save(backend, run)
     project.setdefault("runs", []).append({"id": rid, "module": m.id, "created": run["created"]})
     projects.save(backend, project)
@@ -49,6 +51,58 @@ def load(backend, project: dict, rid: str) -> dict:
     return json.loads(backend.read_text(f"{project['dir']}/runs/{rid}/run.json"))
 
 
+# ------------------------------------------------------------------ Nextflow pipelines
+def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
+    """For a Nextflow module: the samplesheet, the pipeline's parameter file and the cluster config."""
+    if not m.nextflow:
+        return {}
+    nf, d, v = m.nextflow, run["dir"], run["values"]
+    sheet = nf["samplesheet"]
+    rows = v.get(sheet["from"]) or []
+    csv = ",".join(sheet["columns"]) + "\n" + "".join(",".join(str(r.get(c, "")) for c in sheet["columns"]) + "\n" for r in rows)
+    # Intent: pass only what differs from the pipeline's own defaults, so the pipeline decides the rest.
+    params = {f.id: v[f.id] for f in m.params if f.pipeline and v.get(f.id) not in (None, "") and v.get(f.id) != f.default}
+    params.update({sheet["param"]: f"{d}/samplesheet.csv", "outdir": f"{d}/results"})
+    res, user = run["resources"], run["user"]
+    prefix = slurm.job_name(user, m.id, "")
+    config = "\n".join([
+        f"// Written by Everyome for run {run['id']}: how the pipeline's own tasks go to Slurm.",
+        "process.executor = 'slurm'",
+        *([f"process.queue = '{res['partition']}'"] if res.get("partition") else []),
+        "executor {",
+        "    queueSize = 50",
+        "    // Stowers policy: every job carries Claude and the username",
+        f"    jobName = {{ '{prefix}' + task.process.tokenize(':')[-1] }}",
+        "}", ""])
+    return {"samplesheet.csv": csv, "nf_params.json": json.dumps(params, indent=1), "nextflow.config": config}
+
+
+def nextflow_command(run: dict, m: Manifest, python: str) -> str:
+    nf, d = m.nextflow, run["dir"]
+    if run.get("demo"):
+        # Intent: no Nextflow or containers on the demo cluster; the module writes the same outputs instead.
+        return f"{shlex.quote(python)} -m {nf['demo']}"
+    q = shlex.quote
+    return (f"nextflow run {q(nf['pipeline'])} -r {q(str(nf['revision']))} -profile {q(nf['profile'])} -ansi-log false "
+            f"-c {q(d + '/nextflow.config')} -params-file {q(d + '/nf_params.json')} -work-dir {q(d + '/work')} "
+            f"-with-trace {q(d + '/trace.txt')} -resume")
+
+
+def trace_summary(backend, run: dict) -> dict:
+    """Progress of a Nextflow run from its trace file (tasks are listed as they finish)."""
+    try:
+        lines = backend.read_text(f"{run['dir']}/trace.txt").splitlines()
+    except FileNotFoundError:
+        return {"started": False}
+    head = lines[0].split("\t") if lines else []
+    rows = [dict(zip(head, l.split("\t"))) for l in lines[1:] if l.strip()]
+    by = {}
+    for r in rows:
+        by[r.get("status", "")] = by.get(r.get("status", ""), 0) + 1
+    return {"started": True, "tasks": len(rows), "completed": by.get("COMPLETED", 0) + by.get("CACHED", 0),
+            "failed": by.get("FAILED", 0) + by.get("ABORTED", 0), "recent": [r.get("name", "") for r in rows[-5:]][::-1]}
+
+
 def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
     d = run["dir"]
     res = {**run["resources"], **stage.resources}
@@ -59,7 +113,7 @@ def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
             # Intent: on the demo cluster, modules stand in for tools that are not installed there.
             *(["export EVERYOME_DEMO=1"] if run.get("demo") else []),
             # Intent: module commands name the cluster's Python as {python}; nothing else is substituted.
-            stage.run.replace("{python}", shlex.quote(python)),
+            nextflow_command(run, m, python) if m.nextflow else stage.run.replace("{python}", shlex.quote(python)),
             f'echo "[$(date)] stage {stage.id} done"']
     return slurm.script(slurm.job_name(run["user"], m.id, f"{stage.id}_{stage.name}"),
                         f"{d}/logs/{stage.id}_{stage.name}.log", res, body)

@@ -240,6 +240,11 @@ def module_check(mid: str):
     """Can the cluster's Python import what this module needs?"""
     m, be = _module(mid), _need_backend()
     missing = []
+    # Intent: a pipeline module also needs Nextflow on the cluster (not on the demo, which stands in for it).
+    if m.nextflow and not S.demo:
+        for cmd in ("nextflow", "java"):
+            if be.run(f"command -v {cmd}", timeout=60)[0]:
+                missing.append(f"{cmd} (command)")
     for pkg in m.requires:
         rc, _, _ = be.run(f"{shlex.quote(S.conn['python'])} -c {shlex.quote('import ' + pkg)}", timeout=120)
         if rc:
@@ -407,6 +412,29 @@ def run_status():
         r["done"] = st["done"]
         runs.save(S.backend, r)
     return st
+
+
+@app.get("/api/run/progress")
+def run_progress():
+    """For Nextflow modules: how many of the pipeline's tasks have finished."""
+    return runs.trace_summary(_need_backend(), _need_run())
+
+
+@app.get("/api/run/file")
+def run_file(path: str):
+    """A file from inside the run folder (for example, the MultiQC report)."""
+    r = _need_run()
+    if not path or path.startswith("/") or ".." in path.split("/"):
+        raise HTTPException(400, "Give a path inside the run folder.")
+    try:
+        data = S.backend.read_bytes(f"{r['dir']}/{path}")
+    except FileNotFoundError:
+        raise HTTPException(404, "That file is not there (yet).")
+    name = path.split("/")[-1]
+    if name.endswith(".html"):
+        # Intent: reports run their own scripts; sandbox them so they cannot reach the app or its API.
+        return Response(data, media_type="text/html", headers={"Content-Security-Policy": "sandbox allow-scripts allow-popups"})
+    return Response(data, media_type="application/octet-stream", headers={"content-disposition": f'attachment; filename="{name}"'})
 
 
 @app.post("/api/run/cancel")

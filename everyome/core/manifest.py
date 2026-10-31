@@ -9,6 +9,7 @@ See docs/PLAN.md section 4. Bump SPEC when a change would break existing modules
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,8 @@ class Field:
     demo: str = ""            # demo-data file or folder filled in on the demo cluster
     columns: list = field(default_factory=list)   # table: [{id, label, pattern?, help?}]
     fill: dict = field(default_factory=dict)      # table: {helper, from, label} fills rows from another input
+    advanced: bool = False    # shown under "Advanced" (for example, parameters a pipeline marks as hidden)
+    pipeline: bool = False    # passed to the Nextflow pipeline as a parameter
 
     def as_dict(self):
         return {k: v for k, v in self.__dict__.items()}
@@ -86,6 +89,7 @@ class Manifest:
     requires: list[str] = field(default_factory=list)   # Python packages the cluster's Python must have
     tools: list[dict] = field(default_factory=list)     # [{name, version: shell command}] recorded in the run record
     methods: str = ""         # "package.module:function(record) -> str": draft methods text for the write-up
+    nextflow: dict = field(default_factory=dict)  # batch.engine nextflow: pipeline, revision, schema, samplesheet, profile, demo
 
     @property
     def fields(self) -> list[Field]:
@@ -100,6 +104,8 @@ class Manifest:
                 "stages": [{"id": s.id, "name": s.name, "title": s.title} for s in self.stages],
                 "steps": [s.__dict__ for s in self.steps], "has_manual": bool(self.learn.get("manual")), "has_ui": bool(self.ui),
                 "helpers": sorted(self.helpers), "has_report": bool(self.report), "requires": self.requires,
+                "batch_engine": "nextflow" if self.nextflow else ("staged" if self.stages else ""),
+                "pipeline": {k: self.nextflow.get(k) for k in ("pipeline", "revision", "profile")} if self.nextflow else None,
                 "playground": ({**{k: v for k, v in self.learn["playground"].items() if k != "scripts"},
                                 "n_scripts": len(self.learn["playground"]["scripts"])} if self.learn.get("playground") else None)}
 
@@ -161,9 +167,11 @@ def load(path: Path) -> Manifest:
     ids = [f.id for f in m.fields]
     if len(ids) != len(set(ids)):
         raise ManifestError(f"{path}: input and setting ids must be unique")
-    if "batch" in kind:
+    if "batch" in kind and batch.get("engine") == "nextflow":
+        _nextflow(m, batch, path)
+    elif "batch" in kind:
         if batch.get("engine", "staged") != "staged":
-            raise ManifestError(f"{path}: only the 'staged' batch engine exists so far")
+            raise ManifestError(f"{path}: the batch engine must be 'staged' or 'nextflow'")
         for s in batch.get("stages", []):
             for k in ("id", "name", "title", "run"):
                 if not s.get(k):
@@ -196,6 +204,36 @@ def load(path: Path) -> Manifest:
         if f.fill and (f.fill.get("helper") not in m.helpers or f.fill.get("from") not in ids):
             raise ManifestError(f"{path}: {f.id}.fill needs a helper listed under helpers and an input id in 'from'")
     return m
+
+
+def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
+    """A Nextflow pipeline: one head job; its parameters become fields, read from the pipeline's own schema."""
+    from . import nfschema
+    for k in ("pipeline", "revision", "schema", "samplesheet"):
+        if not batch.get(k):
+            raise ManifestError(f"{path}: a nextflow batch needs {k}")
+    if str(batch["revision"]) in ("", "latest", "master", "main", "dev"):
+        raise ManifestError(f"{path}: pin the pipeline to a release (revision), never a branch")
+    try:
+        schema = json.loads((m.dir / batch["schema"]).read_text())
+    except (FileNotFoundError, ValueError):
+        raise ManifestError(f"{path}: batch.schema {batch['schema']} is missing or not JSON")
+    sheet = batch["samplesheet"]
+    table = next((f for f in m.inputs if f.id == sheet.get("from") and f.type == "table"), None)
+    if not table or not set(sheet.get("columns", [])) <= {c["id"] for c in table.columns} or not sheet.get("param"):
+        raise ManifestError(f"{path}: batch.samplesheet needs 'from' (a table input), its 'columns' and the pipeline 'param'")
+    skip = set(batch.get("skip", [])) | {sheet["param"], "outdir"}
+    taken = {f.id for f in m.fields}
+    demo = batch.get("demo_values", {})
+    for f in nfschema.fields(schema, skip):
+        if f.id in taken:
+            raise ManifestError(f"{path}: pipeline parameter {f.id} clashes with a module input or setting")
+        f.demo = demo.get(f.id, "")
+        m.params.append(f)
+    m.report = batch.get("report", m.report)
+    m.nextflow = {k: batch.get(k) for k in ("pipeline", "revision", "schema", "samplesheet", "profile", "demo")}
+    m.nextflow["profile"] = m.nextflow.get("profile") or "apptainer"
+    m.stages = [Stage("01", "pipeline", f"Run {batch['pipeline']} {batch['revision']}", run="")]
 
 
 def coerce(f: Field, v) -> tuple[object, str]:
@@ -241,6 +279,8 @@ def _coerce_table(f: Field, v) -> tuple[object, str]:
             continue                                  # ignore blank rows
         for c in f.columns:
             if not row[c["id"]]:
+                if c.get("optional"):
+                    continue
                 return None, f"row {i} is missing {c['label']}"
             if c.get("pattern") and not re.fullmatch(c["pattern"], row[c["id"]]):
                 return None, f"row {i}: {c['label']} '{row[c['id']]}' {c.get('pattern_help') or 'is not in the expected form'}"

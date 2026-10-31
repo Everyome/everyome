@@ -1,0 +1,84 @@
+# Bulk RNA-seq differential expression: nf-core/rnaseq turns reads into gene counts on the cluster,
+# then a live session compares conditions with DESeq2 (PyDESeq2) and lets you explore the results.
+spec: 1
+id: rna.bulk_de
+name: Bulk RNA-seq differential expression
+suite: rna
+version: 0.1.0
+summary: >
+  Finds genes that change between conditions. nf-core/rnaseq turns your reads
+  into gene counts on the cluster, with a full quality report; a live session
+  then checks the samples, compares conditions with DESeq2 and lets you explore
+  and export the results. Every pipeline setting can be changed.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Patel H. et al. nf-core/rnaseq. Zenodo."
+    url: https://doi.org/10.5281/zenodo.1400710
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Love M.I., Huber W., Anders S. (2014). Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biology 15:550."
+    url: https://doi.org/10.1186/s13059-014-0550-8
+  - text: "Muzellec B. et al. (2023). PyDESeq2: a python package for bulk RNA-seq differential expression analysis. Bioinformatics 39:btad547."
+    url: https://doi.org/10.1093/bioinformatics/btad547
+kind: [batch, interactive]
+requires: [pydeseq2, pandas, numpy, matplotlib]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.rna.bulk_de.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the samples table. Files named like <sample>_R1.fastq.gz and _R2.fastq.gz."
+    demo: fastq
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: "One row per sample. Strandedness 'auto' lets the pipeline work it out. Condition is what the comparison uses, for example control or treated."
+    columns:
+      - {id: sample, label: Sample, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fastq_1, label: Read 1 FASTQ, wide: true}
+      - {id: fastq_2, label: Read 2 FASTQ (empty if single-end), optional: true, wide: true}
+      - {id: strandedness, label: Strandedness, pattern: "forward|reverse|unstranded|auto", pattern_help: "should be forward, reverse, unstranded or auto"}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: reads_dir, label: Find samples in the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/rnaseq
+  revision: "3.27.0"
+  schema: pipeline/nextflow_schema.json
+  samplesheet: {from: samples, columns: [sample, fastq_1, fastq_2, strandedness], param: input}
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, hook_url, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix]
+  demo: everyome.modules.rna.bulk_de.demo_pipeline
+  demo_values: {fasta: genome/genome.fa, gtf: genome/genes.gtf}   # pipeline settings filled in on the demo cluster
+  report: everyome.modules.rna.bulk_de.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "72:00:00", session: {cpus: 4, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.rna.bulk_de.helpers:scan
+
+interactive:
+  engine: everyome.modules.rna.bulk_de.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: qc, title: Check samples}
+    - {id: de, title: Compare conditions}
+    - {id: results, title: Explore results}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+
+demo:
+  build: everyome.modules.rna.bulk_de.demo_data:build

@@ -11,6 +11,8 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = n => Number(n).toLocaleString();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// "#RRGGBB" -> [r, g, b], for blending theme colours in heatmaps and expression scales.
+const hexRgb = h => [1, 3, 5].map(i => parseInt(String(h).slice(i, i + 2), 16));
 // Colours used in plots. Filled from the active theme by applyTheme(); these are the house-style defaults.
 const COL = { gold: "#C2A24A", golddk: "#8F7529", goldlt: "#DFC684", ox: "#6E1B2B", wine: "#8E2438", plum: "#32203A", ink: "#1C1620",
   muted: "#5A5260", rule: "#D6CBB6", card: "#FBF7EF", parch: "#E7DECC", ok: "#5E6B2E" };
@@ -533,11 +535,11 @@ async function suitePage(el, id) {
   wireModuleCards(el);
 }
 
-const tableRow = (f, r = {}) => `<tr>${f.columns.map(c => `<td><input type="text" class="mono" data-col="${esc(c.id)}" aria-label="${esc(c.label)}" value="${esc(r[c.id] ?? "")}"></td>`).join("")}
+const tableRow = (f, r = {}) => `<tr>${f.columns.map(c => `<td><input type="text" class="mono${c.wide ? " wide" : ""}" data-col="${esc(c.id)}" aria-label="${esc(c.label)}" value="${esc(r[c.id] ?? "")}"></td>`).join("")}
   <td class="num"><button type="button" class="btn small" data-delrow>Remove</button></td></tr>`;
 const fieldHtml = (f, val) => {
   if (f.type === "table") return `<div class="field" data-f="${f.id}"><span>${esc(f.label)}${f.required ? ' <span class="muted small">(required)</span>' : ""}</span>
-    <table data-table="${f.id}"><thead><tr>${f.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}<th></th></tr></thead><tbody>${(val?.length ? val : [{}]).map(r => tableRow(f, r)).join("")}</tbody></table>
+    <div class="tablewrap"><table data-table="${f.id}"><thead><tr>${f.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}<th></th></tr></thead><tbody>${(val?.length ? val : [{}]).map(r => tableRow(f, r)).join("")}</tbody></table></div>
     <div class="row" style="margin-top:8px"><button type="button" class="btn small" data-addrow="${f.id}">Add row</button>${f.fill?.helper ? `<button type="button" class="btn small" data-fill="${f.id}">${esc(f.fill.label || "Fill in")}</button>` : ""}</div>
     ${f.help ? `<small>${esc(f.help)}</small>` : ""}<div data-fillmsg="${f.id}"></div></div>`;
   const help = f.help ? `<small>${esc(f.help)}${f.min != null || f.max != null ? ` (${f.min != null ? "from " + f.min : ""}${f.min != null && f.max != null ? " " : ""}${f.max != null ? "up to " + f.max : ""})` : ""}</small>` : "";
@@ -555,8 +557,19 @@ const readField = (el, f) => {
     .filter(r => Object.values(r).some(Boolean));
   const i = $(`[name=${f.id}]`, el); return f.type === "bool" ? i.checked : i.value.trim();
 };
-const paramCards = ps => { const groups = [...new Set(ps.map(f => f.group || "Settings"))];
-  return groups.map(g => `<div class="card" style="margin-bottom:18px"><div class="label">${esc(g)}</div><div class="grid g2">${ps.filter(f => (f.group || "Settings") === g).map(f => fieldHtml(f, f._val)).join("")}</div></div>`).join(""); };
+// Module settings show open; a pipeline's own settings come in collapsible groups (its first group open), with the
+// settings the pipeline marks as specialist gathered under "Advanced". Groups with changed values are opened.
+const paramCards = ps => {
+  const own = ps.filter(f => !f.pipeline), pipe = ps.filter(f => f.pipeline && !f.advanced), adv = ps.filter(f => f.pipeline && f.advanced);
+  const changed = f => f._val !== f.default && !(f._val == null && f.default == null) && f._val !== "";
+  const grid = fs => `<div class="grid g2">${fs.map(f => fieldHtml(f, f._val)).join("")}</div>`;
+  const groups = fs => [...new Set(fs.map(f => f.group || "Settings"))];
+  const card = (g, fs, open) => `<details class="card fold" style="margin-bottom:14px" ${open ? "open" : ""}><summary class="label">${esc(g)} <span class="muted">(${fs.length})</span></summary>${grid(fs)}</details>`;
+  return groups(own).map(g => `<div class="card" style="margin-bottom:18px"><div class="label">${esc(g)}</div>${grid(own.filter(f => (f.group || "Settings") === g))}</div>`).join("") +
+    (pipe.length ? `<h2>Pipeline settings</h2><p class="small muted">Every setting the pipeline accepts, with its own defaults. Only the ones you change are passed to it.</p>` : "") +
+    groups(pipe).map((g, i) => { const fs = pipe.filter(f => f.group === g); return card(g, fs, i === 0 || fs.some(changed)); }).join("") +
+    (adv.length ? card("Advanced", adv, adv.some(changed)) : "");
+};
 
 VIEWS.settings = async el => {
   const m = curModule(), s = ST.state, run = s.run;
@@ -612,13 +625,15 @@ VIEWS.settings = async el => {
 
 VIEWS.run = async el => {
   const m = curModule(), run = ST.state.run;
-  el.innerHTML = head("I", m.name, "Run on the cluster",
-    "You will see the exact job scripts before anything is sent. Each stage waits for the one before, so you can close the app and come back later.") +
+  el.innerHTML = head("I", m.name, "Run on the cluster", m.batch_engine === "nextflow"
+    ? `You will see the exact job script before anything is sent. One job runs ${esc(m.pipeline.pipeline)} ${esc(m.pipeline.revision)}, which then sends its own tasks to the cluster, so you can close the app and come back later.`
+    : "You will see the exact job scripts before anything is sent. Each stage waits for the one before, so you can close the app and come back later.") +
     `<p class="small muted">Run <span class="mono">${esc(run.id)}</span>, created ${esc(run.created)}${run.defaults_changed.length ? `; settings changed from the defaults: ${run.defaults_changed.map(esc).join(", ")}` : ""}.</p>
     <div class="row" style="margin-bottom:16px"><button class="btn primary" id="runall">Check and submit…</button><button class="btn" id="rerun" disabled>Re-run from selected stage…</button><button class="btn danger" id="cancel">Cancel jobs</button></div><div id="fail"></div>
     <div class="grid g-side"><div class="card"><div class="label">Stages</div><ol class="stages" id="stages">
       ${m.stages.map(s => `<li data-sid="${s.id}"><span class="n">${s.id}</span><span>${esc(s.title)}</span><span class="state" data-st="${s.id}">Not run</span><span class="small muted mono" data-el="${s.id}"></span></li>`).join("")}</ol></div>
     <div class="card"><div class="label">Job log</div><p class="small muted" id="logtitle">Select a stage to see its log.</p><pre class="log" id="log">–</pre></div></div>
+    ${m.batch_engine === "nextflow" ? `<div class="card" style="margin-top:18px"><div class="label">Pipeline progress</div><div id="nfprog"><p class="small muted">Starts when the pipeline job runs. The pipeline sends its own tasks to the cluster; they are counted here as they finish.</p></div></div>` : ""}
     <div id="next"></div>`;
   let sel = null, shownNext = false;
   async function poll() {
@@ -636,6 +651,9 @@ VIEWS.run = async el => {
     $("#fail", el).innerHTML = failed ? `<div class="notice warn">Stage ${failed.id} (${esc(failed.title)}) failed, so the stages after it did not run. Its log is shown on the right. Fix the cause, then use <b>Re-run from selected stage</b>.</div>` : "";
     if (failed && !sel) select(failed.id);
     if (sel) $("#log", el).textContent = (await api("/api/run/log?stage=" + sel)).log || "(no output yet)";
+    if (m.batch_engine === "nextflow") { const p = await api("/api/run/progress"); if (p.started) $("#nfprog", el).innerHTML =
+      `<div class="metric"><span>Tasks finished</span><b>${fmt(p.completed)}</b></div>${p.failed ? `<div class="metric"><span>Tasks failed</span><b>${fmt(p.failed)}</b></div>` : ""}
+       <p class="small muted">Latest: ${p.recent.map(esc).join(" · ")}</p>`; }
     if (r.done && !ST.state.run.done) { ST.state.run.done = true; renderSide(); }
     if (r.done && !shownNext) {
       shownNext = true;
@@ -660,6 +678,7 @@ VIEWS.run = async el => {
     if (!ok) return;
     await api("/api/run/submit", { method: "POST", body: { start_at: from } }); await refreshState(); shownNext = false; $("#next", el).innerHTML = ""; toast("Jobs submitted.", true); poll();
   };
+  if (m.batch_engine === "nextflow" && !Object.keys(run.jobs || {}).length) select("01");
   $("#runall", el).onclick = e => guarded(e.currentTarget, () => submit(null));
   $("#rerun", el).onclick = e => guarded(e.currentTarget, () => submit(sel));
   $("#cancel", el).onclick = e => guarded(e.currentTarget, async () => { await api("/api/run/cancel", { method: "POST" }); toast("Cancel requested.", true); poll(); });
