@@ -25,6 +25,14 @@ cite:
     url: https://doi.org/10.1038/s41598-019-41695-z
 kind: [batch, interactive]
 requires: [scanpy, anndata, harmonypy, leidenalg, openpyxl, seaborn]
+# Versions recorded in each run's record (the first line each command prints).
+tools:
+  - {name: fastqc, version: "fastqc --version"}
+  - {name: cutadapt, version: "cutadapt --version"}
+  - {name: picard, version: "picard FastqToSam --version"}
+  - {name: STAR, version: "STAR --version"}
+  - {name: samtools, version: "samtools --version"}
+methods: everyome.modules.singlecell.splitseq.methods:methods
 
 inputs:
   - id: raw_dir

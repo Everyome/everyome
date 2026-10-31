@@ -84,6 +84,8 @@ class Manifest:
     helpers: dict = field(default_factory=dict)   # name -> "package.module:function(backend, **args)", run on the app side
     report: str = ""          # "package.module:function(backend, run)": summary shown when the batch stages finish
     requires: list[str] = field(default_factory=list)   # Python packages the cluster's Python must have
+    tools: list[dict] = field(default_factory=list)     # [{name, version: shell command}] recorded in the run record
+    methods: str = ""         # "package.module:function(record) -> str": draft methods text for the write-up
 
     @property
     def fields(self) -> list[Field]:
@@ -154,7 +156,8 @@ def load(path: Path) -> Manifest:
                  resources=batch.get("resources", {}), engine=inter.get("engine", ""), ui=inter.get("ui", ""),
                  steps=[Step(s["id"], s["title"]) for s in inter.get("steps", [])],
                  learn=d.get("learn", {}), demo=d.get("demo", {}), helpers=d.get("helpers", {}),
-                 report=batch.get("report", ""), requires=d.get("requires", []))
+                 report=batch.get("report", ""), requires=d.get("requires", []),
+                 tools=d.get("tools", []), methods=d.get("methods", ""))
     ids = [f.id for f in m.fields]
     if len(ids) != len(set(ids)):
         raise ManifestError(f"{path}: input and setting ids must be unique")
@@ -184,7 +187,9 @@ def load(path: Path) -> Manifest:
         raise ManifestError(f"{path}: interactive.ui points to a missing file")
     if m.demo.get("data") and not (m.dir / m.demo["data"]).is_dir():
         raise ManifestError(f"{path}: demo.data points to a missing folder")
-    for name, target in {**m.helpers, **({"report": m.report} if m.report else {}), **({"demo.build": m.demo["build"]} if m.demo.get("build") else {})}.items():
+    if not all(isinstance(t, dict) and t.get("name") and t.get("version") for t in m.tools):
+        raise ManifestError(f"{path}: every entry in tools needs a name and a version command")
+    for name, target in {**m.helpers, **({"report": m.report} if m.report else {}), **({"methods": m.methods} if m.methods else {}), **({"demo.build": m.demo["build"]} if m.demo.get("build") else {})}.items():
         if ":" not in str(target):
             raise ManifestError(f"{path}: {name} should be 'package.module:function'")
     for f in m.fields:

@@ -13,6 +13,7 @@ pytest.importorskip("harmonypy")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
+from rerun_helpers import rerun, rerun_until_session_replayed  # noqa: E402
 
 MID = "singlecell.splitseq"
 
@@ -123,6 +124,27 @@ def test_splitseq_end_to_end(client, tmp_path):
     state = (tmp_path / "demo_cluster/projects/split/runs" / run["id"] / "session/state.json").read_text()
     for action in ("combined sublibraries (no atlas)", "combined sublibraries and merged in an atlas", "labelled cells", "filtered cells", "clustered", "named a cluster", "exported results"):
         assert action in state
+
+    # Record, protocol and methods
+    rec = ok(c.post("/api/run/record"))
+    for phrase in ("were combined with an existing atlas", "Harmony", "Leiden", "giving", "Cells with fewer than",
+                   "(1 cluster named, as 1 cell type)", "compared descriptively by condition"):
+        assert phrase in rec["methods"], phrase
+    assert "Rosenberg" in rec["references"] and "https://doi.org/10.1126/science.aam8999" in rec["references"]
+    assert "| Sublibraries |" in rec["protocol"] and "| scanpy |" in rec["protocol"] and "| STAR | not found on the cluster |" in rec["protocol"]
+
+    # Repeat it from the bundle in a new folder: same cells, clusters, names and proportions
+    run_dir = tmp_path / "demo_cluster/projects/split/runs" / run["id"]
+    demo_root, new = tmp_path / "demo_cluster", tmp_path / "repeat_split"
+    p = rerun(demo_root, run_dir / "record/rerun", new, "--submit")
+    assert p.returncode == 0, p.stderr
+    rerun_until_session_replayed(demo_root, run_dir / "record/rerun", new)
+    for f in ("composition_counts_by_condition.csv", "composition_fractions_by_condition.csv"):
+        assert (new / "results" / f).read_text() == (run_dir / "results" / f).read_text(), f
+    import json
+    a, b = (json.loads((d / "session/state.json").read_text()) for d in (run_dir, new))
+    assert a["annotations"] == b["annotations"] and a["qc"] == b["qc"]
+    assert [h for h in a["history"] if h["action"] == "clustered"][-1]["clusters"] == [h for h in b["history"] if h["action"] == "clustered"][-1]["clusters"]
 
 
 def test_atlas_is_optional(client, tmp_path):

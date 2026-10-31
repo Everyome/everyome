@@ -321,6 +321,27 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Phase 3 notes (2026-10-31)
+
+Every run now has a **Record and write-up** page. *Build the record* gathers the
+inputs (size and SHA-256 checksum up to 2 GB), every setting against its
+default, the cluster jobs, software versions (Python packages from the
+module's `requires`, command-line tools from its `tools`), the live-session
+steps in order, the results and the references, into `record/record.json`. From
+it Everyome writes `protocol.md` (shown, downloadable, printable to PDF),
+`methods.md` (a draft each module writes; the user's edits are saved separately
+as `methods_edited.md`), `references.txt` / `.bib`, and `rerun/`.
+
+`python -m everyome.core.rerun record/rerun NEW_DIR --submit` writes and submits
+the same job scripts into a new folder (the user runs it; without `--submit` it
+only writes and shows them); `--session` then replays the logged session calls.
+Tested on the demo cluster: repeating the tutorial run and the SPLiT-seq run
+gives identical results (filter, clusters, names, composition tables).
+
+Not done yet: DOCX export (print to PDF covers sharing for now), container
+digests (nothing runs in containers until the Nextflow engine in phase 4), and
+checksums of files inside input folders (folders list names and sizes).
+
 ### Phase 2 notes (2026-10-31)
 
 SPLiTscape is now the module `singlecell.splitseq` (version 1.0.0). The SPLiTscape

@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from everyome.core import server
+from rerun_helpers import rerun, rerun_until_session_replayed
 
 
 def wait(fn, timeout=60, every=0.5):
@@ -74,3 +75,25 @@ def test_tutorial_module_end_to_end(client, tmp_path):
     assert len(out) == kept + 1
     state = (tmp_path / "demo_cluster/projects/test_project/runs" / run["id"] / "session/state.json").read_text()
     assert "set GC range" in state and "exported" in state   # decisions recorded in order
+
+    # Record and write-ups
+    rec = ok(client.post("/api/run/record"))
+    assert {"protocol.md", "methods.md", "references.bib", "rerun/"} <= set(rec["files"])
+    assert "Live-session steps" in rec["protocol"] and "Set gc range" in rec["protocol"] and "SHA-256" in rec["protocol"]
+    assert "Shortest sequence kept | **100** | 50" in rec["protocol"]
+    assert "between 0.45 and 0.65" in rec["methods"]
+    ok(client.post("/api/run/methods", json={"text": "My edited methods."}))
+    assert ok(client.get("/api/run/record"))["methods"] == "My edited methods."
+    assert "between 0.45" in ok(client.post("/api/run/methods/reset"))["methods"]
+    assert client.get("/api/run/record/file", params={"name": "references.bib"}).text.startswith("@misc{horkan2026")
+    assert client.get("/api/run/record/file", params={"name": "../run.json"}).status_code == 404
+
+    # Repeat the run from its bundle, in a new folder, and get the same result
+    run_dir = tmp_path / "demo_cluster/projects/test_project/runs" / run["id"]
+    demo_root, new = tmp_path / "demo_cluster", tmp_path / "repeat_1"
+    p = rerun(demo_root, run_dir / "record/rerun", new)
+    assert p.returncode == 0 and "Nothing submitted" in p.stdout and not (new / "logs/01_lengths.log").exists()
+    p = rerun(demo_root, run_dir / "record/rerun", new, "--submit")
+    assert p.returncode == 0 and "Submitted" in p.stdout, p.stderr
+    rerun_until_session_replayed(demo_root, run_dir / "record/rerun", new)
+    assert (new / "results/gc_filtered.tsv").read_text() == (run_dir / "results/gc_filtered.tsv").read_text()

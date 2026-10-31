@@ -8,6 +8,7 @@ from everyome.core.engine import BaseEngine
 
 class Engine(BaseEngine):
     API = ("summary", "histogram", "set_gc_range", "export")
+    REPLAY = ("set_gc_range", "export")
 
     def __init__(self, run_dir: str):
         super().__init__(run_dir)
@@ -60,3 +61,17 @@ class Engine(BaseEngine):
         self.state["step"] = "exported"
         self._record("exported", file="gc_filtered.tsv", rows=len(rows))
         self._prog(100, "Saved results/gc_filtered.tsv")
+
+
+def methods(rec: dict) -> str:
+    """Draft methods text for a Sequence summary run, from its record."""
+    st = {x["id"]: x["value"] for x in rec["settings"]}
+    hist = (rec.get("session") or {}).get("history", [])
+    text = (f"Sequence lengths and GC content were computed with the Sequence summary module (version {rec['module']['version']}) "
+            f"of Everyome (version {rec['everyome']}); sequences shorter than {st['min_length']} bases were excluded and unknown bases "
+            f"were {'counted' if st['count_n'] else 'not counted'} towards GC content.")
+    ranges = [h for h in hist if h["action"] == "set GC range"]
+    if ranges:
+        r = ranges[-1]
+        text += f" Sequences with GC content between {r['low']:.2f} and {r['high']:.2f} were kept ({r['kept']} sequences)."
+    return text + "\n"

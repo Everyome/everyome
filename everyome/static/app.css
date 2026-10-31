@@ -260,3 +260,5 @@ svg.dot{max-width:420px}
 svg .ax.it{font-style:italic}
 .pg .note{font:italic 13.5px/1.5 var(--body);color:var(--muted);margin:8px 0 0}
 @media (max-width:1250px){.pg{grid-template-columns:1fr;grid-template-areas:"umap" "met" "ctl" "qc" "pca" "dot" "comp"}.tries{grid-template-columns:1fr}.a-umap canvas{height:340px}}
+.manual code{overflow-wrap:anywhere;font-size:12.5px}
+.manual td{overflow-wrap:anywhere}

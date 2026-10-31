@@ -56,7 +56,8 @@ function pages() {
       { id: "modules", title: "Choose an analysis", ok: !!s.project, done: !!m },
       { id: "settings", title: "Inputs and settings", ok: !!s.project && !!m, done: !!s.run },
       ...(hasBatch(m) ? [{ id: "run", title: "Run on the cluster", ok: !!s.run, done: !!s.run?.done }] : []),
-      ...(hasSession(m) ? [{ id: "session", title: "Live session", ok: runDone(), done: ST.sess === "READY" }] : [])] },
+      ...(hasSession(m) ? [{ id: "session", title: "Live session", ok: runDone(), done: ST.sess === "READY" }] : []),
+      { id: "record", title: "Record and write-up", ok: !!s.run, done: false }] },
   ];
   if (m && hasSession(m)) groups.push({ group: m.name, medal: "II", items: m.steps.map(st => (
     { id: "step:" + st.id, title: st.title, ok: ST.sess === "READY", done: false })) });
@@ -302,6 +303,10 @@ function md(src) {
   while (i < lines.length) {
     const l = lines[i];
     if (!l.trim()) { i++; continue; }
+    if (l.startsWith("```")) {                                 // fenced code block
+      const code = []; i++; while (i < lines.length && !lines[i].startsWith("```")) code.push(lines[i++]); i++;
+      out.push(`<pre class="script">${esc(code.join("\n"))}</pre>`); continue;
+    }
     const h = l.match(/^(#{1,3})\s+(.*)/);
     if (h) { out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
     if (l.startsWith("|")) {
@@ -320,7 +325,7 @@ function md(src) {
       }
       out.push(`<${tag}>${items.join("")}</${tag}>`); continue;
     }
-    const para = []; while (i < lines.length && lines[i].trim() && !lines[i].match(/^(#|\||\s*(\d+\.|-)\s)/)) para.push(lines[i++].trim());
+    const para = []; while (i < lines.length && lines[i].trim() && !lines[i].match(/^(#|\||```|\s*(\d+\.|-)\s)/)) para.push(lines[i++].trim());
     out.push(`<p>${inline(para.join(" "))}</p>`);
   }
   return out.join("\n");
@@ -684,6 +689,44 @@ VIEWS.session = async el => {
     await api("/api/session/start", { method: "POST" }); await refreshState(); poll(); });
   $("#stop", el).onclick = e => guarded(e.currentTarget, async () => { await api("/api/session/stop", { method: "POST" }); ST.sess = null; renderPills(); renderSide(); poll(); });
   every(2000, () => poll().catch(() => {}));
+};
+
+VIEWS.record = async el => {
+  const run = ST.state.run, m = curModule();
+  let r = await api("/api/run/record");
+  const file = n => `/api/run/record/file?name=${encodeURIComponent(n)}`;
+  el.innerHTML = head("✎", m.name, "Record and write-up",
+    "Everything about this run in one place: a lab-book protocol, a draft methods section to edit, the references, and what you need to repeat it.") +
+    `<div class="row" style="margin-bottom:6px"><button class="btn primary" id="build">${r.exists ? "Update the record" : "Build the record"}</button>
+      <span class="small muted" id="when">${r.exists ? "Last built " + esc(r.created) + "." : "Not built yet."}</span></div>
+    <p class="small muted">Building reads the run folder, checks the size and checksum of each input, and asks the cluster which software versions it has. It takes longer for large inputs. Build again after more live-session steps.</p>
+    <div id="body"></div>`;
+  function draw() {
+    if (!r.exists) { $("#body", el).innerHTML = `<div class="empty">Build the record to see the protocol, methods and references.</div>`; return; }
+    $("#body", el).innerHTML = `
+      <h2>Lab-book protocol</h2><div class="row" style="margin-bottom:10px"><a class="btn small" href="${file("protocol.md")}" download>Download (Markdown)</a><button class="btn small" id="print">Print or save as PDF</button>
+        <a class="btn small" href="${file("record.json")}" download>Full record (JSON)</a></div>
+      <div class="card manual" id="proto">${md(r.protocol || "")}</div>
+      <h2>Methods</h2><p class="small">A draft written from the record. Edit it for your paper; your version is saved next to the draft, which is kept.${r.methods_edited ? ' <b>Showing your edited version.</b>' : ""}</p>
+      <textarea id="meth" rows="14" style="width:100%;font:15px/1.6 var(--body);padding:12px;background:var(--bone);border:1px solid var(--rule);color:var(--ink)" aria-label="Methods text">${esc(r.methods || "")}</textarea>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="msave">Save my version</button><button class="btn" id="mreset" ${r.methods_edited ? "" : "disabled"}>Go back to the draft</button>
+        <button class="btn" id="mcopy">Copy</button><a class="btn small" href="${file(r.methods_edited ? "methods_edited.md" : "methods.md")}" download>Download</a></div>
+      <h2>References</h2><div class="card"><ul>${(r.references || "").trim().split("\n").map(x => `<li class="small">${esc(x)}</li>`).join("")}</ul>
+        <div class="row"><a class="btn small" href="${file("references.txt")}" download>Text</a><a class="btn small" href="${file("references.bib")}" download>BibTeX</a></div></div>
+      <h2>Repeat this run</h2><div class="card"><p class="small">The folder <code>${esc(r.dir)}/rerun</code> holds the exact settings, the job scripts and the live-session steps. To repeat the run, on the cluster, with the Python that has Everyome:</p>
+        <pre class="script">python -m everyome.core.rerun ${esc(r.dir)}/rerun /path/to/new/run/folder --submit
+python -m everyome.core.rerun ${esc(r.dir)}/rerun /path/to/new/run/folder --session   # after its jobs finish</pre>
+        <p class="small muted">Leave out <code>--submit</code> first to read the job scripts without sending them. The repeat gets its own folder; this run is never changed.</p></div>`;
+    $("#print", el).onclick = () => { const w = window.open("", "_blank"); w.document.write(`<!doctype html><title>${esc(run.id)} protocol</title><style>body{font:15px/1.55 Georgia,serif;max-width:900px;margin:30px auto;color:#111}table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid #bbb;padding:4px 6px;text-align:left;font-size:13px}code{font-size:12px}</style>${$("#proto", el).innerHTML}`); w.document.close(); w.focus(); w.print(); };
+    $("#msave", el).onclick = e => guarded(e.currentTarget, async () => { await api("/api/run/methods", { method: "POST", body: { text: $("#meth", el).value } }); r = await api("/api/run/record"); draw(); toast("Your methods text is saved.", true); });
+    $("#mreset", el).onclick = e => guarded(e.currentTarget, async () => { r = await api("/api/run/methods/reset", { method: "POST" }); draw(); toast("Back to the generated draft.", true); });
+    $("#mcopy", el).onclick = () => navigator.clipboard.writeText($("#meth", el).value).then(() => toast("Copied.", true));
+  }
+  $("#build", el).onclick = e => { const btn = e.currentTarget; guarded(btn, async () => {
+    $("#when", el).textContent = "Building…"; r = await api("/api/run/record", { method: "POST" });
+    $("#when", el).textContent = "Last built " + r.created + "."; btn.textContent = "Update the record"; draw(); toast("Record built.", true);
+  }); };
+  draw();
 };
 
 VIEWS.manual = async (el, mid) => {

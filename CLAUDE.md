@@ -19,6 +19,7 @@ current when decisions change.
 | `everyome/core/projects.py`, `runs.py` | Project folders; runs (params, job scripts, afterok chain, status, logs) |
 | `everyome/core/engine.py`, `session.py`, `sessions.py` | Interactive engines (base class), the compute-node session server, and the app side (start, tunnel, ping, stop) |
 | `everyome/suites.yaml`, `everyome/core/suites.py` | The suites, their tools (ready = has a module; otherwise planned), and the data-type and aim rules behind "Find the right analysis". A module's `suite` must be one of these ids and it must be listed as a tool |
+| `everyome/core/records.py`, `rerun.py` | Run record (inputs with checksums, settings, jobs, versions, session steps) and the write-ups made from it: protocol, methods, references, rerun bundle. `python -m everyome.core.rerun BUNDLE NEW_DIR [--submit / --session]` repeats a run; the user runs it |
 | `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
@@ -42,7 +43,10 @@ decisions with `_record()`. `ui.js` registers views with
 `columns`, optional `pattern`) and `fill` from a module `helpers` function;
 `batch.report` (shown on the Run page via the `report` view); `demo.build`
 (generates demo data once); `requires` (Python packages checked on the cluster);
-`learn.playground` (scripts loaded in order that define an object with `mount`,
+`tools` (version commands recorded in the run record); `methods`
+(function writing the draft methods text from the record); engines list in
+`REPLAY` the calls that change the analysis, which are logged with their
+arguments so `rerun --session` can replay them; `learn.playground` (scripts loaded in order that define an object with `mount`,
 `presetsHtml`, `applyPreset`, plus lede, intro, caveats and credit text).
 Stages see `$EVERYOME_CPUS`, and `$EVERYOME_DEMO=1` on the demo cluster.
 

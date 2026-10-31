@@ -6,6 +6,8 @@ and records every decision in order so the run can be written up later.
 Long steps run in the background and report progress.
 
 Subclasses list the methods the GUI may call in API; nothing else is reachable.
+Methods listed in REPLAY change the analysis; each call is logged with its
+arguments, so the session can be replayed exactly to repeat the run.
 """
 from __future__ import annotations
 
@@ -18,6 +20,7 @@ from pathlib import Path
 
 class BaseEngine:
     API: tuple[str, ...] = ()
+    REPLAY: tuple[str, ...] = ()
 
     def __init__(self, run_dir: str):
         self.dir = Path(run_dir)
@@ -30,15 +33,24 @@ class BaseEngine:
         self.state = json.loads(self.state_path.read_text()) if self.state_path.exists() else {"step": "start", "history": []}
         self.task = {"running": False, "step": "", "progress": 0, "error": None, "message": ""}
         self.lock = threading.Lock()
+        self._state_lock = threading.RLock()   # Intent: the call log and background steps both write state.json
 
     # ---------------------------------------------------------------- state
     def _save_state(self):
-        self.state_path.write_text(json.dumps(self.state, indent=1))
+        with self._state_lock:
+            self.state_path.write_text(json.dumps(self.state, indent=1))
 
     def _record(self, action: str, **details):
         """Note a decision (in order) for the run record and the lab-book protocol."""
-        self.state.setdefault("history", []).append({"at": time.strftime("%Y-%m-%d %H:%M:%S"), "action": action, **details})
-        self._save_state()
+        with self._state_lock:
+            self.state.setdefault("history", []).append({"at": time.strftime("%Y-%m-%d %H:%M:%S"), "action": action, **details})
+            self._save_state()
+
+    def _log_call(self, method: str, args: dict):
+        """Keep the exact call (method and arguments) for replaying the session later."""
+        with self._state_lock:
+            self.state.setdefault("calls", []).append({"at": time.strftime("%Y-%m-%d %H:%M:%S"), "method": method, "args": args})
+            self._save_state()
 
     def status(self):
         return {"step": self.state.get("step"), "task": self.task, "module": self.run["module"], "run": self.run["id"]}

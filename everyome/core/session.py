@@ -60,7 +60,10 @@ def create_app(run_dir: str, engine_spec: str, token: str, idle_minutes: float) 
         # Intent: only the methods the engine lists in API can be called from the GUI.
         if method not in eng.API:
             raise HTTPException(404, f"No action called {method}.")
-        return getattr(eng, method)(**b)
+        out = getattr(eng, method)(**b)
+        if method in eng.REPLAY:
+            eng._log_call(method, b)       # Intent: only calls that were accepted are replayed
+        return out
 
     @app.get("/download")
     def download(name: str):

@@ -12,6 +12,7 @@ authors: ["Helen R Horkan"]
 licence: same as Everyome
 cite: []
 kind: [batch, interactive]
+methods: everyome.modules.tutorial.sequence_summary.engine:methods
 
 inputs:
   - id: fasta

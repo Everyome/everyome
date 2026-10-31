@@ -53,6 +53,7 @@ def _read_dge(path):
 class Engine(BaseEngine):
     API = ("merge", "libraries", "label", "unique_counts", "qc_data", "qc_preview", "qc_apply", "cluster", "cluster_summary",
            "embedding", "colour", "genes", "markers", "dotplot", "annotate", "composition", "export", "files")
+    REPLAY = ("merge", "label", "qc_apply", "cluster", "annotate", "export")
 
     def __init__(self, run_dir: str):
         super().__init__(run_dir)

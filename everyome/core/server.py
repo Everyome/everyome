@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from everyome import __version__
 
-from . import demo, modules, projects, runs, sessions, slurm, suites
+from . import demo, modules, projects, records, runs, sessions, slurm, suites
 from .backends import LocalBackend, SSHBackend, describe_ssh_error
 from .session import TOKEN_HEADER
 
@@ -47,6 +47,15 @@ class AppState:
 
 S = AppState()
 app = FastAPI(title="Everyome", version=__version__)
+
+
+@app.middleware("http")
+async def revalidate_static(request: Request, call_next):
+    # Intent: after an update, browsers must fetch the new app files rather than reuse old copies.
+    resp = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 def _need_backend():
@@ -305,6 +314,63 @@ async def run_upload(file: UploadFile = File(...)):
     path = f"{r['dir']}/uploads/{name}"
     S.backend.write_bytes(path, await file.read())
     return {"path": path, "name": name}
+
+
+# ------------------------------------------------------------------ record and write-ups
+RECORD_FILES = ("record.json", "protocol.md", "methods.md", "methods_edited.md", "references.txt", "references.bib")
+
+
+def _record_text(name):
+    try:
+        return S.backend.read_text(f"{S.run['dir']}/record/{name}")
+    except FileNotFoundError:
+        return None
+
+
+@app.post("/api/run/record")
+def record_build():
+    """Gather the run's record (inputs, settings, jobs, versions, session steps) and write the write-ups."""
+    r, be = _need_run(), _need_backend()
+    rec = records.build(be, S.conn, _need_project(), r, _module(r["module"]))
+    out = records.write(be, rec, _module(r["module"]), r)
+    return {**out, **record_get()}
+
+
+@app.get("/api/run/record")
+def record_get():
+    r = _need_run()
+    rec = _record_text("record.json")
+    edited = _record_text("methods_edited.md")
+    return {"exists": rec is not None, "created": json.loads(rec)["created"] if rec else None, "dir": f"{r['dir']}/record",
+            "protocol": _record_text("protocol.md"), "methods": edited or _record_text("methods.md"), "methods_edited": edited is not None,
+            "references": _record_text("references.txt")}
+
+
+@app.post("/api/run/methods")
+def methods_save(b: dict = Body(...)):
+    """Save the user's edited methods text next to the generated draft (which is kept)."""
+    r = _need_run()
+    S.backend.write_text(f"{r['dir']}/record/methods_edited.md", str(b.get("text", "")))
+    return {"ok": True}
+
+
+@app.post("/api/run/methods/reset")
+def methods_reset():
+    r = _need_run()
+    S.backend.run(f"rm -f {shlex.quote(r['dir'] + '/record/methods_edited.md')}")
+    return record_get()
+
+
+@app.get("/api/run/record/file")
+def record_file(name: str):
+    if name not in RECORD_FILES:
+        raise HTTPException(404, "No such record file.")
+    _need_run()
+    text = _record_text(name)
+    if text is None:
+        raise HTTPException(404, "Build the record first.")
+    kind = "application/json" if name.endswith(".json") else "text/plain; charset=utf-8"
+    return Response(text, media_type=kind, headers={"content-disposition": f'attachment; filename="{S.run["id"]}_{name}"'})
 
 
 @app.post("/api/run/close")

@@ -22,7 +22,9 @@ which becomes its first single-cell module and keeps its own citation.
 The core is in place (phase 1 of [`docs/PLAN.md`](docs/PLAN.md)): connect to a
 cluster or the built-in demo cluster, create projects, choose an analysis, fill
 in its settings, check the exact job scripts, submit them, follow the jobs, and
-explore the results in a live session.
+explore the results in a live session. Every run then gets a lab-book
+protocol, a draft methods section to edit, its references, and a bundle that
+repeats it exactly.
 
 Modules so far:
 - **SPLiT-seq (SPLiTscape)**, single cell: SPLiT-seq sublibraries from raw reads
