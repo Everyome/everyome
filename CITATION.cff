@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use Everyome, adapt its code, or reuse its text or figures, please cite it as below."
+title: "Everyome: every -ome, for everyone"
+type: software
+authors:
+  - family-names: Horkan
+    given-names: Helen R.
+    affiliation: Stowers Institute for Medical Research
+version: 0.0.1
