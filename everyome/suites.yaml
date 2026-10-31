@@ -1,0 +1,92 @@
+# Suites, their tools (ready or planned), and the rules behind "Find the right analysis".
+#
+# A tool with `module:` points at a module that ships with Everyome and can be run.
+# Tools without one are planned (docs/PLAN.md section 2) and shown as "in progress".
+# Each data type and aim lists the tools it fits; suggestions rank tools by how many
+# of the user's answers they fit. Answers stay on the user's computer.
+
+suites:
+  - id: tutorial
+    name: Getting started
+    blurb: Small worked examples that show how Everyome works.
+    tools:
+      - {id: tutorial.sequence_summary, name: Sequence summary, module: tutorial.sequence_summary}
+  - id: dna
+    name: DNA
+    blurb: Genomes, variants and how DNA is packed and folded.
+    tools:
+      - {id: dna.variants, name: Variant and mutation calling}
+      - {id: dna.atac, name: Chromatin accessibility (ATAC-seq)}
+      - {id: dna.hic, name: 3D genome architecture (Hi-C)}
+      - {id: dna.assembly, name: Genome assembly}
+      - {id: dna.annotation, name: Genome annotation}
+  - id: rna
+    name: RNA
+    blurb: Which genes are expressed, how much, and how they change.
+    tools:
+      - {id: rna.bulk_de, name: Differential expression (bulk RNA-seq)}
+      - {id: rna.riboseq, name: Translation (Ribo-seq)}
+      - {id: rna.abundance, name: RNA abundance}
+  - id: singlecell
+    name: Single cell
+    blurb: Cell types and states, one cell at a time.
+    tools:
+      - {id: singlecell.splitseq, name: SPLiT-seq (SPLiTscape)}
+      - {id: singlecell.scrna, name: Single-cell RNA-seq (10x and similar)}
+      - {id: singlecell.scatac, name: Single-cell ATAC-seq}
+      - {id: singlecell.multiome, name: Multiome (RNA and ATAC together)}
+  - id: spatial
+    name: Spatial
+    blurb: Where in the tissue genes are expressed.
+    tools:
+      - {id: spatial.spots, name: Spot-based spatial (Visium-style)}
+      - {id: spatial.probes, name: Probe-based imaging}
+      - {id: spatial.singlecell, name: Single-cell spatial}
+  - id: protein
+    name: Protein
+    blurb: Structure, interactions and function.
+    tools:
+      - {id: protein.structure, name: Structure prediction}
+      - {id: protein.interactions, name: Interaction prediction}
+      - {id: protein.function, name: Function annotation}
+  - id: molbio
+    name: Molecular biology
+    blurb: Design for the bench, right on your computer.
+    tools:
+      - {id: molbio.primers, name: Primer design}
+      - {id: molbio.plasmids, name: Plasmid maps and cloning}
+      - {id: molbio.digests, name: Restriction digests}
+  - id: phylo
+    name: Phylogenetics
+    blurb: How sequences and species are related.
+    tools:
+      - {id: phylo.tree, name: Alignment and tree building}
+
+data_types:
+  - {id: dna_reads, label: "DNA sequencing reads (whole genome, exome or targeted)", tools: [dna.variants, dna.assembly]}
+  - {id: long_reads, label: "Long reads (PacBio or Nanopore)", tools: [dna.assembly, dna.annotation, dna.variants]}
+  - {id: chromatin, label: "ATAC-seq, ChIP-seq or CUT&RUN", tools: [dna.atac]}
+  - {id: hic, label: "Hi-C or other chromosome contact data", tools: [dna.hic]}
+  - {id: bulk_rna, label: "Bulk RNA-seq", tools: [rna.bulk_de, rna.abundance]}
+  - {id: riboseq, label: "Ribo-seq", tools: [rna.riboseq]}
+  - {id: sc_rna, label: "Single-cell RNA-seq (10x, SPLiT-seq and others)", tools: [singlecell.splitseq, singlecell.scrna]}
+  - {id: sc_atac, label: "Single-cell ATAC-seq or multiome", tools: [singlecell.scatac, singlecell.multiome]}
+  - {id: spatial, label: "Spatial transcriptomics", tools: [spatial.spots, spatial.probes, spatial.singlecell]}
+  - {id: protein_seq, label: "Protein sequences or structures", tools: [protein.structure, protein.interactions, protein.function]}
+  - {id: constructs, label: "Plasmids, constructs or primers", tools: [molbio.primers, molbio.plasmids, molbio.digests]}
+  - {id: sequences, label: "A set of DNA or protein sequences (FASTA)", tools: [phylo.tree, tutorial.sequence_summary, protein.function]}
+  - {id: not_sure, label: "Not sure yet", tools: [tutorial.sequence_summary]}
+
+aims:
+  - {id: compare, label: "Compare conditions, treatments or time points", tools: [rna.bulk_de, singlecell.scrna, singlecell.splitseq, rna.riboseq]}
+  - {id: cell_types, label: "Find and name cell types", tools: [singlecell.splitseq, singlecell.scrna, singlecell.multiome, spatial.singlecell]}
+  - {id: variants, label: "Find mutations or variants", tools: [dna.variants]}
+  - {id: genome, label: "Build or annotate a genome", tools: [dna.assembly, dna.annotation]}
+  - {id: chromatin, label: "See which DNA is open, bound or folded", tools: [dna.atac, dna.hic, singlecell.scatac, singlecell.multiome]}
+  - {id: where, label: "See where genes are expressed in a tissue", tools: [spatial.spots, spatial.probes, spatial.singlecell]}
+  - {id: translation, label: "Measure translation", tools: [rna.riboseq]}
+  - {id: protein, label: "Predict protein structure, partners or function", tools: [protein.structure, protein.interactions, protein.function]}
+  - {id: design, label: "Design primers, plasmids or cloning", tools: [molbio.primers, molbio.plasmids, molbio.digests]}
+  - {id: evolution, label: "Work out how sequences or species are related", tools: [phylo.tree]}
+  - {id: check, label: "Get a quick overview of my sequences", tools: [tutorial.sequence_summary]}
+  - {id: learn, label: "Learn how Everyome works", tools: [tutorial.sequence_summary]}

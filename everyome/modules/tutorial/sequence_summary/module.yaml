@@ -1,0 +1,66 @@
+# Tutorial module: shows every part of an Everyome module on a tiny FASTA file.
+spec: 1
+id: tutorial.sequence_summary
+name: Sequence summary
+suite: tutorial
+version: 0.1.0
+summary: >
+  Counts the sequences in a FASTA file, measures their lengths and GC content,
+  and lets you explore and filter them. A small worked example of how Everyome
+  modules run: two cluster stages, then a live session.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite: []
+kind: [batch, interactive]
+
+inputs:
+  - id: fasta
+    label: FASTA file
+    type: file
+    required: true
+    help: Nucleotide sequences, one record per '>' header line.
+    demo: sequences.fasta
+
+params:
+  - id: min_length
+    label: Shortest sequence kept
+    type: int
+    default: 50
+    min: 0
+    help: Sequences shorter than this many bases are left out of the summary.
+  - id: count_n
+    label: Count N bases in GC content
+    type: bool
+    default: false
+    help: When off, unknown bases (N) are ignored when working out the GC fraction.
+  - id: rounding
+    label: Decimal places for GC
+    type: choice
+    choices: ["2", "3", "4"]
+    default: "3"
+    help: How many decimal places to keep in the results table.
+
+batch:
+  engine: staged
+  resources: {cpus: 1, mem: 1G, time: "00:10:00"}
+  stages:
+    - id: "01"
+      name: lengths
+      title: Read the sequences and measure their lengths
+      run: "{python} -m everyome.modules.tutorial.sequence_summary.steps lengths"
+    - id: "02"
+      name: gc
+      title: Work out the GC content of each sequence
+      run: "{python} -m everyome.modules.tutorial.sequence_summary.steps gc"
+
+interactive:
+  engine: everyome.modules.tutorial.sequence_summary.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: explore, title: Explore and filter}
+
+learn:
+  manual: docs/manual.md
+
+demo:
+  data: demo

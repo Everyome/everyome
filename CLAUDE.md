@@ -12,13 +12,32 @@ current when decisions change.
 
 | Path | What |
 |---|---|
-| `everyome/core/` | Backends, scheduler, projects, runs, module loader, local server |
-| `everyome/modules/` | First-party modules, one folder each with `module.yaml` |
-| `everyome/static/` | Frontend (vanilla JS), shared viewers, themes |
-| `tests/` | Unit tests and end-to-end demo flows |
+| `everyome/core/backends.py` | `SSHBackend` (system ssh, key-only, ControlMaster) and `LocalBackend` (this computer; demo cluster when given fake Slurm) |
+| `everyome/core/slurm.py` | sbatch/squeue/sacct/scancel, job naming, script headers |
+| `everyome/core/manifest.py` | `module.yaml` spec v1: fields, stages, steps; value checking |
+| `everyome/core/modules.py` | Finds first-party modules; community registry switched off |
+| `everyome/core/projects.py`, `runs.py` | Project folders; runs (params, job scripts, afterok chain, status, logs) |
+| `everyome/core/engine.py`, `session.py`, `sessions.py` | Interactive engines (base class), the compute-node session server, and the app side (start, tunnel, ping, stop) |
+| `everyome/suites.yaml`, `everyome/core/suites.py` | The suites, their tools (ready = has a module; otherwise planned), and the data-type and aim rules behind "Find the right analysis". A module's `suite` must be one of these ids and it must be listed as a tool |
+| `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
+| `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
+| `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
+| `everyome/static/` | App shell (`app.js`: home page, suite pages, views, shared viewers, markdown), `app.css`, `themes.json`, fonts |
+| `design/themes/` | 67 cnidarian themes; `python design/themes/export_app_themes.py` regenerates `everyome/static/themes.json` |
+| `tests/` | Manifest, Slurm naming, and an end-to-end demo flow (real session process) |
 | `docs/PLAN.md` | Design plan and phases |
 
 The source for porting is SPLiTscape in `~/Desktop/helomics` (`app/splitscape_app/`).
+
+## Writing a module
+
+Copy `everyome/modules/tutorial/sequence_summary/`. Stage commands are bash lines
+in `module.yaml` (`{python}` is the cluster's Python), run inside the run folder
+with `$EVERYOME_PARAMS` (settings as JSON) and `$EVERYOME_RUN_DIR`. An interactive
+engine subclasses `BaseEngine`, lists callable methods in `API`, and records
+decisions with `_record()`. `ui.js` registers views with
+`Everyome.registerViews(id, {stepId: async el => ...})` and calls the engine with
+`Everyome.call(method, args)`.
 
 ## Running
 
@@ -39,7 +58,7 @@ pytest
 - **Community modules** stay disabled until review, signing and pinning are in place
   (`docs/PLAN.md` section 7).
 - **Data governance:** no PII/PHI in code or logs; never store passwords or keys.
-- **Design:** Gothic Cream is the default theme; every theme passes WCAG AA in light and dark.
+- **Design:** Nematostella in light mode is the default for new users (Gothic Cream remains the house style); every theme passes WCAG AA in light and dark. The app always opens on the home page.
 - **Licence:** not yet chosen (MIT or BSD-3, pending Stowers tech transfer); don't add one.
 - Comments state intent; keep UI text plain-language and written for biologists.
 - Literature references include a DOI or URL.

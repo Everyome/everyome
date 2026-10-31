@@ -19,8 +19,12 @@ which becomes its first single-cell module and keeps its own citation.
 
 ## Status
 
-Early groundwork. The design is in [`docs/PLAN.md`](docs/PLAN.md). The app
-currently starts and shows a holding page; modules come next.
+The core is in place (phase 1 of [`docs/PLAN.md`](docs/PLAN.md)): connect to a
+cluster or the built-in demo cluster, create projects, choose an analysis, fill
+in its settings, check the exact job scripts, submit them, follow the jobs, and
+explore the results in a live session. One tutorial module, *Sequence summary*,
+shows every part of a module. Real analysis modules come next, starting with
+SPLiTscape.
 
 ## Try it
 
@@ -29,6 +33,10 @@ pip install -e ".[test]"
 everyome            # opens http://127.0.0.1:8777
 pytest
 ```
+
+Choose **Demo cluster** to try everything on your own computer, with example
+data and a pretend job scheduler. Demo data lives in `~/.everyome/demo_cluster`;
+delete that folder to start fresh.
 
 ## Licence
 

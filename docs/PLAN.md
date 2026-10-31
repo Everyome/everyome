@@ -5,7 +5,8 @@
 Created by **Helen R Horkan PhD** (Stowers Institute). Everyome grows out of
 SPLiTscape; SPLiTscape stays a named module with its own citation.
 
-Status: draft plan, 2026-10-31. Nothing here is built yet.
+Status (2026-10-31): phase 0 done except the external items (domain, PyPI at version 1, licence and trademark);
+phase 1 code done and tested on the demo cluster — see the notes under section 9.
 
 ---
 
@@ -319,6 +320,32 @@ Each phase ends with a check you can see working.
 | 8 | Suite roll-out | Add modules suite by suite (section 2), each with demo data and learning material | — ongoing |
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
+
+### Phase 1 notes (2026-10-31)
+
+Built: backends, Slurm calls, projects, staged runs with a script preview before
+submitting, interactive sessions (generic `BaseEngine`, token-guarded session
+server, tunnel and proxy), manifest spec v1 with value checking, module loader
+with community modules switched off, demo cluster, and the GUI shell with forms
+built from manifests. Test module: `tutorial.sequence_summary` (two stages, one
+interactive step, manual, demo data). Tested end to end on the demo cluster, in
+pytest and in the browser.
+
+Differences from section 4: `inputs` and `params` share one field schema
+(types text, int, float, bool, choice, file, folder); the batch engine so far is
+`staged` (Nextflow arrives in phase 4); stage commands are bash lines with
+`{python}`; a module may ship its own views as `interactive.ui`.
+
+Added after the plan: a home page that explains Everyome, shows every suite as a
+box (ready, or "in progress" with its planned tools), and a "Find the right
+analysis" form. People choose their data types and aims; simple rules in
+`everyome/suites.yaml` rank the tools that fit, and once a data type is named
+only tools that can use it are suggested. Answers are not stored or sent anywhere.
+
+Not yet done from the phase 1 "done when": the SSH backend is carried over
+unchanged from SPLiTscape (where it was tested against a local sshd) but has
+not been re-tested in Everyome; local-only modules (`kind: local`) are defined
+in the spec but have no runner until phase 5.
 
 ---
 

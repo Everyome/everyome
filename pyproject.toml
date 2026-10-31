@@ -10,11 +10,11 @@ readme = "README.md"
 authors = [{ name = "Helen R Horkan" }]
 requires-python = ">=3.10"
 # Intent: keep the core light; heavy scientific packages belong to the modules that need them.
-dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "pyyaml", "setproctitle"]
+dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24", "pyyaml", "setproctitle"]
 # Licence still to be confirmed with Stowers tech transfer (MIT or BSD-3); add it here and as LICENSE once decided.
 
 [project.optional-dependencies]
-test = ["pytest", "httpx"]
+test = ["pytest"]
 
 [project.scripts]
 everyome = "everyome.__main__:main"
@@ -23,4 +23,4 @@ everyome = "everyome.__main__:main"
 include = ["everyome*"]
 
 [tool.setuptools.package-data]
-everyome = ["static/*"]
+everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/docs/*"]

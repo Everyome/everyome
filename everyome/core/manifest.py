@@ -1,0 +1,200 @@
+"""The module manifest (module.yaml), spec version 1.
+
+A manifest tells the core everything it needs to show and run a module: its
+inputs and settings (with defaults, ranges and plain-language help), its batch
+stages, its interactive steps, and where its manual and demo data live. The GUI
+builds its forms from it, so every setting is editable without new screens.
+
+See docs/PLAN.md section 4. Bump SPEC when a change would break existing modules.
+"""
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import yaml
+
+SPEC = 1
+KINDS = {"local", "batch", "interactive"}
+TYPES = {"text", "int", "float", "bool", "choice", "file", "folder"}
+ID = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$")
+
+
+class ManifestError(ValueError):
+    """A module.yaml that does not follow the spec; the message says what to fix."""
+
+
+@dataclass
+class Field:
+    id: str
+    label: str
+    type: str = "text"
+    default: object = None
+    help: str = ""
+    required: bool = False
+    min: float | None = None
+    max: float | None = None
+    choices: list = field(default_factory=list)
+    group: str = ""
+    demo: str = ""            # demo-data file or folder filled in on the demo cluster
+
+    def as_dict(self):
+        return {k: v for k, v in self.__dict__.items()}
+
+
+@dataclass
+class Stage:
+    id: str
+    name: str
+    title: str
+    run: str
+    resources: dict = field(default_factory=dict)
+
+
+@dataclass
+class Step:
+    id: str
+    title: str
+
+
+@dataclass
+class Manifest:
+    id: str
+    name: str
+    suite: str
+    version: str
+    summary: str
+    kind: list[str]
+    dir: Path
+    authors: list[str] = field(default_factory=list)
+    licence: str = ""
+    cite: list[dict] = field(default_factory=list)
+    inputs: list[Field] = field(default_factory=list)
+    params: list[Field] = field(default_factory=list)
+    resources: dict = field(default_factory=dict)
+    stages: list[Stage] = field(default_factory=list)
+    engine: str = ""
+    ui: str = ""              # the module's own GUI views (a JS file in the module folder)
+    steps: list[Step] = field(default_factory=list)
+    learn: dict = field(default_factory=dict)
+    demo: dict = field(default_factory=dict)
+
+    @property
+    def fields(self) -> list[Field]:
+        return self.inputs + self.params
+
+    def as_dict(self):
+        """What the GUI needs (no file-system paths)."""
+        return {"id": self.id, "name": self.name, "suite": self.suite, "version": self.version, "summary": self.summary,
+                "kind": self.kind, "authors": self.authors, "licence": self.licence, "cite": self.cite,
+                "inputs": [f.as_dict() for f in self.inputs], "params": [f.as_dict() for f in self.params],
+                "resources": self.resources,
+                "stages": [{"id": s.id, "name": s.name, "title": s.title} for s in self.stages],
+                "steps": [s.__dict__ for s in self.steps], "has_manual": bool(self.learn.get("manual")), "has_ui": bool(self.ui)}
+
+
+def _field(d: dict, where: str) -> Field:
+    if not isinstance(d, dict) or "id" not in d:
+        raise ManifestError(f"{where}: every entry needs an id")
+    f = Field(**{k: v for k, v in d.items() if k in Field.__dataclass_fields__})
+    if not re.match(r"^[a-z][a-z0-9_]*$", f.id):
+        raise ManifestError(f"{where}.{f.id}: ids use lower case letters, digits and _")
+    if f.type not in TYPES:
+        raise ManifestError(f"{where}.{f.id}: type must be one of {', '.join(sorted(TYPES))}")
+    if f.type == "choice" and not f.choices:
+        raise ManifestError(f"{where}.{f.id}: a choice needs a list of choices")
+    if not f.label:
+        raise ManifestError(f"{where}.{f.id}: give it a label people will read")
+    if f.default is not None:
+        _, err = coerce(f, f.default)
+        if err:
+            raise ManifestError(f"{where}.{f.id}: default {f.default!r} is not valid ({err})")
+    return f
+
+
+def load(path: Path) -> Manifest:
+    """Read and check a module.yaml; raises ManifestError with a plain explanation."""
+    path = Path(path)
+    try:
+        d = yaml.safe_load(path.read_text()) or {}
+    except yaml.YAMLError as e:
+        raise ManifestError(f"{path}: not valid YAML ({e})")
+    if d.get("spec") != SPEC:
+        raise ManifestError(f"{path}: spec must be {SPEC} (found {d.get('spec')!r})")
+    for k in ("id", "name", "suite", "version", "summary", "kind"):
+        if not d.get(k):
+            raise ManifestError(f"{path}: missing {k}")
+    if not ID.match(d["id"]):
+        raise ManifestError(f"{path}: id {d['id']!r} should look like suite.name (lower case)")
+    kind = d["kind"] if isinstance(d["kind"], list) else [d["kind"]]
+    if not set(kind) <= KINDS:
+        raise ManifestError(f"{path}: kind must be from {', '.join(sorted(KINDS))}")
+    batch, inter = d.get("batch") or {}, d.get("interactive") or {}
+    m = Manifest(id=d["id"], name=d["name"], suite=d["suite"], version=str(d["version"]), summary=d["summary"].strip(),
+                 kind=kind, dir=path.parent, authors=d.get("authors", []), licence=d.get("licence", ""), cite=d.get("cite", []),
+                 inputs=[_field(x, "inputs") for x in d.get("inputs", [])], params=[_field(x, "params") for x in d.get("params", [])],
+                 resources=batch.get("resources", {}), engine=inter.get("engine", ""), ui=inter.get("ui", ""),
+                 steps=[Step(s["id"], s["title"]) for s in inter.get("steps", [])],
+                 learn=d.get("learn", {}), demo=d.get("demo", {}))
+    ids = [f.id for f in m.fields]
+    if len(ids) != len(set(ids)):
+        raise ManifestError(f"{path}: input and setting ids must be unique")
+    if "batch" in kind:
+        if batch.get("engine", "staged") != "staged":
+            raise ManifestError(f"{path}: only the 'staged' batch engine exists so far")
+        for s in batch.get("stages", []):
+            for k in ("id", "name", "title", "run"):
+                if not s.get(k):
+                    raise ManifestError(f"{path}: every batch stage needs {k}")
+            m.stages.append(Stage(str(s["id"]), s["name"], s["title"], s["run"], s.get("resources", {})))
+        if not m.stages:
+            raise ManifestError(f"{path}: a batch module needs at least one stage")
+    if "interactive" in kind and (not m.engine or ":" not in m.engine):
+        raise ManifestError(f"{path}: interactive.engine should be 'package.module:ClassName'")
+    for k in ("manual",):
+        if m.learn.get(k) and not (m.dir / m.learn[k]).exists():
+            raise ManifestError(f"{path}: learn.{k} points to a missing file")
+    if m.ui and not (m.dir / m.ui).is_file():
+        raise ManifestError(f"{path}: interactive.ui points to a missing file")
+    if m.demo.get("data") and not (m.dir / m.demo["data"]).is_dir():
+        raise ManifestError(f"{path}: demo.data points to a missing folder")
+    return m
+
+
+def coerce(f: Field, v) -> tuple[object, str]:
+    """Turn a form value into the field's type; returns (value, error message or '')."""
+    if v is None or v == "":
+        return (None, "required") if f.required else (f.default, "")
+    if f.type in ("int", "float") and isinstance(v, bool):
+        return None, f"should be a {'whole number' if f.type == 'int' else 'number'}"
+    try:
+        if f.type == "int":
+            v = int(v)
+        elif f.type == "float":
+            v = float(v)
+        elif f.type == "bool":
+            v = v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes", "on")
+        else:
+            v = str(v).strip()
+    except ValueError:
+        return None, f"should be a {'whole number' if f.type == 'int' else 'number'}"
+    if f.type in ("int", "float"):
+        if f.min is not None and v < f.min:
+            return None, f"must be at least {f.min:g}"
+        if f.max is not None and v > f.max:
+            return None, f"must be at most {f.max:g}"
+    if f.type == "choice" and v not in [str(c) for c in f.choices]:
+        return None, "is not one of the choices"
+    return v, ""
+
+
+def check_values(m: Manifest, values: dict) -> tuple[dict, dict]:
+    """All inputs and settings with defaults filled in, plus {id: problem} for anything invalid."""
+    out, errors = {}, {}
+    for f in m.fields:
+        v, err = coerce(f, values.get(f.id))
+        if err:
+            errors[f.id] = f"{f.label} {err}."
+        out[f.id] = v
+    return out, errors
