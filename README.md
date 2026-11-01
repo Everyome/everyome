@@ -34,6 +34,11 @@ Modules so far:
 - **Single-cell RNA-seq (10x and similar)**, single cell: nf-core/scrnaseq
   counts cells on the cluster and removes empty droplets; a live session then
   filters, clusters, finds markers and names and compares cell types.
+- **Genome assembly (PacBio, Nanopore, Illumina)**, DNA: nf-core/genomeassembler
+  builds genomes from long reads, polished with Illumina reads and with genes
+  lifted from a relative; compare strategies side by side and choose one.
+- **Bacterial genome assembly and annotation**, DNA: nf-core/bacass assembles
+  Illumina, long or hybrid reads and finds genes (Prokka or Bakta).
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **Primer design**, molecular biology: Primer3 primers on a plasmid map, with
@@ -50,7 +55,7 @@ everyome                              # opens http://127.0.0.1:8777
 ```
 
 Analyses that run a Nextflow pipeline on your cluster (bulk and single-cell
-RNA-seq) also need the pipelines package, at the same version as Everyome, from
+RNA-seq, genome assembly) also need the pipelines package, at the same version as Everyome, from
 the next release on: `pip install "everyome-pipelines==<version>"`. Everyome
 ships the pipelines, so your cluster never downloads code from GitHub; see
 [`docs/PIPELINES.md`](docs/PIPELINES.md), including for clusters without internet.

@@ -41,6 +41,7 @@ class Field:
     demo: str = ""            # demo-data file or folder filled in on the demo cluster
     columns: list = field(default_factory=list)   # table: [{id, label, pattern?, help?}]
     fill: dict = field(default_factory=dict)      # table: {helper, from, label} fills rows from another input
+    one_of: list = field(default_factory=list)    # table: [[col, col], ...] each row fills at least one column of each group
     advanced: bool = False    # shown under "Advanced" (for example, parameters a pipeline marks as hidden)
     pipeline: bool = False    # passed to the Nextflow pipeline as a parameter
 
@@ -127,6 +128,8 @@ def _field(d: dict, where: str) -> Field:
     if f.type == "table":
         if not f.columns or not all(isinstance(c, dict) and c.get("id") and c.get("label") for c in f.columns):
             raise ManifestError(f"{where}.{f.id}: a table needs columns, each with an id and a label")
+        if not all(isinstance(g, list) and set(g) <= {c["id"] for c in f.columns} for g in f.one_of):
+            raise ManifestError(f"{where}.{f.id}: one_of lists groups of this table's column ids")
         for c in f.columns:
             if c.get("pattern"):
                 try:
@@ -236,7 +239,10 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
         raise ManifestError(f"{path}: batch.schema {batch['schema']} is missing or not JSON")
     sheet = batch["samplesheet"]
     table = next((f for f in m.inputs if f.id == sheet.get("from") and f.type == "table"), None)
-    if not table or not set(sheet.get("columns", [])) <= {c["id"] for c in table.columns} or not sheet.get("param"):
+    cols = {c["id"] for c in table.columns} if table else set()
+    # A column is a table column id, or {name, from: column} (renamed), {name, if_filled: column} (true/false) or {name, value} (fixed).
+    srcs = [c if isinstance(c, str) else c.get("from") or c.get("if_filled") for c in sheet.get("columns", []) if isinstance(c, str) or "value" not in c]
+    if not table or not srcs or not set(srcs) <= cols or not sheet.get("param"):
         raise ManifestError(f"{path}: batch.samplesheet needs 'from' (a table input), its 'columns' and the pipeline 'param'")
     skip = set(batch.get("skip", [])) | {sheet["param"], "outdir"}
     taken = {f.id for f in m.fields}
@@ -309,6 +315,10 @@ def _coerce_table(f: Field, v) -> tuple[object, str]:
                 return None, f"row {i} is missing {c['label']}"
             if c.get("pattern") and not re.fullmatch(c["pattern"], row[c["id"]]):
                 return None, f"row {i}: {c['label']} '{row[c['id']]}' {c.get('pattern_help') or 'is not in the expected form'}"
+        for g in f.one_of:
+            if not any(row[c] for c in g):
+                labels = [next(c["label"] for c in f.columns if c["id"] == x) for x in g]
+                return None, f"row {i} needs at least one of: {', '.join(labels)}"
         out.append(row)
     if f.required and not out:
         return None, "needs at least one row"

@@ -321,6 +321,44 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### DNA suite: genome assembly and annotation (2026-10-31)
+
+Two modules sharing one live session (`dna/explorer.py`, `dna/shared/`):
+
+- **Genome assembly (PacBio, Nanopore, Illumina)**, `dna.assembly`: nf-core/genomeassembler
+  2.0.1. One table row per assembly, so one run compares strategies: Nanopore
+  alone (Flye), HiFi alone (hifiasm), both together (hifiasm hybrid), or each
+  assembled and scaffolded onto the other (RagTag); Illumina reads polish (Pilon)
+  and check (Merqury). Genes are lifted over from a related genome (Liftoff).
+  Everyome turns BUSCO and QUAST on. Illumina-only assembly is not possible here.
+- **Bacterial genome assembly and annotation**, `dna.bacterial`: nf-core/bacass
+  2.6.1. Illumina, long reads or hybrid; several assemblers per run to compare;
+  genes by Prokka or Bakta. Starts from settings the pipeline accepts
+  (assembly type hybrid, Unicycler; contamination screening off until databases
+  are given): bacass's own assembler default lists every assembler, which no
+  assembly type accepts.
+- **Explorer:** finds every assembly either pipeline writes (any stage:
+  assembly, polished, scaffold), computes its statistics itself (size, contigs,
+  N50/L50/N90, GC, gaps), reads BUSCO short summaries and pairs gene annotations
+  by contig names, sample and tool. Views: compare (table, Nx curves, BUSCO
+  bars), contigs (lengths, GC against length), genes (summary, lengths,
+  search), choose and export (`results/final/`, with a comparison table and the
+  reason in the record). Pure Python, so any cluster Python with Everyome runs it.
+- **Core additions:** samplesheet columns can be renamed, derived (true/false from
+  another column), fixed, or dropped when empty, with any separator and empty
+  value (bacass reads a TSV with NA); tables can require one of several columns per row.
+- **Demo:** toy genomes with repeats of known sizes, so each strategy breaks where
+  real reads would: three chromosomes for the eukaryote (scaffolding recovers
+  all three; Nanopore errors lower BUSCO until polished), and a bacterium with a
+  chromosome and two plasmids (short reads break at rRNA operons and insertion
+  sequences; most long-read assemblers lose the small plasmid; Unicycler hybrid
+  recovers all three). Tests: `tests/test_assembly_flow.py`.
+- **De novo eukaryotic gene annotation** is left for its own tool: no released
+  nf-core pipeline (genomeannotator is archived), and BRAKER3 depends on GeneMark,
+  whose licence restricts redistribution.
+- **Not yet run with real Nextflow or data**; check output paths against real
+  runs (`explorer.py` reads by pattern, not fixed paths).
+
 ### Shipped pipelines and job-name prefix (2026-10-31)
 
 - **Pipelines ship with Everyome** instead of being fetched from GitHub at run

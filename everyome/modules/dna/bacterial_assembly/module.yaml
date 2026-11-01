@@ -1,0 +1,128 @@
+# Bacterial genome assembly and annotation: nf-core/bacass assembles Illumina reads, long reads (Nanopore or PacBio)
+# or both together (hybrid), checks the assemblies and finds genes; then a live session compares and exports them.
+spec: 1
+id: dna.bacterial
+name: Bacterial genome assembly and annotation
+suite: dna
+version: 0.1.0
+summary: >
+  Assembles bacterial (and other small) genomes from Illumina reads, long reads
+  (Nanopore or PacBio) or both together, checks each assembly (BUSCO, QUAST) and
+  finds its genes (Prokka or Bakta). Run several assemblers at once, compare them
+  side by side, choose the best and export it with its genes.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "nf-core/bacass. Zenodo."
+    url: https://doi.org/10.5281/zenodo.2669428
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Wick R.R. et al. (2017). Unicycler: resolving bacterial genome assemblies from short and long sequencing reads. PLoS Computational Biology 13:e1005595."
+    url: https://doi.org/10.1371/journal.pcbi.1005595
+  - text: "Kolmogorov M. et al. (2019). Assembly of long, error-prone reads using repeat graphs. Nature Biotechnology 37:540–546."
+    url: https://doi.org/10.1038/s41587-019-0072-8
+  - text: "Seemann T. (2014). Prokka: rapid prokaryotic genome annotation. Bioinformatics 30:2068–2069."
+    url: https://doi.org/10.1093/bioinformatics/btu153
+  - text: "Schwengers O. et al. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics 7:000685."
+    url: https://doi.org/10.1099/mgen.0.000685
+  - text: "Manni M. et al. (2021). BUSCO update: novel and streamlined workflows along with broader and deeper phylogenetic coverage for scoring of eukaryotic, prokaryotic, and viral genomes. Molecular Biology and Evolution 38:4647–4654."
+    url: https://doi.org/10.1093/molbev/msab199
+  - text: "Gurevich A. et al. (2013). QUAST: quality assessment tool for genome assemblies. Bioinformatics 29:1072–1075."
+    url: https://doi.org/10.1093/bioinformatics/btt086
+kind: [batch, interactive]
+requires: []
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.dna.bacterial_assembly.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the table below: Illumina pairs (_R1/_R2) and long reads (named with ont, nanopore, pacbio or long) for each isolate."
+    demo: reads
+  - id: isolates
+    label: Isolates
+    type: table
+    required: true
+    help: >
+      One row per isolate. Give Illumina reads, long reads, or both; choose the matching Assembly type
+      below (short, long or hybrid) for the whole run. Genome size helps long-read assemblers.
+    one_of: [[short_1, long]]
+    columns:
+      - {id: sample, label: Isolate, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: short_1, label: Illumina read 1, optional: true, wide: true}
+      - {id: short_2, label: Illumina read 2, optional: true, wide: true}
+      - {id: long, label: Long reads (Nanopore or PacBio), optional: true, wide: true}
+      - {id: genome_size, label: Genome size, optional: true, pattern: "[0-9]+(\\.[0-9]+)?m", pattern_help: "should be a size in megabases ending in m, for example 4.6m"}
+    fill: {helper: scan, from: reads_dir, label: Find isolates in the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/bacass
+  revision: "2.6.1"
+  schema: pipeline/nextflow_schema.json
+  samplesheet:
+    from: isolates
+    param: input
+    name: samplesheet.tsv
+    sep: "\t"
+    empty: "NA"
+    columns:
+      - {name: ID, from: sample}
+      - {name: R1, from: short_1}
+      - {name: R2, from: short_2}
+      - {name: LongFastQ, from: long}
+      - {name: Fast5, value: "NA"}
+      - {name: GenomeSize, from: genome_size}
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix]
+  # Intent: a run the pipeline accepts as it stands. The pipeline's own assembler default lists every assembler, which no
+  # assembly type accepts, and contamination screening needs databases you download first (see the manual).
+  defaults: {assembly_type: hybrid, assembler: unicycler, skip_kraken2: true, skip_kmerfinder: true}
+  demo: everyome.modules.dna.bacterial_assembly.demo_pipeline
+  report: everyome.modules.dna.bacterial_assembly.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "48:00:00", session: {cpus: 1, mem: 8G, time: "04:00:00"}}
+
+helpers:
+  scan: everyome.modules.dna.bacterial_assembly.helpers:scan
+
+interactive:
+  engine: everyome.modules.dna.explorer:Engine
+  ui: [../shared/assembly_ui.js, ui.js]
+  steps:
+    - {id: compare, title: Compare assemblies}
+    - {id: contigs, title: Look at contigs}
+    - {id: genes, title: Look at genes}
+    - {id: export, title: Choose and export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [../shared/playground/assembly_playground.js]
+    object: AssemblyPlayground
+    lede: >
+      Why long reads give complete bacterial chromosomes and short reads give
+      hundreds of pieces, and why hybrid assemblies are the most accurate.
+    intro:
+      - "A simulated genome with repeats of different lengths (in bacteria, rRNA operons of about 5 kb and insertion sequences of 1–2 kb are what break short-read assemblies). Choose the reads and see where the assembly breaks."
+    caveats:
+      - "The simulated genome is a few megabases with three chromosomes; a bacterium usually has one chromosome and maybe plasmids."
+      - "Assemblies here break only at repeats longer than the reads and at gaps in coverage. Real assemblers also lose small plasmids when long reads are size-selected."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    compare: ../shared/guides/compare.md
+    nx: ../shared/guides/nx.md
+    busco: ../shared/guides/busco.md
+    contigs: ../shared/guides/contigs.md
+    genes: docs/guides/genes.md
+    choose: ../shared/guides/choose.md
+
+demo:
+  build: everyome.modules.dna.bacterial_assembly.demo_data:build

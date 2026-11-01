@@ -61,11 +61,26 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
     nf, d, v = m.nextflow, run["dir"], run["values"]
     sheet = nf["samplesheet"]
     rows = v.get(sheet["from"]) or []
-    csv = ",".join(sheet["columns"]) + "\n" + "".join(",".join(str(r.get(c, "")) for c in sheet["columns"]) + "\n" for r in rows)
+    sep, empty, fname = sheet.get("sep", ","), sheet.get("empty", ""), sheet.get("name", "samplesheet.csv")
+
+    def cell(r, c):
+        if isinstance(c, str):
+            v = r.get(c, "")
+        elif "value" in c:
+            v = c["value"]
+        elif "if_filled" in c:
+            v = "true" if str(r.get(c["if_filled"], "")).strip() else "false"
+        else:
+            v = r.get(c["from"], "")
+        return str(v) if str(v).strip() else empty
+    names = [c if isinstance(c, str) else c["name"] for c in sheet["columns"]]
+    # Intent: optional columns nobody filled in are left out, so the pipeline uses its own setting for them.
+    keep = [i for i, c in enumerate(sheet["columns"]) if not (isinstance(c, dict) and c.get("drop_if_empty") and not any(str(r.get(c["from"], "")).strip() for r in rows))]
+    csv = sep.join(names[i] for i in keep) + "\n" + "".join(sep.join(cell(r, sheet["columns"][i]) for i in keep) + "\n" for r in rows)
     # Intent: pass only what differs from the pipeline's own defaults, so the pipeline decides the rest.
     base = lambda f: nf.get("upstream", {}).get(f.id, f.default)
     params = {f.id: v[f.id] for f in m.params if f.pipeline and v.get(f.id) not in (None, "") and v.get(f.id) != base(f)}
-    params.update({sheet["param"]: f"{d}/samplesheet.csv", "outdir": f"{d}/results"})
+    params.update({sheet["param"]: f"{d}/{fname}", "outdir": f"{d}/results"})
     res, user = run["resources"], run["user"]
     prefix = slurm.job_name(user, m.id, "", run.get("job_prefix", slurm.JOB_PREFIX))
     config = "\n".join([
@@ -77,7 +92,7 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
         "    // Job names carry the job-name prefix and the username, so everyone can see whose job it is",
         f"    jobName = {{ '{prefix}' + task.process.tokenize(':')[-1] }}",
         "}", ""])
-    return {"samplesheet.csv": csv, "nf_params.json": json.dumps(params, indent=1), "nextflow.config": config}
+    return {fname: csv, "nf_params.json": json.dumps(params, indent=1), "nextflow.config": config}
 
 
 def nextflow_command(run: dict, m: Manifest, python: str) -> str:

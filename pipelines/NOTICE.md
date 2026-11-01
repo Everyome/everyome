@@ -8,6 +8,8 @@ and CI files left out, and keep their own licences:
 |---|---|---|
 | nf-core-rnaseq-3.27.0.tar.gz | https://github.com/nf-core/rnaseq/tree/3.27.0 | MIT (LICENSE inside the bundle), © the nf-core/rnaseq team |
 | nf-core-scrnaseq-4.2.0.tar.gz | https://github.com/nf-core/scrnaseq/tree/4.2.0 | MIT (LICENSE inside the bundle), © the nf-core/scrnaseq team; the 10x barcode whitelists in assets/ are distributed by nf-core with the pipeline |
+| nf-core-genomeassembler-2.0.1.tar.gz | https://github.com/nf-core/genomeassembler/tree/2.0.1 | MIT (LICENSE inside the bundle), © the nf-core/genomeassembler team |
+| nf-core-bacass-2.6.1.tar.gz | https://github.com/nf-core/bacass/tree/2.6.1 | MIT (LICENSE inside the bundle), © the nf-core/bacass team |
 | nf-schema-*.zip | https://github.com/nextflow-io/nf-schema | Apache License 2.0 |
 
 The software containers the pipelines use are not included; each tool keeps its own licence.

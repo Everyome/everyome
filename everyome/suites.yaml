@@ -18,7 +18,8 @@ suites:
       - {id: dna.variants, name: Variant and mutation calling}
       - {id: dna.atac, name: Chromatin accessibility (ATAC-seq)}
       - {id: dna.hic, name: 3D genome architecture (Hi-C)}
-      - {id: dna.assembly, name: Genome assembly}
+      - {id: dna.assembly, name: Genome assembly (PacBio, Nanopore, Illumina), module: dna.assembly}
+      - {id: dna.bacterial, name: Bacterial genome assembly and annotation, module: dna.bacterial}
       - {id: dna.annotation, name: Genome annotation}
   - id: rna
     name: RNA
@@ -63,8 +64,8 @@ suites:
       - {id: phylo.tree, name: Alignment and tree building}
 
 data_types:
-  - {id: dna_reads, label: "DNA sequencing reads (whole genome, exome or targeted)", tools: [dna.variants, dna.assembly]}
-  - {id: long_reads, label: "Long reads (PacBio or Nanopore)", tools: [dna.assembly, dna.annotation, dna.variants]}
+  - {id: dna_reads, label: "DNA sequencing reads (whole genome, exome or targeted)", tools: [dna.variants, dna.assembly, dna.bacterial]}
+  - {id: long_reads, label: "Long reads (PacBio or Nanopore)", tools: [dna.assembly, dna.bacterial, dna.annotation, dna.variants]}
   - {id: chromatin, label: "ATAC-seq, ChIP-seq or CUT&RUN", tools: [dna.atac]}
   - {id: hic, label: "Hi-C or other chromosome contact data", tools: [dna.hic]}
   - {id: bulk_rna, label: "Bulk RNA-seq", tools: [rna.bulk_de, rna.abundance]}
@@ -81,7 +82,7 @@ aims:
   - {id: compare, label: "Compare conditions, treatments or time points", tools: [rna.bulk_de, singlecell.scrna, singlecell.splitseq, rna.riboseq]}
   - {id: cell_types, label: "Find and name cell types", tools: [singlecell.splitseq, singlecell.scrna, singlecell.multiome, spatial.singlecell]}
   - {id: variants, label: "Find mutations or variants", tools: [dna.variants]}
-  - {id: genome, label: "Build or annotate a genome", tools: [dna.assembly, dna.annotation]}
+  - {id: genome, label: "Build or annotate a genome", tools: [dna.assembly, dna.bacterial, dna.annotation]}
   - {id: chromatin, label: "See which DNA is open, bound or folded", tools: [dna.atac, dna.hic, singlecell.scatac, singlecell.multiome]}
   - {id: where, label: "See where genes are expressed in a tissue", tools: [spatial.spots, spatial.probes, spatial.singlecell]}
   - {id: translation, label: "Measure translation", tools: [rna.riboseq]}

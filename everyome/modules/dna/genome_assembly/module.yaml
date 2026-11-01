@@ -1,0 +1,139 @@
+# Genome assembly: nf-core/genomeassembler builds assemblies from PacBio HiFi and/or Nanopore reads (Illumina reads
+# polish and check them; genes can be lifted over from a related genome), then a live session compares and exports them.
+spec: 1
+id: dna.assembly
+name: Genome assembly (PacBio, Nanopore, Illumina)
+suite: dna
+version: 0.1.0
+summary: >
+  Builds a genome from long reads: PacBio HiFi, Nanopore, or both together, with
+  Illumina reads to polish and check it, and genes lifted over from a related,
+  annotated genome. Try several strategies in one run, then compare them side by
+  side (size, contiguity, BUSCO completeness, genes), choose the best and export it.
+  For bacteria, see Bacterial genome assembly and annotation.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "nf-core/genomeassembler. Zenodo."
+    url: https://doi.org/10.5281/zenodo.14986998
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Cheng H. et al. (2021). Haplotype-resolved de novo assembly using phased assembly graphs with hifiasm. Nature Methods 18:170–175."
+    url: https://doi.org/10.1038/s41592-020-01056-5
+  - text: "Kolmogorov M. et al. (2019). Assembly of long, error-prone reads using repeat graphs. Nature Biotechnology 37:540–546."
+    url: https://doi.org/10.1038/s41587-019-0072-8
+  - text: "Alonge M. et al. (2022). Automated assembly scaffolding using RagTag elevates a new tomato system for high-throughput genome editing. Genome Biology 23:258."
+    url: https://doi.org/10.1186/s13059-022-02823-7
+  - text: "Walker B.J. et al. (2014). Pilon: an integrated tool for comprehensive microbial variant detection and genome assembly improvement. PLoS ONE 9:e112963."
+    url: https://doi.org/10.1371/journal.pone.0112963
+  - text: "Shumate A., Salzberg S.L. (2021). Liftoff: accurate mapping of gene annotations. Bioinformatics 37:1639–1643."
+    url: https://doi.org/10.1093/bioinformatics/btaa1016
+  - text: "Manni M. et al. (2021). BUSCO update: novel and streamlined workflows along with broader and deeper phylogenetic coverage for scoring of eukaryotic, prokaryotic, and viral genomes. Molecular Biology and Evolution 38:4647–4654."
+    url: https://doi.org/10.1093/molbev/msab199
+  - text: "Gurevich A. et al. (2013). QUAST: quality assessment tool for genome assemblies. Bioinformatics 29:1072–1075."
+    url: https://doi.org/10.1093/bioinformatics/btt086
+kind: [batch, interactive]
+requires: []
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.dna.genome_assembly.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the table below. Everyome looks for Nanopore, PacBio HiFi and Illumina files by name."
+    demo: reads
+  - id: assemblies
+    label: Assemblies to make
+    type: table
+    required: true
+    help: >
+      One row per assembly. Rows can use the same reads in different ways, so you can compare
+      strategies in one run: Nanopore alone, HiFi alone, both together (hybrid), or each assembled
+      and one scaffolded onto the other. Illumina reads, if given, polish the assembly (Pilon) and
+      check its accuracy (Merqury).
+    one_of: [[ontreads, hifireads]]
+    columns:
+      - {id: sample, label: Name, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: ontreads, label: Nanopore reads, optional: true, wide: true}
+      - {id: hifireads, label: PacBio HiFi reads, optional: true, wide: true}
+      - {id: short_1, label: Illumina read 1, optional: true, wide: true}
+      - {id: short_2, label: Illumina read 2, optional: true, wide: true}
+      - {id: strategy, label: Strategy, pattern: "single|hybrid|scaffold", pattern_help: "should be single, hybrid or scaffold"}
+      - {id: assembler, label: Assembler, pattern: "flye|hifiasm|flye_hifiasm|hifiasm_hifiasm|flye_flye|hifiasm_flye",
+         pattern_help: "should be flye or hifiasm (single, hybrid), or nanopore_hifi assemblers such as flye_hifiasm (scaffold)"}
+      - {id: polish, label: Polishing, optional: true, pattern: "pilon|medaka|dorado|medaka\\+pilon|dorado\\+pilon",
+         pattern_help: "should be pilon, medaka, dorado, medaka+pilon or dorado+pilon, or empty"}
+    fill: {helper: scan, from: reads_dir, label: Suggest assemblies from the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/genomeassembler
+  revision: "2.0.1"
+  schema: pipeline/nextflow_schema.json
+  samplesheet:
+    from: assemblies
+    param: input
+    columns:
+      - sample
+      - ontreads
+      - hifireads
+      - {name: shortread_F, from: short_1}
+      - {name: shortread_R, from: short_2}
+      - {name: use_short_reads, if_filled: short_1}
+      - {name: paired, if_filled: short_2}
+      - strategy
+      - assembler
+      - {name: polish, from: polish, drop_if_empty: true}
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix]
+  # Intent: always check the assemblies; the pipeline leaves BUSCO and QUAST off unless asked.
+  defaults: {busco: true, quast: true}
+  demo: everyome.modules.dna.genome_assembly.demo_pipeline
+  demo_values: {ref_fasta: reference/related.fa, ref_gff: reference/related.gff3}
+  report: everyome.modules.dna.genome_assembly.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "120:00:00", session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.dna.genome_assembly.helpers:scan
+
+interactive:
+  engine: everyome.modules.dna.explorer:Engine
+  ui: [../shared/assembly_ui.js, ui.js]
+  steps:
+    - {id: compare, title: Compare assemblies}
+    - {id: contigs, title: Look at contigs}
+    - {id: genes, title: Look at genes}
+    - {id: export, title: Choose and export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [../shared/playground/assembly_playground.js]
+    object: AssemblyPlayground
+    lede: >
+      Why long reads give longer contigs, what coverage does, and why polishing
+      matters, on a simulated genome where the truth is known.
+    intro:
+      - "A simulated genome with repeats of different lengths. Choose the reads (their length, accuracy and coverage) and see where the assembly breaks, how N50 changes, and how accurate the result is."
+    caveats:
+      - "Assemblies here break only at repeats longer than the reads and at gaps in coverage. Real assemblers also struggle with heterozygosity, collapsed repeats and contamination."
+      - "Accuracy uses a simple majority vote over the reads covering each base; real polishers do better with fewer reads."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    compare: ../shared/guides/compare.md
+    nx: ../shared/guides/nx.md
+    busco: ../shared/guides/busco.md
+    contigs: ../shared/guides/contigs.md
+    genes: docs/guides/genes.md
+    choose: ../shared/guides/choose.md
+
+demo:
+  build: everyome.modules.dna.genome_assembly.demo_data:build
