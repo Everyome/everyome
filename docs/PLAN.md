@@ -321,6 +321,30 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Phase 5 notes (2026-10-31)
+
+- **Local modules run in the app.** `kind: [local]` modules run their engine in
+  the Everyome app process: no job, no session, no tunnel. Their calls, logging,
+  records and reruns work exactly like cluster modules.
+- **"This computer" mode** (a third choice on Connect) needs no cluster. Projects
+  and example data live in `~/Everyome`. Cluster modules are shown but
+  disabled there, with a note to connect to a cluster or the demo.
+- **Shared sequence map** (`seqMap`): circular for plasmids, linear otherwise,
+  with features, single-cut restriction sites, primers and a highlighted region.
+- **New module `molbio.primers`** (0.1.0): reads GenBank, FASTA or pasted
+  sequences; you choose the region; Primer3 (primer3-py) suggests pairs, with the
+  common settings as fields and any other Primer3 setting as `NAME=value` lines.
+  You can check your own primers (Tm, GC, hairpin, self- and pair-dimer ΔG, where
+  they bind, product size) and export all pairs, an order sheet and a GenBank
+  file with the primers added. The demo plasmid is synthetic and labelled as such.
+- Records now find versions by installed package name, so `primer3`/`Bio` report
+  primer3-py and Biopython versions. Tested with no cluster connected, in pytest
+  and the browser, including an exact repeat from the rerun bundle.
+
+**Not done yet:** local modules can't be used while connected to a real cluster
+over SSH (their files would be on the cluster). For now, switch to "This
+computer". Products crossing the origin of a circular plasmid aren't designed.
+
 ### Phase 4 notes (2026-10-31)
 
 New module `rna.bulk_de` (0.1.0): nf-core/rnaseq **3.27.0** turns reads into gene

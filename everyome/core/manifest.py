@@ -18,7 +18,7 @@ import yaml
 
 SPEC = 1
 KINDS = {"local", "batch", "interactive"}
-TYPES = {"text", "int", "float", "bool", "choice", "file", "folder", "table"}
+TYPES = {"text", "longtext", "int", "float", "bool", "choice", "file", "folder", "table"}
 ID = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$")
 
 
@@ -179,7 +179,9 @@ def load(path: Path) -> Manifest:
             m.stages.append(Stage(str(s["id"]), s["name"], s["title"], s["run"], s.get("resources", {})))
         if not m.stages:
             raise ManifestError(f"{path}: a batch module needs at least one stage")
-    if "interactive" in kind and (not m.engine or ":" not in m.engine):
+    if "local" in kind and len(kind) > 1:
+        raise ManifestError(f"{path}: a local module runs only on this computer; it cannot also be batch or interactive")
+    if ("interactive" in kind or "local" in kind) and (not m.engine or ":" not in m.engine):
         raise ManifestError(f"{path}: interactive.engine should be 'package.module:ClassName'")
     for k in ("manual",):
         if m.learn.get(k) and not (m.dir / m.learn[k]).exists():

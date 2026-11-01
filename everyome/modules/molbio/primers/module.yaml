@@ -1,0 +1,80 @@
+# Primer design: Primer3 on this computer, with a plasmid or sequence map. No cluster needed.
+spec: 1
+id: molbio.primers
+name: Primer design
+suite: molbio
+version: 0.1.0
+summary: >
+  Designs PCR primers for a region of your sequence with Primer3, shows them on a
+  plasmid or sequence map with the single-cut restriction sites, checks primers
+  you already have for hairpins and dimers, and exports an order sheet.
+  Runs on this computer.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Untergasser A. et al. (2012). Primer3—new capabilities and interfaces. Nucleic Acids Research 40:e115."
+    url: https://doi.org/10.1093/nar/gks596
+  - text: "primer3-py: Python bindings for Primer3 (libnano)."
+    url: https://github.com/libnano/primer3-py
+  - text: "Cock P.J.A. et al. (2009). Biopython: freely available Python tools for computational molecular biology and bioinformatics. Bioinformatics 25:1422–1423."
+    url: https://doi.org/10.1093/bioinformatics/btp163
+kind: [local]
+requires: [primer3, Bio]
+methods: everyome.modules.molbio.primers.methods:methods
+
+inputs:
+  - id: sequence_file
+    label: Sequence file
+    type: file
+    help: "GenBank (.gb, .gbk) keeps your features on the map; FASTA works too. Or paste a sequence below instead."
+    demo: demo_plasmid.gb
+  - id: sequence_text
+    label: Or paste a sequence
+    type: longtext
+    help: "Plain bases or FASTA. Used only when no file is given."
+  - id: topology
+    label: Shape of the sequence
+    type: choice
+    choices: [auto, circular, linear]
+    default: auto
+    help: "'auto' reads it from a GenBank file (plasmids are usually circular) and treats pasted sequences as linear."
+
+params:
+  - {id: product_min, label: Shortest product, type: int, default: 100, min: 20, group: Product, help: "In bases."}
+  - {id: product_max, label: Longest product, type: int, default: 600, min: 20, group: Product, help: "In bases."}
+  - {id: num_return, label: Pairs to suggest, type: int, default: 5, min: 1, max: 50, group: Product}
+  - {id: size_min, label: Shortest primer, type: int, default: 18, min: 8, max: 35, group: Primers}
+  - {id: size_opt, label: Best primer length, type: int, default: 20, min: 8, max: 35, group: Primers}
+  - {id: size_max, label: Longest primer, type: int, default: 25, min: 8, max: 35, group: Primers}
+  - {id: tm_min, label: Lowest melting temperature (°C), type: float, default: 57, group: Primers}
+  - {id: tm_opt, label: Best melting temperature (°C), type: float, default: 60, group: Primers}
+  - {id: tm_max, label: Highest melting temperature (°C), type: float, default: 63, group: Primers}
+  - {id: gc_min, label: Lowest GC content (%), type: float, default: 40, min: 0, max: 100, group: Primers}
+  - {id: gc_max, label: Highest GC content (%), type: float, default: 60, min: 0, max: 100, group: Primers}
+  - {id: gc_clamp, label: G or C bases at the 3' end, type: int, default: 1, min: 0, max: 5, group: Primers,
+     help: "A G or C at the 3' end helps the primer hold on where extension starts."}
+  - {id: max_poly_x, label: Longest run of one base, type: int, default: 4, min: 1, max: 10, group: Primers}
+  - {id: mv_conc, label: Monovalent salt (mM), type: float, default: 50, min: 0, group: Reaction conditions, help: "Na+ and K+; affects melting temperature."}
+  - {id: dv_conc, label: Magnesium (mM), type: float, default: 1.5, min: 0, group: Reaction conditions}
+  - {id: dntp_conc, label: dNTPs (mM), type: float, default: 0.6, min: 0, group: Reaction conditions}
+  - {id: dna_conc, label: Primer concentration (nM), type: float, default: 50, min: 0, group: Reaction conditions}
+  - {id: enzymes, label: Enzymes to show on the map, type: text, group: Map,
+     default: "EcoRI BamHI HindIII XhoI XbaI SalI PstI SacI KpnI NotI NcoI NdeI BglII SpeI NheI ApaI SmaI EcoRV ClaI MluI AgeI AscI PacI SphI BsaI BsmBI",
+     help: "Names separated by spaces. The map shows those that cut exactly once."}
+  - {id: extra_primer3, label: Any other Primer3 setting, type: longtext, group: Advanced Primer3 settings,
+     help: "One per line as NAME=value, for example PRIMER_MAX_END_STABILITY=9. Every Primer3 setting can be set here; see the Primer3 manual."}
+
+interactive:
+  engine: everyome.modules.molbio.primers.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: sequence, title: Look at the sequence}
+    - {id: design, title: Design primers}
+    - {id: check, title: Check your own primers}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+
+demo:
+  data: demo

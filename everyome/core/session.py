@@ -29,6 +29,25 @@ def load_engine(spec: str, run_dir: str):
     return getattr(importlib.import_module(mod), cls)(run_dir)
 
 
+def call_engine(eng, method: str, b: dict):
+    """Run one GUI action on an engine. Only methods it lists in API are reachable; REPLAY ones are logged."""
+    if method not in eng.API:
+        raise HTTPException(404, f"No action called {method}.")
+    out = getattr(eng, method)(**b)
+    if method in eng.REPLAY:
+        eng._log_call(method, b)           # Intent: only calls that were accepted are replayed
+    return out
+
+
+def result_file(run_dir: str, name: str) -> Path:
+    """A file inside the run's results/ folder (sub-folders allowed), never outside it."""
+    res = (Path(run_dir) / "results").resolve()
+    path = (res / name).resolve()
+    if not path.is_relative_to(res) or not path.is_file():
+        raise HTTPException(404)
+    return path
+
+
 def create_app(run_dir: str, engine_spec: str, token: str, idle_minutes: float) -> FastAPI:
     app = FastAPI(title="Everyome session")
     eng = load_engine(engine_spec, run_dir)
@@ -57,21 +76,11 @@ def create_app(run_dir: str, engine_spec: str, token: str, idle_minutes: float) 
 
     @app.post("/call/{method}")
     def call(method: str, b: dict = Body(default={})):
-        # Intent: only the methods the engine lists in API can be called from the GUI.
-        if method not in eng.API:
-            raise HTTPException(404, f"No action called {method}.")
-        out = getattr(eng, method)(**b)
-        if method in eng.REPLAY:
-            eng._log_call(method, b)       # Intent: only calls that were accepted are replayed
-        return out
+        return call_engine(eng, method, b)
 
     @app.get("/download")
     def download(name: str):
-        res = (Path(run_dir) / "results").resolve()
-        path = (res / name).resolve()
-        # Intent: anything inside results/ (including sub-folders), nothing outside it.
-        if not path.is_relative_to(res) or not path.is_file():
-            raise HTTPException(404)
+        path = result_file(run_dir, name)
         return FileResponse(path, filename=path.name)
 
     @app.post("/stop")

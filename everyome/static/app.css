@@ -270,3 +270,5 @@ details.card.fold[open]>summary{margin-bottom:12px}
 .tablewrap table{width:auto;min-width:100%}
 .tablewrap td input{min-width:110px}
 .tablewrap td input.wide{min-width:300px}
+.warnv{color:var(--ox);font-weight:600}
+td.num,th.num{white-space:nowrap}

@@ -34,7 +34,9 @@ test = ["pytest"]
 singlecell = ["numpy", "pandas", "scipy", "scanpy>=1.9", "anndata>=0.9", "harmonypy", "leidenalg", "igraph", "openpyxl", "seaborn", "matplotlib"]
 # Intent: what the bulk RNA module's live session needs.
 rna = ["numpy", "pandas", "matplotlib", "pydeseq2"]
-all = ["everyome[singlecell,rna]"]
+# Intent: what the molecular biology tools need (they run on this computer).
+molbio = ["primer3-py", "biopython"]
+all = ["everyome[singlecell,rna,molbio]"]
 
 [project.urls]
 Homepage = "https://github.com/Everyome/everyome"
@@ -53,5 +55,5 @@ version = { attr = "everyome.__version__" }
 include = ["everyome*"]
 
 [tool.setuptools.package-data]
-everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/docs/*", "modules/*/*/docs/*/*",
+everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/demo/*/*", "modules/*/*/docs/*", "modules/*/*/docs/*/*",
   "modules/*/*/workflow/*/*", "modules/*/*/templates/*", "modules/*/*/pipeline/*"]

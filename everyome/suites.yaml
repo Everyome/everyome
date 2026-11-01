@@ -53,7 +53,7 @@ suites:
     name: Molecular biology
     blurb: Design for the bench, right on your computer.
     tools:
-      - {id: molbio.primers, name: Primer design}
+      - {id: molbio.primers, name: Primer design, module: molbio.primers}
       - {id: molbio.plasmids, name: Plasmid maps and cloning}
       - {id: molbio.digests, name: Restriction digests}
   - id: phylo

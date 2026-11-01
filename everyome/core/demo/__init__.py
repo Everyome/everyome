@@ -17,18 +17,23 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 
+def example_data(data: Path, modules: dict) -> None:
+    """Copy (or build, once) each module's example data into data/<module id>/."""
+    for m in modules.values():
+        if m.demo.get("data"):
+            # Intent: refresh example data from the installed modules, never touching users' projects.
+            shutil.copytree(m.dir / m.demo["data"], data / m.id, dirs_exist_ok=True)
+        if m.demo.get("build") and not (data / m.id / ".demo_ready").exists():
+            # Intent: modules whose example data is generated (too large to ship) build it once, here.
+            mod, _, fn = m.demo["build"].partition(":")
+            getattr(importlib.import_module(mod), fn)(data / m.id)
+            (data / m.id / ".demo_ready").write_text("1")
+
+
 def setup(root: Path, modules: dict) -> Path:
     """Create or refresh the demo cluster; returns the folder holding the fake Slurm commands."""
     (root / "projects").mkdir(parents=True, exist_ok=True)
-    for m in modules.values():
-        if m.demo.get("data"):
-            # Intent: refresh demo data from the installed modules, never touching users' demo projects.
-            shutil.copytree(m.dir / m.demo["data"], root / "data" / m.id, dirs_exist_ok=True)
-        if m.demo.get("build") and not (root / "data" / m.id / ".demo_ready").exists():
-            # Intent: modules whose demo data is generated (too large to ship) build it once, here.
-            mod, _, fn = m.demo["build"].partition(":")
-            getattr(importlib.import_module(mod), fn)(root / "data" / m.id)
-            (root / "data" / m.id / ".demo_ready").write_text("1")
+    example_data(root / "data", modules)
     bin_dir = root / ".bin"
     bin_dir.mkdir(exist_ok=True)
     for cmd in ("sbatch", "squeue", "sacct", "scancel"):

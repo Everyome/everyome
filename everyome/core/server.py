@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import shlex
 import sys
@@ -17,14 +18,14 @@ from pathlib import Path
 
 import httpx
 from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from everyome import __version__
 
 from . import demo, modules, projects, records, runs, sessions, slurm, suites
 from .backends import LocalBackend, SSHBackend, describe_ssh_error
-from .session import TOKEN_HEADER
+from .session import TOKEN_HEADER, call_engine, load_engine, result_file
 
 STATIC = Path(__file__).resolve().parents[1] / "static"
 HOME = Path.home() / ".everyome"
@@ -38,7 +39,10 @@ class AppState:
         self.demo = False
         self.project = None       # mirrors everyome_project.json
         self.run = None           # mirrors the open run's run.json
-        self.session = None       # {"url", "token", "node", "run"}
+        self.session = None       # {"url", "token", "node", "run"} for a cluster session
+        self.local = None         # {"run": id, "engine": engine} for a module running here, in this app
+        # "This computer": projects and example data live here (EVERYOME_LOCAL_ROOT moves it, for example for testing).
+        self.local_root = Path(os.environ.get("EVERYOME_LOCAL_ROOT") or Path.home() / "Everyome")
         self.demo_root = HOME / "demo_cluster"
         self.modules, self.module_problems = modules.discover()
         self.suites = suites.load()
@@ -112,8 +116,16 @@ def state():
 def connect(b: dict = Body(...)):
     if S.backend:
         S.backend.close()
-    S.session, S.project, S.run = None, None, None
-    if b.get("mode") == "demo":
+    S.session, S.local, S.project, S.run = None, None, None, None
+    if b.get("mode") == "local":
+        # Intent: no cluster at all. Modules that run on this computer work; cluster modules say they need one.
+        root = S.local_root
+        (root / "projects").mkdir(parents=True, exist_ok=True)
+        demo.example_data(root / "examples", {k: m for k, m in S.modules.items() if "local" in m.kind})
+        S.backend, S.demo = LocalBackend(root, None, label="this computer"), False
+        S.conn = {"mode": "local", "user": S.backend.user, "python": sys.executable,
+                  "projects_root": f"{root}/projects", "data_root": f"{root}/examples", "partition": "", "bind": "127.0.0.1"}
+    elif b.get("mode") == "demo":
         bin_dir = demo.setup(S.demo_root, S.modules)
         S.backend, S.demo = LocalBackend(S.demo_root, bin_dir, label="demo cluster"), True
         root = str(S.demo_root)
@@ -146,7 +158,8 @@ def checks():
         rc, so, se = be.run(cmd, timeout=30)
         out.append({"name": name, "ok": rc == 0, "detail": (so.strip().splitlines() or [""])[-1][:120] if rc == 0 else bad_hint})
     chk("Logged in", "whoami", "Could not run commands.")
-    chk("Scheduler available", "command -v sbatch && command -v squeue", "Slurm commands (sbatch, squeue) were not found.")
+    if c.get("mode") != "local":
+        chk("Scheduler available", "command -v sbatch && command -v squeue", "Slurm commands (sbatch, squeue) were not found.")
     chk("Everyome installed for that Python", f"{shlex.quote(c['python'])} -c 'import everyome; print(\"everyome\", everyome.__version__)'",
         "That Python cannot import Everyome. Ask IT for the shared install, or install it in your own environment.")
     chk("Projects folder writable", f"mkdir -p {shlex.quote(c['projects_root'])} && test -w {shlex.quote(c['projects_root'])} && echo {shlex.quote(c['projects_root'])}",
@@ -158,7 +171,7 @@ def checks():
 def disconnect():
     if S.backend:
         S.backend.close()
-    S.backend, S.project, S.run, S.session, S.conn, S.demo = None, None, None, None, {}, False
+    S.backend, S.project, S.run, S.session, S.local, S.conn, S.demo = None, None, None, None, None, {}, False
     return {"ok": True}
 
 
@@ -282,6 +295,10 @@ def project_open(b: dict = Body(...)):
 @app.post("/api/run/create")
 def run_create(b: dict = Body(...)):
     p, be, m = _need_project(), _need_backend(), _module(b.get("module", ""))
+    if S.conn.get("mode") == "local" and "local" not in m.kind:
+        raise HTTPException(400, f"{m.name} runs on a computing cluster. Connect to your cluster, or try it on the demo cluster.")
+    if "local" in m.kind and not isinstance(be, LocalBackend):
+        raise HTTPException(400, f"{m.name} runs on this computer. Choose 'This computer' (or the demo cluster) on the Connect page to use it.")
     res = {**(b.get("resources") or {}), "partition": (b.get("resources") or {}).get("partition") or S.conn.get("partition", "")}
     try:
         S.run = runs.create(be, p, m, b.get("values") or {}, res, demo=S.demo)
@@ -381,7 +398,7 @@ def record_file(name: str):
 @app.post("/api/run/close")
 def run_close():
     """Leave the open run (it stays in the project); used before starting a new one."""
-    S.run, S.session = None, None
+    S.run, S.session, S.local = None, None, None
     return {"ok": True}
 
 
@@ -457,6 +474,14 @@ def run_log(stage: str):
 def session_start():
     r, be = _need_run(), _need_backend()
     m = _module(r["module"])
+    if "local" in m.kind:
+        # Intent: a local module's engine runs inside this app; no job, no tunnel.
+        if not S.local or S.local["run"] != r["id"]:
+            try:
+                S.local = {"run": r["id"], "engine": load_engine(m.engine, r["dir"])}
+            except (FileNotFoundError, ValueError) as e:
+                raise HTTPException(400, str(e))
+        return {"local": True}
     if "interactive" not in m.kind:
         raise HTTPException(400, "This module has no interactive steps.")
     if "batch" in m.kind and not r.get("done"):
@@ -473,6 +498,10 @@ def session_start():
 @app.get("/api/session/status")
 def session_status():
     r, be = _need_run(), _need_backend()
+    if S.local and S.local["run"] == r["id"]:
+        return {"state": "READY", "node": "this computer", "engine": S.local["engine"].status()}
+    if "local" in _module(r["module"]).kind:
+        return {"state": "NONE"}
     if not r.get("session_job"):
         return {"state": "NONE"}
     st = slurm.states(be, {"s": r["session_job"]}).get("s", {}).get("state", "UNKNOWN")
@@ -491,6 +520,9 @@ def session_status():
 
 @app.post("/api/session/stop")
 def session_stop():
+    if S.local:
+        S.local = None
+        return {"ok": True}
     sessions.stop(_need_backend(), _need_run(), S.session)
     S.session = None
     return {"ok": True}
@@ -498,7 +530,21 @@ def session_stop():
 
 @app.api_route("/api/s/{path:path}", methods=["GET", "POST"])
 async def session_proxy(path: str, request: Request):
-    """Forward GUI requests to the interactive session, adding its token."""
+    """Forward GUI requests to the interactive session, adding its token (or run them here, for local modules)."""
+    if S.local and S.run and S.local["run"] == S.run["id"]:
+        eng = S.local["engine"]
+        if path == "status":
+            return eng.status()
+        if path.startswith("call/") and request.method == "POST":
+            body = await request.body()
+            try:
+                return call_engine(eng, path[5:], json.loads(body) if body else {})
+            except (KeyError, ValueError, RuntimeError, FileNotFoundError) as e:
+                raise HTTPException(400, str(e))
+        if path == "download":
+            f = result_file(S.run["dir"], request.query_params.get("name", ""))
+            return FileResponse(f, filename=f.name)
+        raise HTTPException(404)
     if not S.session:
         raise HTTPException(409, "The session is not running. Start it first.")
     async with httpx.AsyncClient(timeout=120) as client:

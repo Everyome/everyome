@@ -24,6 +24,7 @@ current when decisions change.
 | `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
+| `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |
 | `everyome/modules/rna/bulk_de/` | Bulk RNA-seq: nf-core/rnaseq 3.27.0 (pinned; schemas in `pipeline/`) for reads to counts, then a PyDESeq2 live session; `demo_pipeline.py` stands in for Nextflow on the demo cluster |
 | `everyome/modules/singlecell/splitseq/` | SPLiTscape as a module: `workflow/` (the SPLiTscape bash and Python stages), `stage.py` (writes `reads.env` from settings, runs a stage or its demo stand-in), `helpers.py` (folder scan, read-QC report), `engine.py` (part 2), `ui.js`, `demo_data.py` |
 | `everyome/static/` | App shell (`app.js`: home page, suite pages, views, shared viewers, markdown), `app.css`, `themes.json`, fonts |
@@ -48,7 +49,10 @@ decisions with `_record()`. `ui.js` registers views with
 `tools` (version commands recorded in the run record); `methods`
 (function writing the draft methods text from the record); engines list in
 `REPLAY` the calls that change the analysis, which are logged with their
-arguments so `rerun --session` can replay them; `batch.engine: nextflow` (pipeline, pinned revision, bundled schema,
+arguments so `rerun --session` can replay them; `kind: [local]` modules run their engine inside the app (no job, no tunnel)
+and need "This computer" or the demo cluster; "This computer" mode keeps
+projects in `~/Everyome` (`EVERYOME_LOCAL_ROOT` moves it). `seqMap()` is the
+shared plasmid/sequence map. `batch.engine: nextflow` (pipeline, pinned revision, bundled schema,
 samplesheet from a table input, profile, skip list, demo stand-in, demo_values):
 one head job runs the pipeline with a generated `nextflow.config` that names
 every task `Claude_<user>_everyome_<module>_<task>`; only changed settings go in
@@ -62,7 +66,7 @@ Python 3.10 or newer (3.9 is end-of-life and no longer on GitHub's Ubuntu runner
 CI tests 3.10 and 3.12 on Linux and macOS.
 
 ```bash
-pip install -e ".[test,singlecell,rna]" && everyome     # http://127.0.0.1:8777
+pip install -e ".[test,all]" && everyome     # http://127.0.0.1:8777
 pytest          # the SPLiT-seq end-to-end test is skipped without the singlecell extra
 EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 ```

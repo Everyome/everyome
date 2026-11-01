@@ -56,7 +56,9 @@ def test_api_needs_no_connection():
     c = TestClient(server.app)
     assert len(c.get("/api/suites").json()["suites"]) == 8
     r = c.post("/api/suggest", json={"data": ["constructs"], "aims": ["design"]}).json()["suggestions"]
-    assert r[0]["suite"] == "molbio" and r[0]["ready"] is False
+    assert r[0]["id"] == "molbio.primers" and r[0]["ready"] is True          # ready tools come first among equals
+    r = c.post("/api/suggest", json={"data": ["sequences"], "aims": ["evolution"]}).json()["suggestions"]
+    assert r[0]["suite"] == "phylo" and r[0]["ready"] is False
 
 
 def test_not_sure_alone_points_to_the_worked_example():

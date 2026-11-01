@@ -32,6 +32,8 @@ Modules so far:
   merged with an existing atlas or dataset. Includes a playground.
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
+- **Primer design**, molecular biology: Primer3 primers on a plasmid map, with
+  checks for your own primers. Runs on your computer; no cluster needed.
 - **Sequence summary**, getting started: a small worked example of how every
   module runs.
 

@@ -45,6 +45,14 @@ function clearTimers() { ST.timers.forEach(clearInterval); ST.timers = []; }
 const curModule = () => ST.modules.find(m => m.id === (ST.state?.run?.module || ST.pick));
 const hasBatch = m => m?.kind.includes("batch");
 const hasSession = m => m?.kind.includes("interactive");
+const isLocal = m => m?.kind.includes("local");
+const isLocalMode = () => ST.state?.conn?.mode === "local";
+// Open a run where it belongs: cluster stages, the live session, or (local modules) straight into its first step.
+async function openRun() {
+  const m = curModule();
+  if (isLocal(m)) { await api("/api/session/start", { method: "POST" }); ST.sess = "READY"; renderSide(); renderPills(); return go("step:" + m.steps[0].id); }
+  go(hasBatch(m) ? "run" : "session");
+}
 const runDone = () => !!ST.state?.run?.done || (ST.state?.run && !hasBatch(curModule()));
 
 function pages() {
@@ -61,7 +69,7 @@ function pages() {
       ...(hasSession(m) ? [{ id: "session", title: "Live session", ok: runDone(), done: ST.sess === "READY" }] : []),
       { id: "record", title: "Record and write-up", ok: !!s.run, done: false }] },
   ];
-  if (m && hasSession(m)) groups.push({ group: m.name, medal: "II", items: m.steps.map(st => (
+  if (m && (hasSession(m) || isLocal(m))) groups.push({ group: m.name, medal: "II", items: m.steps.map(st => (
     { id: "step:" + st.id, title: st.title, ok: ST.sess === "READY", done: false })) });
   if (m) groups.push({ group: "Learn", medal: "?", items: [{ id: "manual", title: "Manual", ok: m.has_manual, done: false },
     ...(m.playground ? [{ id: "playground", title: "Playground", ok: true, done: false }] : [])] });
@@ -84,8 +92,13 @@ function renderPills() {
 }
 async function refreshState() {
   ST.state = await api("/api/state");
-  if (ST.state.run?.session_job) {
-    try { const s = await api("/api/session/status"); ST.sess = s.state; ST.eng = s.engine || null; } catch { ST.sess = null; }
+  if (ST.state.run?.session_job || (ST.state.run && isLocal(curModule()))) {
+    try {
+      let st = await api("/api/session/status");
+      // Intent: a local module's engine lives in the app; reopen it quietly after a reload.
+      if (st.state === "NONE" && isLocal(curModule())) { await api("/api/session/start", { method: "POST" }); st = await api("/api/session/status"); }
+      ST.sess = st.state; ST.eng = st.engine || null;
+    } catch { ST.sess = null; }
   } else ST.sess = null;
   renderSide(); renderPills();
 }
@@ -298,6 +311,52 @@ class EmbeddingPlot {
   }
 }
 
+// Plasmid or sequence map. features: [{start, end, strand, label, type}] (1-based, end inclusive);
+// sites: [{name, pos}]; primers: [{label, start, end, strand}]; highlight: {start, end, label}.
+// Circular for plasmids, linear otherwise. Positions in the sequence's own coordinates.
+function seqMap(len, { features = [], sites = [], primers = [], highlight = null, circular = true, title = "", w = 560 } = {}) {
+  const c = COL, pal = PALETTE, typeCol = {};
+  let k = 0;
+  const colOf = t => typeCol[t] ??= pal[(k++) % pal.length];
+  if (!circular) {
+    const L = 30, R = w - 30, Y = 90, X = p => L + (p - 1) / Math.max(1, len - 1) * (R - L);
+    let s = `<svg class="chart" viewBox="0 0 ${w} 200" role="img" aria-label="${esc(title || "Sequence map")}"><line x1="${L}" x2="${R}" y1="${Y}" y2="${Y}" stroke="${c.muted}" stroke-width="2"/>`;
+    if (highlight) s += `<rect x="${X(highlight.start)}" y="${Y - 26}" width="${Math.max(2, X(highlight.end) - X(highlight.start))}" height="52" fill="${c.gold}" opacity=".25"><title>${esc(highlight.label || "")}</title></rect>`;
+    features.forEach((f, i) => { const y = Y + (f.strand < 0 ? 8 : -20);
+      s += `<rect x="${X(f.start)}" y="${y}" width="${Math.max(2, X(f.end) - X(f.start))}" height="12" fill="${colOf(f.type)}"><title>${esc(f.label)} (${f.start}–${f.end})</title></rect>`;
+      s += `<text x="${(X(f.start) + X(f.end)) / 2}" y="${f.strand < 0 ? Y + 34 + (i % 2) * 12 : Y - 26 - (i % 2) * 12}" text-anchor="middle" class="ax">${esc(f.label)}</text>`; });
+    sites.forEach(t => s += `<line x1="${X(t.pos)}" x2="${X(t.pos)}" y1="${Y - 6}" y2="${Y + 6}" stroke="${c.ink}"/><text x="${X(t.pos)}" y="${Y + 62}" text-anchor="middle" class="ax" transform="rotate(-50 ${X(t.pos)} ${Y + 62})">${esc(t.name)}</text>`);
+    primers.forEach(p => { const x0 = X(p.start), x1 = X(p.end), y = Y + (p.strand < 0 ? 16 : -32);
+      s += `<path d="M${p.strand < 0 ? x1 : x0} ${y}L${p.strand < 0 ? x0 + 4 : x1 - 4} ${y}" stroke="${c.ox}" stroke-width="3" marker-end="url(#ah)"/>`; });
+    return s + `<defs><marker id="ah" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0L6,3L0,6z" fill="${c.ox}"/></marker></defs>
+      <text x="${L}" y="${Y + 100}" class="ax">1</text><text x="${R}" y="${Y + 100}" text-anchor="end" class="ax">${fmt(len)} bp</text></svg>${legendTypes()}`;
+  }
+  const W = w, H = w * 0.9, cx = W / 2, cy = H / 2, r = H * 0.3;
+  const ang = p => (p - 1) / len * 2 * Math.PI - Math.PI / 2, pt = (a, rr) => [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+  const arc = (a0, a1, r0, r1) => { if (a1 < a0) a1 += 2 * Math.PI; const big = a1 - a0 > Math.PI ? 1 : 0, [x0, y0] = pt(a0, r1), [x1, y1] = pt(a1, r1), [x2, y2] = pt(a1, r0), [x3, y3] = pt(a0, r0);
+    return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r1} ${r1} 0 ${big} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}A${r0} ${r0} 0 ${big} 0 ${x3.toFixed(1)} ${y3.toFixed(1)}Z`; };
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title || "Plasmid map")}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.muted}" stroke-width="2"/>`;
+  if (highlight) s += `<path d="${arc(ang(highlight.start), ang(highlight.end + 1), r - 22, r + 22)}" fill="${c.gold}" opacity=".25"><title>${esc(highlight.label || "")}</title></path>`;
+  const labels = [];
+  features.forEach(f => { const a0 = ang(f.start), a1 = ang(f.end + 1), out = f.strand >= 0;
+    s += `<path d="${arc(a0, a1, out ? r + 3 : r - 13, out ? r + 13 : r - 3)}" fill="${colOf(f.type)}"><title>${esc(f.label)} (${f.start}–${f.end}, ${f.strand < 0 ? "reverse" : "forward"})</title></path>`;
+    labels.push({ a: ang((f.start + f.end) / 2), t: f.label, r: r + 30 }); });
+  sites.forEach(t => { const a = ang(t.pos), [x0, y0] = pt(a, r - 6), [x1, y1] = pt(a, r + 6);
+    s += `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${c.ink}"/>`; labels.push({ a, t: `${t.name} (${t.pos})`, r: r + 30, small: true }); });
+  primers.forEach(p => { const a0 = ang(p.start), a1 = ang(p.end + 1), rr = p.strand < 0 ? r - 26 : r + 22;
+    s += `<path d="${arc(a0, a1, rr - 3, rr + 3)}" fill="${c.ox}"><title>${esc(p.label)}</title></path>`; labels.push({ a: (a0 + a1) / 2, t: p.label, r: r + 30, primer: true }); });
+  // Intent: place labels just outside the circle, then push apart any on the same side that would overlap.
+  const placed = labels.map(l => { const [x, y] = pt(l.a, r + 30); return { ...l, x, y, right: Math.cos(l.a) >= 0 }; });
+  for (const side of [true, false]) {
+    const g = placed.filter(l => l.right === side).sort((p, q) => p.y - q.y);
+    for (let i = 1; i < g.length; i++) if (g[i].y - g[i - 1].y < 13) g[i].y = g[i - 1].y + 13;
+  }
+  placed.forEach(l => { s += `<text x="${l.x.toFixed(1)}" y="${(l.y + 4).toFixed(1)}" text-anchor="${l.right ? "start" : "end"}" class="ax" ${l.primer ? `style="fill:${c.ox}"` : ""}>${esc(l.t)}</text>`; });
+  return s + `<text x="${cx}" y="${cy - 4}" text-anchor="middle" class="axb">${esc(title)}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" class="ax">${fmt(len)} bp</text></svg>${legendTypes()}`;
+  function legendTypes() { return `<div class="legend">${Object.entries(typeCol).map(([t, col]) => `<span><i style="background:${col}"></i>${esc(t)}</span>`).join("")}</div>`; }
+}
+
 // Minimal Markdown for module manuals: headings, paragraphs, lists, tables, **bold**, *italic*, `code`.
 function md(src) {
   const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/\*([^*]+)\*/g, "<i>$1</i>");
@@ -354,7 +413,7 @@ window.Everyome = {
   upload: async file => { const f = new FormData(); f.append("file", file);
     const r = await fetch("/api/run/upload", { method: "POST", body: f }), d = await r.json(); if (!r.ok) throw new Error(d.detail || "Upload failed."); return d; },
   downloadUrl: name => "/api/s/download?name=" + encodeURIComponent(name),
-  helpers: { $, $$, esc, fmt, fmtSize, sleep, toast, guarded, followTask, barChart, histChart, logHist, logLine, stacked, dotplot, legendFor, themed,
+  helpers: { $, $$, esc, fmt, fmtSize, sleep, toast, guarded, followTask, barChart, histChart, logHist, logLine, stacked, dotplot, legendFor, themed, seqMap,
     EmbeddingPlot, hexRgb: h => hexRgb(h), COL: () => COL, PALETTE: () => PALETTE, every, go },
 };
 async function loadModuleUi(m) {
@@ -378,13 +437,15 @@ const VIEWS = {};
 VIEWS.connect = async el => {
   const s = ST.state, sv = s.saved || {};
   el.innerHTML = head("✦", "Get started", "Connect",
-    "Everyome does the heavy work on a computing cluster and shows it here. Use the demo cluster to try it out, or connect to your own with your SSH key.") +
+    "Big analyses run on a computing cluster and show here; smaller ones run on this computer. Use the demo cluster to try everything out, connect to your own cluster with your SSH key, or work on this computer alone.") +
     `${s.connected ? `<div class="notice">Connected to <b>${esc(s.label)}</b>. <button class="btn small" id="disc">Disconnect</button></div>` : ""}
-    <div class="grid g2">
+    <div class="grid g3">
       <button class="choice" id="pick-demo" aria-pressed="${s.demo}"><div class="label">Try it out</div><h3>Demo cluster</h3>
         <p>A practice cluster on this computer with example data and a pretend job scheduler. Nothing leaves your machine.</p></button>
       <button class="choice" id="pick-ssh" aria-pressed="${s.connected && !s.demo}"><div class="label">Real data</div><h3>My cluster</h3>
         <p>Connect with the SSH key you already use. No passwords are stored; jobs run under your own account.</p></button>
+      <button class="choice" id="pick-local" aria-pressed="${s.conn?.mode === "local"}"><div class="label">No cluster</div><h3>This computer</h3>
+        <p>For analyses that run here, such as primer design. Projects are saved in the Everyome folder in your home folder.</p></button>
     </div>
     <div id="sshform" hidden><h2>Cluster details</h2><div class="card"><div class="grid g2">
       ${[["host", "Cluster address", "e.g. login.cluster.example.org"], ["user", "Your username", ""], ["port", "SSH port", "Usually 22"],
@@ -404,6 +465,10 @@ VIEWS.connect = async el => {
     const r = await api("/api/connect", { method: "POST", body: { mode: "demo" } });
     await refreshState(); showChecks(r.checks); toast("Connected to the demo cluster.", true);
     $("#pick-demo", el).setAttribute("aria-pressed", "true");
+  });
+  $("#pick-local", el).onclick = e => guarded(e.currentTarget, async () => {
+    const r = await api("/api/connect", { method: "POST", body: { mode: "local" } });
+    await refreshState(); showChecks(r.checks); toast("Working on this computer.", true);
   });
   $("#pick-ssh", el).onclick = () => { $("#sshform", el).hidden = false; $("[name=host]", el).focus(); };
   $("#go-ssh", el).onclick = e => guarded(e.currentTarget, async () => {
@@ -437,7 +502,7 @@ VIEWS.project = async el => {
       await api("/api/project/open", { method: "POST", body: { dir: b.dataset.open } }); await refreshState(); go(ST.pick ? "settings" : "project"); });
     const r = e.target.closest("[data-run]"); if (r) guarded(r, async () => {
       await api("/api/run/open", { method: "POST", body: { id: r.dataset.run } }); await refreshState();
-      go(hasBatch(curModule()) ? "run" : "session"); });
+      await openRun(); });
   });
   $("#create", el).onclick = e => guarded(e.currentTarget, async () => {
     await api("/api/project/create", { method: "POST", body: { name: $("#pname", el).value } }); await refreshState();
@@ -448,7 +513,8 @@ VIEWS.project = async el => {
 const suiteName = id => ST.suites?.suites.find(s => s.id === id)?.name || id;
 const moduleCard = m => `<div class="choice" aria-pressed="${curModule()?.id === m.id}"><div class="label">${esc(suiteName(m.suite))} · v${esc(m.version)}</div><h3>${esc(m.name)}</h3><p>${esc(m.summary)}</p>
   <div class="tags">${m.kind.map(k => `<span class="tag">${{ batch: "Cluster jobs", interactive: "Live session", local: "Runs here" }[k]}</span>`).join("")}</div>
-  <div class="acts"><button class="btn primary small" data-pick="${esc(m.id)}">Start a new run</button>${m.has_manual ? `<button class="btn small" data-man="${esc(m.id)}">Read the manual</button>` : ""}${m.playground ? `<button class="btn small" data-go="playground:${esc(m.id)}">Try the playground</button>` : ""}</div></div>`;
+  ${isLocalMode() && !isLocal(m) ? `<p class="small muted" style="margin-top:8px">Needs a cluster: connect to yours, or try it on the demo cluster.</p>` : ""}
+  <div class="acts"><button class="btn primary small" data-pick="${esc(m.id)}" ${isLocalMode() && !isLocal(m) ? "disabled" : ""}>Start a new run</button>${m.has_manual ? `<button class="btn small" data-man="${esc(m.id)}">Read the manual</button>` : ""}${m.playground ? `<button class="btn small" data-go="playground:${esc(m.id)}">Try the playground</button>` : ""}</div></div>`;
 function wireModuleCards(el) {
   el.addEventListener("click", e => {
     const mn = e.target.closest("[data-man]"); if (mn) return go("manual:" + mn.dataset.man);
@@ -548,6 +614,7 @@ const fieldHtml = (f, val) => {
   if (f.type === "choice") return `<label class="field" data-f="${f.id}"><span>${esc(f.label)}${req}</span><select name="${f.id}">${f.choices.map(c => `<option ${String(c) === String(val) ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>${help}</label>`;
   if (f.type === "file" || f.type === "folder") return `<label class="field" data-f="${f.id}"><span>${esc(f.label)}${req}</span><span class="pathrow"><input type="text" class="mono" name="${f.id}" data-path="${f.type === "file" ? "file" : "dir"}" value="${esc(val ?? "")}">
     <button type="button" class="btn small" data-browse="${f.id}">Browse</button></span>${help}</label>`;
+  if (f.type === "longtext") return `<label class="field" data-f="${f.id}"><span>${esc(f.label)}${req}</span><textarea name="${f.id}" rows="6" class="mono" style="width:100%">${esc(val ?? "")}</textarea>${help}</label>`;
   const num = f.type === "int" || f.type === "float";
   return `<label class="field" data-f="${f.id}"><span>${esc(f.label)}${req}</span><input type="${num ? "number" : "text"}" name="${f.id}" value="${esc(val ?? "")}"
     ${num && f.min != null ? `min="${f.min}"` : ""} ${num && f.max != null ? `max="${f.max}"` : ""} ${f.type === "float" ? 'step="any"' : ""}>${help}</label>`;
@@ -573,12 +640,14 @@ const paramCards = ps => {
 
 VIEWS.settings = async el => {
   const m = curModule(), s = ST.state, run = s.run;
-  const demoVal = f => s.demo && f.demo ? `${s.conn.data_root}/${m.id}/${f.demo}` : f.default;
+  const exampleVal = f => `${s.conn.data_root}/${m.id}/${f.demo}`;
+  const demoVal = f => s.demo && f.demo ? exampleVal(f) : f.default;
   const val = f => run ? run.values[f.id] : demoVal(f);
   const res = run?.resources || { ...m.resources, partition: s.conn.partition };
   el.innerHTML = head("I", m.name, "Inputs and settings", esc(m.summary)) +
     (run ? `<div class="notice">These are the settings of run <b class="mono">${esc(run.id)}</b>. To change them, start a new run below; the old one is kept.</div>` : "") +
-    (s.demo && !run ? `<div class="notice">Demo inputs are filled in for you. Browse to see the demo data.</div>` : "") + `<div id="needs"></div>` +
+    (s.demo && !run ? `<div class="notice">Demo inputs are filled in for you. Browse to see the demo data.</div>` : "") +
+    (isLocalMode() && !run && m.fields_all.some(f => f.demo) ? `<div class="notice">Want to try it first? <button class="btn small" id="example">Fill in the example</button></div>` : "") + `<div id="needs"></div>` +
     `<div class="grid g-side"><div>
       ${m.inputs.length ? `<div class="card" style="margin-bottom:18px"><div class="label">Inputs</div>${m.inputs.map(f => fieldHtml(f, val(f))).join("")}</div>` : ""}
       ${paramCards(m.params.map(f => ({ ...f, _val: val(f) })))}
@@ -610,6 +679,7 @@ VIEWS.settings = async el => {
     const v = await browse(mode === "file" ? cur.replace(/\/[^/]*$/, "") : cur, mode, mode === "dir" ? "Choose a folder" : "Choose a file");
     if (v) inp.value = v;
   });
+  if ($("#example", el)) $("#example", el).onclick = () => m.fields_all.filter(f => f.demo).forEach(f => { const i = $(`[name=${f.id}]`, el); if (i) i.value = exampleVal(f); });
   $("#reset", el).onclick = () => m.fields_all.forEach(f => { if (f.type === "table") return; const i = $(`[name=${f.id}]`, el); if (f.type === "bool") i.checked = !!f.default; else i.value = demoVal(f) ?? ""; });
   $("#save", el).onclick = e => guarded(e.currentTarget, async () => {
     $$(".field.bad", el).forEach(x => x.classList.remove("bad"));
@@ -619,7 +689,7 @@ VIEWS.settings = async el => {
     const missing = m.fields_all.filter(f => f.required && (values[f.id] === "" || (f.type === "table" && !values[f.id].length)));
     if (missing.length) { missing.forEach(f => $(`[data-f=${f.id}]`, el).classList.add("bad")); throw new Error("Please fill in: " + missing.map(f => f.label).join(", ")); }
     await api("/api/run/create", { method: "POST", body: { module: m.id, values, resources } }); await refreshState();
-    toast("Run created. Nothing has been submitted yet.", true); go(hasBatch(m) ? "run" : "session");
+    toast(isLocal(m) ? "Run created." : "Run created. Nothing has been submitted yet.", true); await openRun();
   });
 };
 

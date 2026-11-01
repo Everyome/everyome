@@ -51,8 +51,9 @@ def _file_info(backend, path: str) -> dict:
 
 def _software(backend, conn: dict, m: Manifest) -> dict:
     pkgs = list(dict.fromkeys(["everyome", *m.requires, "numpy", "pandas", "scipy"]))
-    script = ("import importlib.metadata as md, json, sys\nout = {'python': sys.version.split()[0]}\n"
-              f"for p in {pkgs!r}:\n    try: out[p] = md.version(p)\n    except Exception: out[p] = None\nprint(json.dumps(out))")
+    # Intent: modules list import names (Bio, primer3); look versions up under their installed package names.
+    script = ("import importlib.metadata as md, json, sys\nout = {'python': sys.version.split()[0]}\ndists = md.packages_distributions()\n"
+              f"for p in {pkgs!r}:\n    try: out[p] = md.version(dists.get(p, [p])[0])\n    except Exception: out[p] = None\nprint(json.dumps(out))")
     rc, out, _ = backend.run(f"{shlex.quote(conn['python'])} -c {shlex.quote(script)}", timeout=120)
     try:
         python = json.loads(out.strip().splitlines()[-1])
