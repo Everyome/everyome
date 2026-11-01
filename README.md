@@ -34,6 +34,9 @@ Modules so far:
 - **Single-cell RNA-seq (10x and similar)**, single cell: nf-core/scrnaseq
   counts cells on the cluster and removes empty droplets; a live session then
   filters, clusters, finds markers and names and compares cell types.
+- **Spatial transcriptomics (10x Visium)**, spatial: from Space Ranger's output,
+  see every spot on the tissue image, find tissue regions, their markers and
+  spatially variable genes, and compare regions between conditions.
 - **Genome assembly (PacBio, Nanopore, Illumina)**, DNA: nf-core/genomeassembler
   builds genomes from long reads, polished with Illumina reads and with genes
   lifted from a relative; compare strategies side by side and choose one.

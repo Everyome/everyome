@@ -321,6 +321,27 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Spatial suite: 10x Visium (2026-11-01)
+
+- **Spatial transcriptomics (10x Visium)**, `spatial.visium`: starts from Space
+  Ranger's `outs` folders (what facilities hand back), so it is a live session
+  only, with no pipeline. nf-core/spatialvi has no release to pin yet.
+- Spots go through the shared single-cell steps (filter with the mitochondrial
+  share, Harmony, Leiden, markers, naming, composition, export). The shared views
+  now take a module's words, so they say spot and region here.
+- New: a reader for Space Ranger output (`.h5` or matrix folder; positions as
+  csv, older headerless csv or Visium HD parquet; scale factors and image), the
+  tissue view (spots on the tissue image, coloured by cluster, region, gene or
+  quality, adjustable opacity), and spatially variable genes by Moran's I on each
+  section's six nearest spots.
+- Demo: two toy skin sections in Space Ranger's layout (four layers; an immune
+  infiltrate only in the treated one; damaged spots at the cut edge); test in
+  `tests/test_visium_flow.py`, including an exact repeat.
+- Playground: what a spot records (spot size, depth, sharp or soft boundaries,
+  pattern or none), with Moran's I.
+- Not yet: real Visium data; Visium HD tested only by format (binned folders read
+  like standard ones); deconvolution of cell types within spots.
+
 ### DNA suite: genome assembly and annotation (2026-10-31)
 
 Two modules sharing one live session (`dna/explorer.py`, `dna/shared/`):

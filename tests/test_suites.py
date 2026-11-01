@@ -18,7 +18,7 @@ def test_every_planned_suite_is_listed():
 
 def test_ready_and_planned_tools():
     pub = {s["id"]: s for s in suites.public(CAT, MODS)["suites"]}
-    assert pub["tutorial"]["ready"] and pub["dna"]["ready"] and not pub["spatial"]["ready"]
+    assert pub["tutorial"]["ready"] and pub["dna"]["ready"] and pub["spatial"]["ready"] and not pub["protein"]["ready"]
     assert pub["tutorial"]["tools"][0]["ready"] is True
 
 

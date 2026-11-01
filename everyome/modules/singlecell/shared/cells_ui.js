@@ -9,7 +9,12 @@
   const lede = t => `<p class="lede">${t}</p>`;
 
   // order: the session's steps, first to last, as the engine names them (state.step).
-  E.cells = ({ order }) => {
+  // words: what one observation and one group are called (spatial modules say spot and region).
+  const CELL = { unit: "cell", units: "cells", Units: "Cells", type: "cell type", types: "cell types", Type: "Cell type",
+    qc: "Remove near-empty barcodes and likely doublets. Move the thresholds and watch how many cells each sample keeps.",
+    qcNote: "${W.qcNote}" };
+  E.cells = ({ order, words = {} }) => {
+  const W = { ...CELL, ...words };
   const S = { an: null, emb: null };
   const refresh = async () => (S.an = await E.status());
   const reached = s => order.indexOf(S.an?.step) >= order.indexOf(s);
@@ -18,21 +23,21 @@
 
   // ---------------------------------------------------------------- filter cells
   async function qc(el) {
-    el.innerHTML = lede("Remove near-empty barcodes and likely doublets. Move the thresholds and watch how many cells each sample keeps.") + `<div class="empty" id="loading">Loading QC data…</div>`;
+    el.innerHTML = lede(W.qc) + `<div class="empty" id="loading">Loading QC data…</div>`;
     const d = await E.call("qc_data"), t = { ...d.thresholds }, c = COL();
     $("#loading", el).remove();
-    el.insertAdjacentHTML("beforeend", `<div class="grid g-side"><div><div class="card"><div class="label">UMIs per cell</div><div id="h1"></div></div>
-        <div class="card" style="margin-top:18px"><div class="label">Genes per cell</div><div id="h2"></div></div>
+    el.insertAdjacentHTML("beforeend", `<div class="grid g-side"><div><div class="card"><div class="label">UMIs per ${W.unit}</div><div id="h1"></div></div>
+        <div class="card" style="margin-top:18px"><div class="label">Genes per ${W.unit}</div><div id="h2"></div></div>
         ${d.mito_edges ? `<div class="card" style="margin-top:18px"><div class="label">Mitochondrial share of counts (%)</div><div id="h3"></div>${guide("mito")}</div>` : ""}
-        <div class="card" style="margin-top:18px"><div class="label">Genes against UMIs (sample of cells)</div><div id="sc"></div>${guide("filter_cells", { open: true })}</div></div>
+        <div class="card" style="margin-top:18px"><div class="label">Genes against UMIs (sample of ${W.units})</div><div id="sc"></div>${guide("filter_cells", { open: true })}</div></div>
       <div><div class="card"><div class="label">Thresholds</div>
         ${[["min_counts", "Minimum UMIs"], ["max_counts", "Maximum UMIs"], ["min_genes", "Minimum genes"], ["max_genes", "Maximum genes"], ...(d.mito_edges ? [["max_mito", "Maximum mitochondrial %"]] : [])].map(([k, l]) =>
           `<label class="field"><span>${l}</span><input type="number" min="0" name="${k}" value="${t[k]}"></label>`).join("")}
-        <p class="small muted">Lower bounds remove empty barcodes; upper bounds remove likely doublets. Set the upper bounds where the tail of the distribution starts.${d.mito_edges ? " A high mitochondrial share marks damaged or dying cells." : ""}</p>
+        <p class="small muted">${W.qcNote}${d.mito_edges ? " A high mitochondrial share marks damaged or dying cells." : ""}</p>
         <div id="kept"></div><div class="row" style="margin-top:12px"><button class="btn primary" id="apply">Apply filter</button></div><div id="qprog"></div></div></div></div>`);
     const draw = () => {
-      $("#h1", el).innerHTML = logHist(d.umi_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.umi])), { lo: t.min_counts, hi: t.max_counts, xlab: "UMIs per cell" });
-      $("#h2", el).innerHTML = logHist(d.gene_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.gene])), { lo: t.min_genes, hi: t.max_genes, xlab: "Genes per cell" });
+      $("#h1", el).innerHTML = logHist(d.umi_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.umi])), { lo: t.min_counts, hi: t.max_counts, xlab: `UMIs per ${W.unit}` });
+      $("#h2", el).innerHTML = logHist(d.gene_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.gene])), { lo: t.min_genes, hi: t.max_genes, xlab: `Genes per ${W.unit}` });
       // Intent: a linear histogram per group, summed; cells right of the line are removed.
       if (d.mito_edges) $("#h3", el).innerHTML = H.histChart(d.mito_edges, d.mito_edges.slice(1).map((_, i) => Object.values(d.groups).reduce((n, g) => n + g.mito[i], 0)), { lo: 0, hi: t.max_mito, xlab: "Mitochondrial share (%)", digits: 0 });
       const s = d.scatter, w = 540, h = 300, L = 50, B = 30, lx = v => Math.log10(Math.max(v, 1));
@@ -41,18 +46,18 @@
       $("#sc", el).innerHTML = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Genes against UMIs">${s.umi.map((u, i) =>
         `<circle cx="${X(u).toFixed(1)}" cy="${Y(s.gene[i]).toFixed(1)}" r="1.6" fill="${keep(i) ? c.golddk : c.ox}" opacity="${keep(i) ? .45 : .9}"/>`).join("")}
         <line x1="${L}" x2="${w}" y1="${h - B}" y2="${h - B}" stroke="${c.muted}"/><line x1="${L}" x2="${L}" y1="0" y2="${h - B}" stroke="${c.muted}"/>
-        <text x="${w / 2}" y="${h - 6}" text-anchor="middle" class="ax">UMIs per cell (log)</text><text x="14" y="${h / 2}" transform="rotate(-90 14 ${h / 2})" text-anchor="middle" class="ax">Genes per cell (log)</text></svg>
+        <text x="${w / 2}" y="${h - 6}" text-anchor="middle" class="ax">UMIs per ${W.unit} (log)</text><text x="14" y="${h / 2}" transform="rotate(-90 14 ${h / 2})" text-anchor="middle" class="ax">Genes per ${W.unit} (log)</text></svg>
         <div class="legend"><span><i style="background:${c.golddk}"></i>kept</span><span><i style="background:${c.ox}"></i>removed</span></div>`;
     };
     let tm;
     const preview = () => { clearTimeout(tm); tm = setTimeout(async () => {
       const r = await E.call("qc_preview", t);
-      $("#kept", el).innerHTML = `<div class="metric"><span>Cells kept</span><b>${fmt(r.kept)}</b></div><p class="small muted">of ${fmt(r.total)} (${(100 * r.kept / r.total).toFixed(1)}%)</p>
+      $("#kept", el).innerHTML = `<div class="metric"><span>${W.Units} kept</span><b>${fmt(r.kept)}</b></div><p class="small muted">of ${fmt(r.total)} (${(100 * r.kept / r.total).toFixed(1)}%)</p>
         <table class="small"><thead><tr><th>Sample</th><th class="num">Kept</th></tr></thead><tbody>${r.per_sample.map(x =>
           `<tr><td class="small">${esc(x.sample)}</td><td class="num">${(100 * x.kept / x.total).toFixed(0)}%</td></tr>`).join("")}</tbody></table>`; }, 200); };
     $$("input[type=number]", el).forEach(i => i.addEventListener("input", () => { t[i.name] = Number(i.value); draw(); preview(); }));
     $("#apply", el).onclick = e => guarded(e.currentTarget, async () => {
-      await E.call("qc_apply", t); await followTask($("#qprog", el)); await refresh(); toast(`Filter applied: ${fmt(S.an.cells)} cells kept.`, true); H.go("step:cluster");
+      await E.call("qc_apply", t); await followTask($("#qprog", el)); await refresh(); toast(`Filter applied: ${fmt(S.an.cells)} ${W.units} kept.`, true); H.go("step:cluster");
     });
     draw(); preview();
   }
@@ -62,7 +67,7 @@
     await refresh();
     const prev = S.an.cluster_params || {}, cols = S.an.obs_columns.filter(c => !S.an.hidden_columns.includes(c));
     const P = { n_top_genes: 2000, n_pcs: 30, batch_key: cols.includes("batch") ? "batch" : cols[0], harmony: true, n_neighbors: 15, resolution: 0.6, min_dist: 0.3, ...prev };
-    el.innerHTML = lede("Correct for batch, place cells on a map and group them into clusters. Change a setting and run again to compare.") +
+    el.innerHTML = lede(`Correct for batch, place ${W.units} on a map and group them into clusters. Change a setting and run again to compare.`) +
       `<div class="grid g-side"><div><div class="card"><div class="row" style="justify-content:space-between"><div class="label">UMAP</div>
           <div class="row"><label class="small">Colour by <select id="colby" style="width:auto"></select></label><input type="text" id="gq" placeholder="Gene or name…" style="width:180px" list="gl" aria-label="Colour by gene"><datalist id="gl"></datalist></div></div>
           <div class="plotwrap"><canvas class="umap" id="cv"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div>${guide("clusters")}</div></div>
@@ -80,8 +85,8 @@
       const s = await E.call("cluster_summary"), e = await embedding(); um.setXY(e.xy);
       $("#metrics", el).innerHTML = `<div class="metric"><span>Clusters</span><b>${s.clusters.length}</b></div>
         <div class="metric"><span>Batch mixing</span><b>${s.batch_mixing != null ? Math.round(100 * s.batch_mixing) + "%" : "–"}</b></div>
-        <p class="small muted">Batch mixing near 100% means batches are interleaved. Check cell types still separate when you colour by your batch column.</p>
-        ${e.n_total > e.xy.length / 2 ? `<p class="small muted">Showing ${fmt(e.xy.length / 2)} of ${fmt(e.n_total)} cells.</p>` : ""}
+        <p class="small muted">Batch mixing near 100% means batches are interleaved. Check ${W.types} still separate when you colour by your batch column.</p>
+        ${e.n_total > e.xy.length / 2 ? `<p class="small muted">Showing ${fmt(e.xy.length / 2)} of ${fmt(e.n_total)} ${W.units}.</p>` : ""}
         <div class="row" style="margin-top:10px"><button class="btn primary" data-go="step:markers">Explore markers →</button></div>`;
       const opts = ["cluster", ...S.an.obs_columns.filter(c => c !== "cluster")];
       $("#colby", el).innerHTML = opts.map(o => `<option>${esc(o)}</option>`).join(""); await colour("cluster");
@@ -112,7 +117,7 @@
       `<div class="card"><div class="label">Clusters</div><div class="chips" id="chips">${cl.map((c, i) => `<button class="chip" data-c="${c.id}" aria-pressed="false"><i style="background:${P[i % P.length]}"></i>${c.id} <span class="muted small">${fmt(c.cells)}</span></button>`).join("")}</div></div>
       <div class="grid g2" style="margin-top:18px"><div class="card"><div class="label" id="mt">Markers</div><div id="mk"><p class="small muted">Choose a cluster above.</p></div>${guide("markers")}</div>
         <div class="card"><div class="label" id="ut">UMAP</div><div class="plotwrap"><canvas class="umap" id="cv" style="height:440px"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div></div></div>
-      <h2>Dotplot</h2><div class="card"><p class="small muted">Top two markers of every cluster. Dot size is the share of cells expressing the gene; colour is mean expression, scaled per gene.</p>
+      <h2>Dotplot</h2><div class="card"><p class="small muted">Top two markers of every cluster. Dot size is the share of ${W.units} expressing the gene; colour is mean expression, scaled per gene.</p>
         <button class="btn" id="dp">Draw dotplot</button><div id="dot" style="overflow:auto;margin-top:12px"></div>${guide("dotplot")}</div>`;
     const um = new EmbeddingPlot($("#cv", el), $("#tip", el)); um.setXY((await embedding()).xy);
     const colour = async key => { const c = await E.call("colour", { key }); um.labels = null; um.setColour(c); if (key === "cluster") um.centroids(c.codes, c.categories); $("#leg", el).innerHTML = legendFor(c); };
@@ -142,10 +147,10 @@
   async function annotate(el) {
     await refresh();
     const cl = S.an.clusters, P = PALETTE(); let ann = { ...(S.an.annotations || {}) }, sel = cl[0]?.id;
-    el.innerHTML = lede("Give each cluster a cell-type name and a colour. Clusters with the same name are treated as one type. Click a cluster on the map or in the list.") +
-      `<div class="grid g-side"><div class="card"><div class="row" style="justify-content:space-between"><div class="label">Cell types</div><span class="small muted" id="prog"></span></div>
+    el.innerHTML = lede(`Give each cluster a ${W.type} name and a colour. Clusters with the same name are treated as one ${W.type}. Click a cluster on the map or in the list.`) +
+      `<div class="grid g-side"><div class="card"><div class="row" style="justify-content:space-between"><div class="label">${W.Type}s</div><span class="small muted" id="prog"></span></div>
         <div class="plotwrap"><canvas class="umap" id="cv"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div></div>
-      <div><div class="card"><div class="label" id="et">Cluster</div><label class="field"><span>Cell-type name</span><input type="text" id="nm" list="names"></label><datalist id="names"></datalist>
+      <div><div class="card"><div class="label" id="et">Cluster</div><label class="field"><span>${W.Type} name</span><input type="text" id="nm" list="names"></label><datalist id="names"></datalist>
         <div class="field"><span>Colour</span><div class="swatches" id="sw">${P.map(c => `<button style="background:${c}" data-col="${c}" aria-label="Colour ${c}" aria-pressed="false"></button>`).join("")}</div></div>
         <div class="row"><button class="btn primary" id="save">Save</button><button class="btn" id="nextc">Next cluster →</button></div>
         <div class="label" style="margin-top:18px">Top markers</div><div id="hint" class="small"></div></div></div></div>
@@ -192,8 +197,8 @@
     await refresh();
     const cols = S.an.obs_columns.filter(c => !S.an.hidden_columns.includes(c));
     const def = cols.includes("condition") ? "condition" : cols[0];
-    el.innerHTML = lede("See how cell-type proportions differ between groups, then save everything to the run folder.") +
-      (named() ? "" : `<div class="notice warn">No clusters are named yet, so every cell is "Unannotated". Name clusters first for a useful comparison.</div>`) +
+    el.innerHTML = lede(`See how ${W.type} proportions differ between groups, then save everything to the run folder.`) +
+      (named() ? "" : `<div class="notice warn">No clusters are named yet, so every ${W.unit} is "Unannotated". Name clusters first for a useful comparison.</div>`) +
       `<div class="card"><div class="row" style="justify-content:space-between"><div class="label">Composition</div><label class="small">Compare by <select id="grp" style="width:auto">${cols.map(c => `<option ${c === def ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label></div>
         <div id="comp"></div>${guide("composition")}</div>
       <h2>Export</h2><div class="card"><p class="small">Writes the annotated data, composition tables, a marker workbook and a UMAP figure to <code>${esc(E.state().run.dir)}/results</code>. You can also download them here.</p>
@@ -202,9 +207,9 @@
       const g = $("#grp", el).value, d = await E.call("composition", { group: g });
       const rows = d.groups.map((gr, j) => [`${gr} (n=${fmt(d.group_sizes[j])})`, d.types.map((_, i) => d.fractions[i][j])]);
       $("#comp", el).innerHTML = stacked(rows, d.types, d.colors, { w: 760, left: 190, title: "Composition" }) +
-        `<table style="margin-top:16px"><thead><tr><th>Cell type</th>${d.groups.map(x => `<th class="num">${esc(x)}</th>`).join("")}</tr></thead><tbody>
+        `<table style="margin-top:16px"><thead><tr><th>${W.Type}</th>${d.groups.map(x => `<th class="num">${esc(x)}</th>`).join("")}</tr></thead><tbody>
         ${d.types.map((t, i) => `<tr><td><span class="chip" style="cursor:inherit"><i style="background:${d.colors[i]}"></i>${esc(t)}</span></td>${d.groups.map((_, j) => `<td class="num">${(100 * d.fractions[i][j]).toFixed(1)}% <span class="muted small">(${fmt(d.counts[i][j])})</span></td>`).join("")}</tr>`).join("")}</tbody></table>
-        ${d.group_sizes.some(n => n < 50) ? `<div class="notice warn" style="margin-top:12px">At least one group has fewer than 50 cells; treat its proportions as anecdotal.</div>` : ""}
+        ${d.group_sizes.some(n => n < 50) ? `<div class="notice warn" style="margin-top:12px">At least one group has fewer than 50 ${W.units}; treat its proportions as anecdotal.</div>` : ""}
         <p class="small muted" style="margin-top:10px">These are descriptive proportions. Testing a difference needs biological replicates and a compositional method.</p>`;
     }
     async function files() {

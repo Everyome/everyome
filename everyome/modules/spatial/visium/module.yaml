@@ -1,0 +1,103 @@
+# Spatial transcriptomics (10x Visium): reads Space Ranger's output, then a live session filters spots, clusters them,
+# finds marker and spatially variable genes, shows everything on the tissue, and names and compares regions.
+spec: 1
+id: spatial.visium
+name: Spatial transcriptomics (10x Visium)
+suite: spatial
+version: 0.1.0
+summary: >
+  Explores 10x Visium sections from Space Ranger's output folders: see every spot
+  on the tissue image, filter poor spots, group spots into tissue regions, find
+  their marker genes and the genes whose expression follows the tissue's layout,
+  name the regions, and compare them between conditions.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Ståhl P.L. et al. (2016). Visualization and analysis of gene expression in tissue sections by spatial transcriptomics. Science 353:78–82."
+    url: https://doi.org/10.1126/science.aaf2403
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+  - text: "Korsunsky I. et al. (2019). Fast, sensitive and accurate integration of single-cell data with Harmony. Nature Methods 16:1289–1296."
+    url: https://doi.org/10.1038/s41592-019-0619-0
+  - text: "Traag V.A., Waltman L., van Eck N.J. (2019). From Louvain to Leiden: guaranteeing well-connected communities. Scientific Reports 9:5233."
+    url: https://doi.org/10.1038/s41598-019-41695-z
+  - text: "Moran P.A.P. (1950). Notes on continuous stochastic phenomena. Biometrika 37:17–23."
+    url: https://doi.org/10.1093/biomet/37.1-2.17
+  - text: "Palla G. et al. (2022). Squidpy: a scalable framework for spatial omics analysis. Nature Methods 19:171–178."
+    url: https://doi.org/10.1038/s41592-021-01358-2
+kind: [interactive]
+requires: [scanpy, anndata, harmonypy, leidenalg, igraph, pandas, numpy, scipy, matplotlib, openpyxl, PIL]
+methods: everyome.modules.spatial.visium.methods:methods
+
+inputs:
+  - id: data_dir
+    label: Folder with Space Ranger results
+    type: folder
+    help: "Used only to fill in the table below: each sample's Space Ranger output folder ('outs') inside it is found."
+    demo: "."
+  - id: samples
+    label: Sections
+    type: table
+    required: true
+    help: >
+      One row per tissue section: its name, Space Ranger's 'outs' folder for it, its condition (what you
+      will compare) and, if sections were prepared on different days or slides, its batch.
+    columns:
+      - {id: sample, label: Section, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: outs, label: Space Ranger 'outs' folder, wide: true}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: batch, label: Batch, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: data_dir, label: Find sections in the folder}
+
+params:
+  - id: mito_genes
+    label: Mitochondrial genes
+    type: text
+    default: "^(MT-|mt-)"
+    help: "Gene names that count as mitochondrial (a regular expression). MT- for human, mt- for mouse; leave empty if your genome has none named this way."
+
+batch:
+  resources: {session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.spatial.visium.helpers:scan
+
+interactive:
+  engine: everyome.modules.spatial.visium.engine:Engine
+  ui: [../../singlecell/shared/cells_ui.js, ui.js]
+  steps:
+    - {id: load, title: Load the sections}
+    - {id: qc, title: Filter spots}
+    - {id: cluster, title: Find tissue regions}
+    - {id: tissue, title: See it on the tissue}
+    - {id: markers, title: Explore markers}
+    - {id: annotate, title: Name regions}
+    - {id: compare, title: Compare and export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/spatial_playground.js]
+    object: SpatialPlayground
+    lede: >
+      What a Visium spot really measures, why spots at a boundary look mixed,
+      and how Moran's I tells a tissue pattern from noise.
+    intro:
+      - "A simulated tissue with a layered structure and one patch. Change the spot size, the sequencing depth and how sharp the pattern is, and see what the spots record and how strongly the gene scores as spatially variable."
+    caveats:
+      - "Spots are drawn on a square grid here; Visium's are hexagonal (six neighbours each), which the module uses."
+      - "Each spot simply averages the cells under it. Real spots also pick up RNA that diffused from nearby."
+  guides:
+    load: docs/guides/load.md
+    cells_per_sample: docs/guides/spots_per_section.md
+    filter_cells: ../../singlecell/shared/guides/filter_cells.md
+    mito: ../../singlecell/shared/guides/mito.md
+    clusters: ../../singlecell/shared/guides/clusters.md
+    tissue: docs/guides/tissue.md
+    spatial_genes: docs/guides/spatial_genes.md
+    markers: docs/guides/markers.md
+    dotplot: ../../singlecell/shared/guides/dotplot.md
+    composition: ../../singlecell/shared/guides/composition.md
+
+demo:
+  build: everyome.modules.spatial.visium.demo_data:build

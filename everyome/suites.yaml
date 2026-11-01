@@ -40,7 +40,7 @@ suites:
     name: Spatial
     blurb: Where in the tissue genes are expressed.
     tools:
-      - {id: spatial.spots, name: Spot-based spatial (Visium-style)}
+      - {id: spatial.spots, name: Spatial transcriptomics (10x Visium), module: spatial.visium}
       - {id: spatial.probes, name: Probe-based imaging}
       - {id: spatial.singlecell, name: Single-cell spatial}
   - id: protein
