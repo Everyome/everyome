@@ -34,6 +34,15 @@ current when decisions change.
 
 The source for porting is SPLiTscape in `~/Desktop/helomics` (`app/splitscape_app/`).
 
+## Learning layer (every module)
+
+A module is listed only with a manual (`learn.manual`) and example data
+(`demo.data` or `demo.build`). Each also has a playground (`learn.playground`;
+new ones use `Everyome.makePlayground({controls, defaults, presets, render})`) and
+"how to read this" guides (`learn.guides: {name: docs/guides/<name>.md}`) placed
+in its views with `H.guide("name")`. `tests/test_learning.py` checks every module
+has all of them and that views and guides match.
+
 ## Writing a module
 
 Copy `everyome/modules/tutorial/sequence_summary/`. Stage commands are bash lines

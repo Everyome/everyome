@@ -272,3 +272,13 @@ details.card.fold[open]>summary{margin-bottom:12px}
 .tablewrap td input.wide{min-width:300px}
 .warnv{color:var(--ox);font-weight:600}
 td.num,th.num{white-space:nowrap}
+
+/* ---- "how to read this" guides and builder playgrounds ---- */
+details.guide{margin:10px 0 0;border-left:3px solid var(--gold);background:var(--tinta);padding:6px 12px}
+details.guide>summary{cursor:pointer;font:400 10.5px var(--label);letter-spacing:.18em;text-transform:uppercase;color:var(--golddk);list-style:none}
+details.guide>summary::before{content:"? ";font-weight:700}
+details.guide .manual{font-size:14.5px;margin-top:6px}
+details.guide .manual p,details.guide .manual li{max-width:none}
+.pgp{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;margin-top:22px;align-items:start}
+.pgp-panels{display:grid;gap:18px;min-width:0}
+@media (max-width:1100px){.pgp{grid-template-columns:1fr}}

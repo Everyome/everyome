@@ -3,7 +3,7 @@
 "use strict";
 (() => {
   const E = window.Everyome, H = E.helpers;
-  const { $, $$, esc, fmt, fmtSize, toast, guarded, seqMap } = H;
+  const { $, $$, esc, fmt, fmtSize, toast, guarded, seqMap, guide } = H;
   const lede = t => `<p class="lede">${t}</p>`;
   let info = null;
   const load = async () => (info = await E.call("sequence_info"));
@@ -18,7 +18,7 @@
     const t = info.target || {};
     el.innerHTML = lede("Here is your sequence. Choose the region the PCR product must cover; the primers are placed either side of it.") +
       `<div class="grid g-side"><div class="card"><div class="label">${info.circular ? "Plasmid map" : "Sequence map"}</div><div id="map">${mapOf()}</div>
-          <p class="small muted">Enzymes shown cut only once. Hover over a feature for its position.</p></div>
+          <p class="small muted">Enzymes shown cut only once. Hover over a feature for its position.</p>${guide("map")}</div>
         <div><div class="card"><div class="label">About the sequence</div>
           <div class="metric"><span>Length</span><b>${fmt(info.length)} bp</b></div><div class="metric"><span>GC content</span><b>${info.gc}%</b></div>
           <div class="metric"><span>Shape</span><b>${info.circular ? "circular" : "linear"}</b></div>
@@ -45,7 +45,7 @@
     el.innerHTML = lede("Primer3 suggests pairs that flank your region, best first. Change the settings on the run's settings page; this page uses them.") +
       `<div class="row" style="margin-bottom:14px"><button class="btn primary" id="go">${info.pairs.length ? "Design again" : "Design primers"}</button>
         <span class="small muted">${info.target ? `Region ${info.target.start}–${info.target.end}${info.target.label ? " (" + esc(info.target.label) + ")" : ""}` : "No region chosen: anywhere in the sequence"}.</span></div>
-      <div id="why"></div><div class="card"><div class="label">Suggested pairs</div><div id="tbl" style="overflow-x:auto"></div></div>
+      <div id="why"></div><div class="card"><div class="label">Suggested pairs</div><div id="tbl" style="overflow-x:auto"></div>${guide("pairs", { open: true })}</div>
       <div class="card" style="margin-top:18px;max-width:720px"><div class="label">On the map</div><div id="map"></div></div>
       <div class="row" style="margin-top:18px"><button class="btn primary" data-go="step:export">Export →</button></div>`;
     let pick = info.chosen || 1;
@@ -70,7 +70,7 @@
       `<div class="card"><div class="grid g2"><label class="field"><span>Forward primer (5'→3')</span><input type="text" id="l" class="mono"></label>
         <label class="field"><span>Reverse primer (5'→3', optional)</span><input type="text" id="r" class="mono"></label></div>
         <label class="field" style="max-width:320px"><span>Name</span><input type="text" id="nm" value="my primers"></label>
-        <div class="row"><button class="btn primary" id="go">Check</button></div></div><div id="out"></div>`;
+        <div class="row"><button class="btn primary" id="go">Check</button></div>${guide("check")}</div><div id="out"></div>`;
     const dg = v => `<span class="${v < -9 ? "warnv" : ""}">${v} kcal/mol</span>`;
     $("#go", el).onclick = e => guarded(e.currentTarget, async () => {
       const r = await E.call("check_primers", { left: $("#l", el).value, right: $("#r", el).value, name: $("#nm", el).value });
@@ -95,7 +95,7 @@
     el.innerHTML = lede("Choose the pairs to order. Everyome saves every suggested pair, an order sheet and a GenBank file with the primers added as features.") +
       `<div class="card"><div class="label">Pairs to order</div><div class="chips">${info.pairs.map(p => `<button class="chip" data-n="${p.n}" aria-pressed="${p.n === (info.chosen || 1)}">Pair ${p.n} · ${p.product} bp</button>`).join("")}</div>
         <div class="row" style="margin-top:14px"><label class="field" style="margin:0;max-width:260px"><span>Name primers as</span><input type="text" id="pre" value="${esc(info.name)}"></label>
-        <button class="btn primary" id="go">Export</button></div><div id="files"></div></div>
+        <button class="btn primary" id="go">Export</button></div><div id="files"></div>${guide("order")}</div>
       <div class="row" style="margin-top:18px"><button class="btn" data-go="record">Record and write-up →</button></div>`;
     el.addEventListener("click", e => { const b = e.target.closest(".chip[data-n]"); if (b) b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); });
     async function files() {

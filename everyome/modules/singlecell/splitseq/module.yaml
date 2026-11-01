@@ -138,6 +138,18 @@ interactive:
 
 learn:
   manual: docs/manual.md
+  guides:
+    read_pairs: docs/guides/read_pairs.md
+    read_regions: docs/guides/read_regions.md
+    saturation: docs/guides/saturation.md
+    knee: docs/guides/knee.md
+    combine: docs/guides/combine.md
+    cells_per_sample: docs/guides/cells_per_sample.md
+    filter_cells: docs/guides/filter_cells.md
+    clusters: docs/guides/clusters.md
+    markers: docs/guides/markers.md
+    dotplot: docs/guides/dotplot.md
+    composition: docs/guides/composition.md
   playground:
     scripts: [docs/playground/umap-js.min.js, docs/playground/play_core.js, docs/playground/play_ui.js]
     object: Playground

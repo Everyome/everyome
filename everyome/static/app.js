@@ -405,6 +405,7 @@ async function followTask(box) {
 // What a module's ui.js receives.
 const MODULE_VIEWS = {};
 window.Everyome = {
+  makePlayground: (...a) => makePlayground(...a),
   registerViews(moduleId, views) { MODULE_VIEWS[moduleId] = views; },
   call: (method, body = {}) => api("/api/s/call/" + method, { method: "POST", body }),
   status: () => api("/api/s/status"),
@@ -413,10 +414,44 @@ window.Everyome = {
   upload: async file => { const f = new FormData(); f.append("file", file);
     const r = await fetch("/api/run/upload", { method: "POST", body: f }), d = await r.json(); if (!r.ok) throw new Error(d.detail || "Upload failed."); return d; },
   downloadUrl: name => "/api/s/download?name=" + encodeURIComponent(name),
-  helpers: { $, $$, esc, fmt, fmtSize, sleep, toast, guarded, followTask, barChart, histChart, logHist, logLine, stacked, dotplot, legendFor, themed, seqMap,
+  helpers: { $, $$, esc, fmt, fmtSize, sleep, toast, guarded, followTask, barChart, histChart, logHist, logLine, stacked, dotplot, legendFor, themed, seqMap, guide, md,
     EmbeddingPlot, hexRgb: h => hexRgb(h), COL: () => COL, PALETTE: () => PALETTE, every, go },
 };
+// "How to read this" guides: short Markdown notes a module places next to its charts and tables.
+const GUIDES = {};
+async function loadGuides(m) { if (!GUIDES[m.id]) GUIDES[m.id] = m.guides?.length ? await api(`/api/modules/${encodeURIComponent(m.id)}/guides`) : {}; }
+function guide(key, { open = false, title = "How to read this" } = {}) {
+  const g = GUIDES[curModule()?.id]?.[key];
+  return g ? `<details class="guide" ${open ? "open" : ""}><summary>${esc(title)}</summary><div class="manual">${md(g)}</div></details>` : "";
+}
+
+// A playground from controls, presets and a render function: the shared builder module playgrounds use.
+// controls: [{group, items: [{key, label, type: range|select, min, max, step, options: [[value, label]], help}]}]
+// presets: [[title, {changes}, what to notice]]; render(state, panelElement) draws the results.
+function makePlayground({ controls, defaults, presets = [], render, panelHtml = "" }) {
+  let S = { ...defaults }, root = null, timer = null;
+  const ctl = c => c.type === "select"
+    ? `<label class="ctl"><span class="lab">${esc(c.label)}</span><select data-key="${c.key}">${c.options.map(([v, l]) => `<option value="${esc(v)}" ${String(S[c.key]) === String(v) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>${c.help ? `<span class="help">${esc(c.help)}</span>` : ""}</label>`
+    : `<label class="ctl"><span class="lab">${esc(c.label)}<output data-out="${c.key}">${S[c.key]}</output></span><input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${S[c.key]}">${c.help ? `<span class="help">${esc(c.help)}</span>` : ""}</label>`;
+  const run = () => { clearTimeout(timer); timer = setTimeout(() => { if (root?.isConnected) render(S, $(".pgp-panels", root)); }, 60); };
+  const set = p => { Object.assign(S, p); $$("[data-key]", root).forEach(i => { i.value = S[i.dataset.key]; }); $$("[data-out]", root).forEach(o => o.textContent = S[o.dataset.out]); run(); };
+  return {
+    mount(el) {
+      root = el;
+      el.innerHTML = `<div class="pgp"><div class="pg-controls">${controls.map(g => `<section class="pg-card"><div class="label">${esc(g.group)}</div>${g.items.map(ctl).join("")}</section>`).join("")}
+        <button type="button" class="pg-reset" data-reset>Reset all settings</button></div><div class="pgp-panels">${panelHtml}</div></div>`;
+      el.addEventListener("input", e => { const k = e.target.dataset.key; if (!k) return; S[k] = e.target.type === "range" ? Number(e.target.value) : e.target.value;
+        const o = $(`[data-out="${k}"]`, el); if (o) o.textContent = S[k]; run(); });
+      el.addEventListener("click", e => { if (e.target.closest("[data-reset]")) set({ ...defaults }); });
+      run();
+    },
+    presetsHtml: () => `<ol class="tries">${presets.map(([t, , d], i) => `<li><button type="button" data-preset="${i}">${esc(t)}</button><span>${esc(d)}</span></li>`).join("")}</ol>`,
+    applyPreset(i) { set({ ...defaults, ...presets[i][1] }); root?.scrollIntoView({ behavior: "smooth", block: "start" }); },
+  };
+}
+
 async function loadModuleUi(m) {
+  await loadGuides(m);
   if (!m.has_ui || MODULE_VIEWS[m.id]) return;
   await new Promise((ok, bad) => { const s = document.createElement("script"); s.src = `/api/modules/${encodeURIComponent(m.id)}/ui.js`;
     s.onload = ok; s.onerror = () => bad(new Error("This module's views could not be loaded.")); document.head.appendChild(s); });

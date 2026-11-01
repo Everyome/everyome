@@ -3,7 +3,7 @@
 "use strict";
 (() => {
   const E = window.Everyome, H = E.helpers;
-  const { $, $$, esc, fmt, fmtSize, toast, guarded, followTask, barChart } = H;
+  const { $, $$, esc, fmt, fmtSize, toast, guarded, followTask, barChart, guide } = H;
   const COL = () => H.COL(), PAL = () => H.PALETTE();
   const S = { an: null, padj: 0.05, lfc: 0 };
   const refresh = async () => (S.an = await E.status());
@@ -44,7 +44,7 @@
         ${q.multiqc ? `<p class="small">nf-core/rnaseq's MultiQC report brings together every quality check: read quality, trimming, alignment rates, strandedness and more.</p>
           <a class="btn primary small" href="/api/run/file?path=${encodeURIComponent(q.multiqc)}" target="_blank" rel="noopener">Open the MultiQC report</a>`
           : `<p class="small muted">No MultiQC report found.</p>`}
-        ${st.demo ? `<p class="small muted" style="margin-top:10px">On the demo cluster this is a placeholder.</p>` : ""}</div></div>`;
+        ${st.demo ? `<p class="small muted" style="margin-top:10px">On the demo cluster this is a placeholder.</p>` : ""}</div></div>${guide("pipeline_report")}`;
   }
 
   // ---------------------------------------------------------------- check samples
@@ -55,14 +55,14 @@
       (o.missing.length ? `<div class="notice warn">These samples are in your table but not in the count table (the pipeline may have dropped them for too few reads): ${o.missing.map(esc).join(", ")}.</div>` : "") +
       `<div class="grid g2"><div class="card"><div class="label">Samples</div><table><thead><tr><th>Sample</th><th>Condition</th><th class="num">Reads counted</th><th class="num">Genes detected</th></tr></thead><tbody>
         ${o.samples.map(s => `<tr><td>${esc(s.sample)}</td><td><span class="chip" style="cursor:inherit"><i style="background:${condColour(conds, s.condition)}"></i>${esc(s.condition)}</span></td><td class="num">${fmt(s.reads)}</td><td class="num">${fmt(s.genes)}</td></tr>`).join("")}</tbody></table>
-        <p class="small muted" style="margin-top:8px">${fmt(o.genes)} genes in <code>${esc(o.counts_file)}</code>.</p></div>
+        <p class="small muted" style="margin-top:8px">${fmt(o.genes)} genes in <code>${esc(o.counts_file)}</code>.</p>${guide("samples")}</div>
       <div class="card"><div class="label">Principal components (${p.n_genes} most variable genes)</div>
         ${scatter(p.samples.map((s, i) => ({ x: p.pc1[i], y: p.pc2[i], c: condColour(conds, p.conditions[i]), r: 6, t: `${s} (${p.conditions[i]})` })),
           { xlab: `PC1 (${p.var[0]}%)`, ylab: `PC2 (${p.var[1] ?? 0}%)`, h: 300, label: "Principal component plot of samples" })}
         ${legend(conds.map(k => [k, condColour(conds, k)]))}
-        <p class="small muted">Samples of one condition should group. A sample on its own may be mislabelled or failed.</p></div></div>
+        <p class="small muted">Samples of one condition should group. A sample on its own may be mislabelled or failed.</p>${guide("pca", { open: true })}</div></div>
       <div class="card" style="margin-top:18px"><div class="label">Sample correlation</div><div id="heat" style="overflow:auto"></div>
-        <p class="small muted">Correlation of normalised, log-scaled counts. Darker means more alike; replicates should be darkest with each other.</p></div>
+        <p class="small muted">Correlation of normalised, log-scaled counts. Darker means more alike; replicates should be darkest with each other.</p>${guide("correlation")}</div>
       <div class="row" style="margin-top:18px"><button class="btn primary" data-go="step:de">Compare conditions →</button></div>`;
     const n = p.samples.length, cw = 34, left = 110, top = 100, mix = t => { const a = H.hexRgb(c.parch), b = H.hexRgb(c.ox); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t))})`; };
     const lo = Math.min(...p.corr.flat()), hi = 1;
@@ -87,7 +87,7 @@
           <label class="field"><span>Significance threshold (adjusted P)</span><input type="number" id="alpha" step="0.01" min="0.001" max="0.5" value="${prev.alpha ?? 0.05}"><small>Also used to tune DESeq2's independent filtering.</small></label>
           <label class="field"><span>Minimum total count</span><input type="number" id="minc" min="0" value="${prev.min_count ?? 10}"><small>Genes with fewer reads than this across the compared samples are left out.</small></label></div>
         <div class="row" style="margin-top:6px"><button class="btn primary" id="run">${prev.test ? "Compare again" : "Compare"}</button></div><div id="prog"></div></div>
-        <div class="card"><div class="label">Result</div><div id="sum">${prev.test ? summary(prev) : '<p class="small muted">Not compared yet.</p>'}</div></div></div>`;
+        <div class="card"><div class="label">Result</div><div id="sum">${prev.test ? summary(prev) : '<p class="small muted">Not compared yet.</p>'}</div>${guide("de_summary")}</div></div>`;
     $("#run", el).onclick = e => guarded(e.currentTarget, async () => {
       await E.call("run_de", { test: $("#test", el).value, reference: $("#ref", el).value, alpha: Number($("#alpha", el).value), min_count: Number($("#minc", el).value) });
       await followTask($("#prog", el)); await refresh(); $("#sum", el).innerHTML = summary(S.an.de); toast("Comparison finished.", true);
@@ -105,11 +105,11 @@
     el.innerHTML = lede(`${esc(d.test)} compared with ${esc(d.reference)}. Click a gene in the plot or table to see its counts in each sample.`) +
       `<div class="card"><div class="row"><label class="small">Adjusted P below <input type="number" id="padj" step="0.01" min="0.0001" max="1" value="${S.padj}" style="width:90px"></label>
         <label class="small">and |log2 fold change| at least <input type="number" id="lfc" step="0.1" min="0" value="${S.lfc}" style="width:80px"></label><span id="counts" class="small"></span></div></div>
-      <div class="grid g2" style="margin-top:18px"><div class="card"><div class="label">Volcano plot</div><div id="vol"></div></div>
-        <div class="card"><div class="label">MA plot</div><div id="ma"></div><p class="small muted">Fold change against average expression. Large changes at low expression are often noise.</p></div></div>
+      <div class="grid g2" style="margin-top:18px"><div class="card"><div class="label">Volcano plot</div><div id="vol"></div>${guide("volcano", { open: true })}</div>
+        <div class="card"><div class="label">MA plot</div><div id="ma"></div><p class="small muted">Fold change against average expression. Large changes at low expression are often noise.</p>${guide("ma_plot")}</div></div>
       <div class="grid g-side" style="margin-top:18px"><div class="card"><div class="row" style="justify-content:space-between"><div class="label">Genes</div>
           <input type="text" id="q" placeholder="Search a gene…" style="width:200px" aria-label="Search a gene"></div><div id="tbl"></div></div>
-        <div class="card"><div class="label" id="gt">Gene</div><div id="gene"><p class="small muted">Click a gene.</p></div></div></div>`;
+        <div class="card"><div class="label" id="gt">Gene</div><div id="gene"><p class="small muted">Click a gene.</p></div>${guide("gene_counts")}</div></div>`;
     const c = COL();
     async function draw() {
       S.padj = Number($("#padj", el).value) || 0.05; S.lfc = Number($("#lfc", el).value) || 0;

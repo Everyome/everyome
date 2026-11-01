@@ -321,6 +321,26 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Phase 6 notes (2026-10-31)
+
+- **Guides:** 26 short "how to read this" notes (tutorial 3, SPLiT-seq 11, bulk
+  RNA 8, primers 4), each a fold-out next to the chart or table it explains: what
+  it shows, what good looks like, what to do if it does not.
+- **Playground builder** (`Everyome.makePlayground`): controls, presets and a
+  render function; new playgrounds for bulk RNA (a simulated experiment scored
+  against the truth: power, false discoveries, misses; moderated t-test as a
+  stand-in for DESeq2), primers (melting temperature with the same
+  nearest-neighbour model as Primer3, checked to match it exactly) and the
+  tutorial (why short sequences give noisy GC; mixed organisms).
+- **Catalogue rule:** a module without a manual and example data is not listed.
+  A test keeps every module complete (manual, example data, playground, guides,
+  and views and guides that match).
+- Checked in the browser: each playground's scenarios behave as their
+  descriptions say. Two were first wrong and fixed: the bulk RNA playground's
+  test was too weak and its genes too lowly expressed (three replicates found
+  nothing); the primer playground used a textbook Tm formula about 8 °C below
+  Primer3.
+
 ### Phase 5 notes (2026-10-31)
 
 - **Local modules run in the app.** `kind: [local]` modules run their engine in

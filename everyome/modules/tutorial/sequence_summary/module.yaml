@@ -62,6 +62,20 @@ interactive:
 
 learn:
   manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/gc_playground.js]
+    object: GCPlayground
+    lede: >
+      Why short sequences give noisy GC values, and what a second organism looks
+      like in a GC histogram.
+    intro:
+      - "Simulated sequences with a known GC content. Change their length, how many there are, and whether some come from a second organism, and watch the histogram."
+    caveats:
+      - "Bases are drawn independently; real genomes have local GC structure (isochores, CpG islands), which widens the peak."
+  guides:
+    gc_histogram: docs/guides/gc_histogram.md
+    lengths: docs/guides/lengths.md
+    summary: docs/guides/summary.md
 
 demo:
   data: demo

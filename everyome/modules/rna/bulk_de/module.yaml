@@ -79,6 +79,28 @@ interactive:
 
 learn:
   manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/de_playground.js]
+    object: DEPlayground
+    lede: >
+      A simulated experiment where the truth is known, so you can see how replicates,
+      effect size, noise and sequencing depth change which genes a test finds.
+    intro:
+      - "2,000 genes, some of which truly change between two conditions. Each setting changes the experiment or the threshold, and the panels score the result against the truth: how many changed genes were found, how many calls were false, and how many were missed."
+      - "Pick a scenario below or move the sliders. Everything runs in your browser."
+    caveats:
+      - "The test here is a moderated t-test on log counts: each gene's variability is pulled towards the typical gene's, as limma does. DESeq2 does the same in spirit but models counts with a negative binomial, so exact numbers differ; the direction of every effect is the same."
+      - "Counts are simulated with log-normal biological variability and Poisson sampling; real data have extra structure (batches, outliers, correlated genes)."
+      - "Numbers are for intuition. Do not use them to plan sample sizes; use a proper power calculation for that."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    samples: docs/guides/samples.md
+    pca: docs/guides/pca.md
+    correlation: docs/guides/correlation.md
+    de_summary: docs/guides/de_summary.md
+    volcano: docs/guides/volcano.md
+    ma_plot: docs/guides/ma_plot.md
+    gene_counts: docs/guides/gene_counts.md
 
 demo:
   build: everyome.modules.rna.bulk_de.demo_data:build

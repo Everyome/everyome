@@ -104,6 +104,7 @@ class Manifest:
                 "stages": [{"id": s.id, "name": s.name, "title": s.title} for s in self.stages],
                 "steps": [s.__dict__ for s in self.steps], "has_manual": bool(self.learn.get("manual")), "has_ui": bool(self.ui),
                 "helpers": sorted(self.helpers), "has_report": bool(self.report), "requires": self.requires,
+                "guides": sorted((self.learn.get("guides") or {})),
                 "batch_engine": "nextflow" if self.nextflow else ("staged" if self.stages else ""),
                 "pipeline": {k: self.nextflow.get(k) for k in ("pipeline", "revision", "profile")} if self.nextflow else None,
                 "playground": ({**{k: v for k, v in self.learn["playground"].items() if k != "scripts"},
@@ -186,6 +187,12 @@ def load(path: Path) -> Manifest:
     for k in ("manual",):
         if m.learn.get(k) and not (m.dir / m.learn[k]).exists():
             raise ManifestError(f"{path}: learn.{k} points to a missing file")
+    guides = m.learn.get("guides") or {}
+    if not isinstance(guides, dict):
+        raise ManifestError(f"{path}: learn.guides should map a short name to a Markdown file")
+    for key, f in guides.items():
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", str(key)) or not (m.dir / f).is_file():
+            raise ManifestError(f"{path}: guide {key} needs a lower-case name and an existing file ({f})")
     pg = m.learn.get("playground")
     if pg:
         if not pg.get("scripts") or not pg.get("object"):

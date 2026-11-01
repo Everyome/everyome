@@ -24,7 +24,8 @@ cluster or the built-in demo cluster, create projects, choose an analysis, fill
 in its settings, check the exact job scripts, submit them, follow the jobs, and
 explore the results in a live session. Every run then gets a lab-book
 protocol, a draft methods section to edit, its references, and a bundle that
-repeats it exactly.
+repeats it exactly. Every analysis comes with a manual, a playground to try it on
+toy data, and "how to read this" guides next to its charts.
 
 Modules so far:
 - **SPLiT-seq (SPLiTscape)**, single cell: SPLiT-seq sublibraries from raw reads

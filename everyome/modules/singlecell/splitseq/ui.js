@@ -4,7 +4,7 @@
 "use strict";
 (() => {
   const E = window.Everyome, H = E.helpers;
-  const { $, $$, esc, fmt, fmtSize, toast, guarded, followTask, barChart, logHist, logLine, stacked, dotplot, legendFor, EmbeddingPlot } = H;
+  const { $, $$, esc, fmt, fmtSize, toast, guarded, followTask, barChart, logHist, logLine, stacked, dotplot, legendFor, EmbeddingPlot, guide } = H;
   const COL = () => H.COL(), PALETTE = () => H.PALETTE();
   const ORDER = ["merged", "labelled", "filtered", "clustered", "exported"];
   const S = { an: null, emb: null };
@@ -22,14 +22,14 @@
     el.innerHTML = `<h2>Quality checks</h2><div class="notice">Review these before starting the live session.</div>
       <div class="grid g2">
       <div class="card"><div class="label">Read pairs per run</div>${q.reads ? barChart(q.reads.map(r => [`${r.sublib} · ${r.run}`, r.reads]), { label: v => (v / 1e6).toFixed(1) + " M" }) : "—"}
-        <p class="small muted">Runs of the same sublibrary should scale with sequencing depth.</p></div>
+        <p class="small muted">Runs of the same sublibrary should scale with sequencing depth.</p>${guide("read_pairs")}</div>
       <div class="card"><div class="label">Where reads land</div>${q.regions ? stacked(reg.map(s => [s, cats.map(k => +(q.regions.find(r => r.sublib === s && r.locus_function === k)?.fraction || 0))]), cats, regCols) : "—"}
-        <p class="small muted">Coding plus UTR is the usable mRNA signal; sublibraries should look alike.</p></div>
+        <p class="small muted">Coding plus UTR is the usable mRNA signal; sublibraries should look alike.</p>${guide("read_regions")}</div>
       <div class="card"><div class="label">Cells and saturation</div>${q.dge ? `<table><thead><tr><th>Sublibrary</th><th class="num">Cells</th><th class="num">UMIs</th><th class="num">Reads per UMI</th></tr></thead><tbody>
         ${q.dge.map(r => `<tr><td>${esc(r.sublib)}</td><td class="num">${fmt(r.cells)}</td><td class="num">${fmt(r.umis)}</td><td class="num">${r.reads_per_umi}</td></tr>`).join("")}</tbody></table>` : "—"}
-        <p class="small muted" style="margin-top:8px">Reads per UMI above about 10 means more sequencing would add few new molecules.</p></div>
+        <p class="small muted" style="margin-top:8px">Reads per UMI above about 10 means more sequencing would add few new molecules.</p>${guide("saturation")}</div>
       <div class="card"><div class="label">Knee plot</div>${q.knee ? logLine(q.knee, { xlab: "Barcode rank", ylab: "Reads per barcode" }) : "—"}
-        <p class="small muted">Real cells form the plateau on the left; the drop marks where background begins.</p></div></div>`;
+        <p class="small muted">Real cells form the plateau on the left; the drop marks where background begins.</p>${guide("knee")}</div></div>`;
   }
 
   // ---------------------------------------------------------------- 09–10 merge and label
@@ -42,7 +42,7 @@
         ${atlas ? `<label class="row small" style="margin-top:12px"><input type="checkbox" id="withatlas" ${withAtlas ? "checked" : ""}> Also merge in <span class="mono">${esc(atlas)}</span></label>
           <p class="small muted">Optional. Leave it unticked to analyse your sublibraries on their own.</p>`
           : `<p class="small muted" style="margin-top:12px">No atlas or other dataset was given, so your sublibraries are analysed on their own. That is all you need to build a first atlas.</p>`}
-        <div id="mprog"></div><div id="msum"></div></div>
+        <div id="mprog"></div><div id="msum"></div>${guide("combine")}</div>
       <h2>2 · Describe each library</h2><div id="labels"></div>`;
     const showSum = () => { const m = S.an.merged || (S.an.cells ? { cells: S.an.cells, genes: S.an.genes } : null); if (reached("merged") && m)
       $("#msum", el).innerHTML = `<p class="small" style="margin-top:12px">Combined: <b>${fmt(m.cells)}</b> cells × <b>${fmt(m.genes)}</b> genes${m.atlas_cells ? ` (${fmt(m.experiment_cells)} yours, ${fmt(m.atlas_cells)} merged in)` : " from your sublibraries"}.</p>`; };
@@ -89,7 +89,7 @@
       async function counts() {
         const u = await E.call("unique_counts");
         $("#ucounts", el).innerHTML = `<h2>Cells per sample</h2><p class="small muted">Check each sample has roughly the number of cells you expect. A sample far below the rest is easiest to catch here.</p>
-          ${barChart(Object.entries(u), { w: 640, title: "Cells per sample" })}<div class="row" style="margin-top:12px"><button class="btn primary" data-go="step:qc">Continue to filtering →</button></div>`;
+          ${barChart(Object.entries(u), { w: 640, title: "Cells per sample" })}${guide("cells_per_sample")}<div class="row" style="margin-top:12px"><button class="btn primary" data-go="step:qc">Continue to filtering →</button></div>`;
       }
       draw();
     }
@@ -103,7 +103,7 @@
     $("#loading", el).remove();
     el.insertAdjacentHTML("beforeend", `<div class="grid g-side"><div><div class="card"><div class="label">UMIs per cell</div><div id="h1"></div></div>
         <div class="card" style="margin-top:18px"><div class="label">Genes per cell</div><div id="h2"></div></div>
-        <div class="card" style="margin-top:18px"><div class="label">Genes against UMIs (sample of cells)</div><div id="sc"></div></div></div>
+        <div class="card" style="margin-top:18px"><div class="label">Genes against UMIs (sample of cells)</div><div id="sc"></div>${guide("filter_cells", { open: true })}</div></div>
       <div><div class="card"><div class="label">Thresholds</div>
         ${[["min_counts", "Minimum UMIs"], ["max_counts", "Maximum UMIs"], ["min_genes", "Minimum genes"], ["max_genes", "Maximum genes"]].map(([k, l]) =>
           `<label class="field"><span>${l}</span><input type="number" min="0" name="${k}" value="${t[k]}"></label>`).join("")}
@@ -142,7 +142,7 @@
     el.innerHTML = lede("Correct for batch, place cells on a map and group them into clusters. Change a setting and run again to compare.") +
       `<div class="grid g-side"><div><div class="card"><div class="row" style="justify-content:space-between"><div class="label">UMAP</div>
           <div class="row"><label class="small">Colour by <select id="colby" style="width:auto"></select></label><input type="text" id="gq" placeholder="Gene or name…" style="width:180px" list="gl" aria-label="Colour by gene"><datalist id="gl"></datalist></div></div>
-          <div class="plotwrap"><canvas class="umap" id="cv"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div></div></div>
+          <div class="plotwrap"><canvas class="umap" id="cv"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div>${guide("clusters")}</div></div>
         <div><div class="card"><div class="label">Settings</div>
           ${[["n_top_genes", "Highly variable genes", 200, 5000, 100], ["n_pcs", "Principal components", 5, 50, 1], ["n_neighbors", "Neighbours", 5, 60, 1], ["resolution", "Resolution", 0.1, 4, 0.1], ["min_dist", "UMAP spacing", 0.05, 0.9, 0.05]]
             .map(([k, l, a, b, s]) => `<label class="field"><span>${l} <output class="mono" style="float:right" data-o="${k}">${P[k]}</output></span><input type="range" name="${k}" min="${a}" max="${b}" step="${s}" value="${P[k]}"></label>`).join("")}
@@ -187,10 +187,10 @@
     const cl = S.an.clusters, P = PALETTE();
     el.innerHTML = lede("Pick a cluster to see the genes that set it apart. Click a gene to see where it is expressed.") +
       `<div class="card"><div class="label">Clusters</div><div class="chips" id="chips">${cl.map((c, i) => `<button class="chip" data-c="${c.id}" aria-pressed="false"><i style="background:${P[i % P.length]}"></i>${c.id} <span class="muted small">${fmt(c.cells)}</span></button>`).join("")}</div></div>
-      <div class="grid g2" style="margin-top:18px"><div class="card"><div class="label" id="mt">Markers</div><div id="mk"><p class="small muted">Choose a cluster above.</p></div></div>
+      <div class="grid g2" style="margin-top:18px"><div class="card"><div class="label" id="mt">Markers</div><div id="mk"><p class="small muted">Choose a cluster above.</p></div>${guide("markers")}</div>
         <div class="card"><div class="label" id="ut">UMAP</div><div class="plotwrap"><canvas class="umap" id="cv" style="height:440px"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div></div></div>
       <h2>Dotplot</h2><div class="card"><p class="small muted">Top two markers of every cluster. Dot size is the share of cells expressing the gene; colour is mean expression, scaled per gene.</p>
-        <button class="btn" id="dp">Draw dotplot</button><div id="dot" style="overflow:auto;margin-top:12px"></div></div>`;
+        <button class="btn" id="dp">Draw dotplot</button><div id="dot" style="overflow:auto;margin-top:12px"></div>${guide("dotplot")}</div>`;
     const um = new EmbeddingPlot($("#cv", el), $("#tip", el)); um.setXY((await embedding()).xy);
     const colour = async key => { const c = await E.call("colour", { key }); um.labels = null; um.setColour(c); if (key === "cluster") um.centroids(c.codes, c.categories); $("#leg", el).innerHTML = legendFor(c); };
     await colour("cluster");
@@ -270,7 +270,7 @@
     el.innerHTML = lede("See how cell-type proportions differ between groups, then save everything to the run folder.") +
       (named() ? "" : `<div class="notice warn">No clusters are named yet, so every cell is "Unannotated". Name clusters first for a useful comparison.</div>`) +
       `<div class="card"><div class="row" style="justify-content:space-between"><div class="label">Composition</div><label class="small">Compare by <select id="grp" style="width:auto">${cols.map(c => `<option ${c === def ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label></div>
-        <div id="comp"></div></div>
+        <div id="comp"></div>${guide("composition")}</div>
       <h2>Export</h2><div class="card"><p class="small">Writes the annotated data, composition tables, a marker workbook and a UMAP figure to <code>${esc(E.state().run.dir)}/results</code>. You can also download them here.</p>
         <div class="row"><button class="btn primary" id="exp">Export results</button></div><div id="eprog"></div><div id="files"></div></div>`;
     async function comp() {

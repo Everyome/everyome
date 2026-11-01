@@ -75,6 +75,22 @@ interactive:
 
 learn:
   manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/tm_playground.js]
+    object: TmPlayground
+    lede: >
+      See how a primer's length, GC content and the salt in your buffer move its
+      melting temperature, and why the two primers of a pair should match.
+    intro:
+      - "Move the sliders for a forward and a reverse primer. The panels show each primer's melting temperature (Tm), its 3' end, and how well the pair is matched, with the usual 57–63 °C range shaded."
+    caveats:
+      - "Tm uses the same nearest-neighbour model as Primer3 (SantaLucia, 1998; magnesium as in von Ahsen et al., 2001), checked to match Primer3 to within 0.01 °C. It assumes a perfectly matched primer at 50 nM; mismatches and secondary structure are not modelled here."
+      - "The example primer is built to match the length and GC you choose; real sequences also matter through which bases sit next to each other."
+  guides:
+    map: docs/guides/map.md
+    pairs: docs/guides/pairs.md
+    check: docs/guides/check.md
+    order: docs/guides/order.md
 
 demo:
   data: demo

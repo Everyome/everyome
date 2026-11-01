@@ -27,6 +27,11 @@ def discover(root: Path = FIRST_PARTY) -> tuple[dict[str, Manifest], list[str]]:
         if m.id in found:
             problems.append(f"{path}: id {m.id} is already used by {found[m.id].dir}")
             continue
+        # Intent: people learn before they run; a module without a manual and example data is not offered.
+        missing = [what for what, ok in (("a manual", m.learn.get("manual")), ("example data", m.demo.get("data") or m.demo.get("build"))) if not ok]
+        if missing:
+            problems.append(f"{path}: not listed until it has {' and '.join(missing)}")
+            continue
         found[m.id] = m
     return found, problems
 

@@ -217,6 +217,13 @@ def module_manual(mid: str):
     return {"markdown": (m.dir / m.learn["manual"]).read_text()}
 
 
+@app.get("/api/modules/{mid}/guides")
+def module_guides(mid: str):
+    """The module's "how to read this" guides, by name, as Markdown."""
+    m = _module(mid)
+    return {k: (m.dir / f).read_text() for k, f in (m.learn.get("guides") or {}).items()}
+
+
 @app.get("/api/modules/{mid}/playground/{n}")
 def module_playground_script(mid: str, n: int):
     # Intent: serve only the scripts the manifest lists for the playground, by position.
