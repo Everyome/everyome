@@ -17,7 +17,11 @@ PyPI token. Nothing in this repository uploads on its own.
    ```
 
 4. Optional but worth it: install the wheel into a fresh environment and run
-   the tests against it (this catches files left out of the package).
+   the tests against it (this catches files left out of the package). Install it
+   the way users will, by exact version and without `--pre`, so dependencies come
+   from stable releases.
+5. For a pre-release, the README's install lines must name the exact version
+   (`pip install "everyome==0.1.0a1"`), not use `--pre`.
 
 ## 2. Rehearse on TestPyPI
 
@@ -25,8 +29,15 @@ TestPyPI is a separate site with its own account: https://test.pypi.org
 
 ```bash
 twine upload --repository testpypi dist/*
-pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ everyome
+# take only everyome from TestPyPI, then everything it needs from the real PyPI
+pip download --no-deps --pre --index-url https://test.pypi.org/simple/ everyome==<version> -d testpypi_dl
+pip install --pre --index-url https://pypi.org/simple/ --find-links testpypi_dl "everyome[all]==<version>"
 ```
+
+Never let pip fetch everyome's dependencies from TestPyPI: anyone can upload
+there, and it holds broken copies of common packages (for example `fastapi`).
+pip does not prefer the first index; it picks the highest version across all of
+them, so `--extra-index-url` is not enough.
 
 ## 3. Upload to PyPI
 

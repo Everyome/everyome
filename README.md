@@ -38,12 +38,15 @@ Modules so far:
 ## Install
 
 ```bash
-pip install --pre everyome            # the app and the tutorial
-pip install --pre "everyome[all]"     # plus SPLiT-seq and bulk RNA-seq (Scanpy, PyDESeq2, ...)
+pip install "everyome==0.1.0a1"          # the app and the tutorial
+pip install "everyome[all]==0.1.0a1"     # plus SPLiT-seq and bulk RNA-seq (Scanpy, PyDESeq2, ...)
 everyome                              # opens http://127.0.0.1:8777
 ```
 
-Everyome needs Python 3.10 or newer and runs on macOS and Linux. Choose **Demo
+Naming the version installs this early release of Everyome while everything it
+needs comes from normal, stable releases. (Avoid `pip install --pre`: it would
+also pull in unfinished versions of other packages.) Everyome needs Python 3.10
+or newer and runs on macOS and Linux. Choose **Demo
 cluster** to try everything on your own computer, with example data and a
 pretend job scheduler; demo data lives in `~/.everyome/demo_cluster` (delete it
 to start fresh). To use your own cluster, Everyome also needs to be installed in

@@ -25,7 +25,8 @@ classifiers = [
   "Framework :: FastAPI",
 ]
 # Intent: keep the core light; heavy scientific packages belong to the modules that need them.
-dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24", "python-multipart", "pyyaml", "setproctitle"]
+# httpx stays below 1.0 until 1.0 is tested with Everyome (its 1.0 pre-releases break the test client).
+dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24,<1", "python-multipart", "pyyaml", "setproctitle"]
 
 [project.optional-dependencies]
 test = ["pytest"]
