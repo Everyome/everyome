@@ -14,7 +14,7 @@ def main():
     a = ap.parse_args()
     try:
         import setproctitle
-        # Intent: Stowers policy names every process Claude_<user>_<tool>_<stage>.
+        # Intent: the app's process name says who started it, with the same prefix as job names (core/slurm.py).
         setproctitle.setproctitle(f"Claude_{os.environ.get('USER', 'user')}_everyome_app")
     except ImportError:
         pass

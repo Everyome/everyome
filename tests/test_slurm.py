@@ -1,4 +1,4 @@
-"""Job naming and scripts follow the Stowers rule: Claude_<user>_everyome_<module>_<stage>."""
+"""Job naming and scripts follow the job-naming rule: Claude_<user>_everyome_<module>_<stage>."""
 from everyome.core import slurm
 
 

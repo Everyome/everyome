@@ -16,11 +16,24 @@ PyPI token. Nothing in this repository uploads on its own.
    twine check --strict dist/*
    ```
 
-4. Optional but worth it: install the wheel into a fresh environment and run
+4. Build the pipelines package too, at the same version (set it in
+   `pipelines/pyproject.toml`). The build stops if anything fetched differs from
+   `everyome/pipelines.lock.json`:
+
+   ```bash
+   rm -rf pipelines/everyome_pipelines/bundles pipelines/dist
+   python -m everyome.core.pipelines build --into pipelines/everyome_pipelines/bundles
+   python -m build pipelines --outdir dist
+   twine check --strict dist/*
+   ```
+
+   Upload both packages (`dist/*` holds both). The first upload of
+   `everyome-pipelines` also needs an account-wide token, as below.
+5. Optional but worth it: install the wheel into a fresh environment and run
    the tests against it (this catches files left out of the package). Install it
    the way users will, by exact version and without `--pre`, so dependencies come
    from stable releases.
-5. For a pre-release, the README's install lines must name the exact version
+6. For a pre-release, the README's install lines must name the exact version
    (`pip install "everyome==0.1.0a1"`), not use `--pre`.
 
 ## 2. Rehearse on TestPyPI

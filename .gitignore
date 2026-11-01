@@ -8,3 +8,6 @@ dist/
 .DS_Store
 # Personal launch config (holds an absolute path to this computer's venv)
 .claude/launch.json
+
+# Pipeline bundles are built for release (python -m everyome.core.pipelines build), not committed
+pipelines/everyome_pipelines/bundles/

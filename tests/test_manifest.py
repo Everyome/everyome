@@ -65,6 +65,9 @@ def test_check_values(tmp_path):
 
 
 def test_community_modules_are_off():
-    assert modules.COMMUNITY_ENABLED is False
-    with pytest.raises(PermissionError):
-        modules.community_registry()
+    from everyome.core import community
+    assert community.BUILD_ENABLED is False and community.enabled() is False
+    for fn in (community.index, lambda: community.install("community.anything")):
+        with pytest.raises(PermissionError):
+            fn()
+    assert community.installed() == ({}, [])

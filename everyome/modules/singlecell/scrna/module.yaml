@@ -1,0 +1,135 @@
+# Single-cell RNA-seq (10x Genomics and similar): nf-core/scrnaseq turns reads into a cell-by-gene matrix on the
+# cluster, then the shared single-cell live session filters, clusters, finds markers and names cell types.
+spec: 1
+id: singlecell.scrna
+name: Single-cell RNA-seq (10x and similar)
+suite: singlecell
+version: 0.1.0
+summary: >
+  From 10x Genomics (or similar droplet) reads to named cell types. nf-core/scrnaseq
+  counts molecules per gene per cell on the cluster and removes empty droplets;
+  a live session then filters damaged cells and doublets, clusters cells, shows
+  their marker genes and lets you name and compare cell types. Every pipeline
+  setting can be changed.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Peltzer A. et al. nf-core/scrnaseq. Zenodo."
+    url: https://doi.org/10.5281/zenodo.3568187
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "He D. et al. (2022). Alevin-fry unlocks rapid, accurate and memory-frugal quantification of single-cell RNA-seq data. Nature Methods 19:316–322."
+    url: https://doi.org/10.1038/s41592-022-01408-3
+  - text: "Fleming S.J. et al. (2023). Unsupervised removal of systematic background noise from droplet-based single-cell experiments using CellBender. Nature Methods 20:1323–1335."
+    url: https://doi.org/10.1038/s41592-023-01943-7
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+  - text: "Korsunsky I. et al. (2019). Fast, sensitive and accurate integration of single-cell data with Harmony. Nature Methods 16:1289–1296."
+    url: https://doi.org/10.1038/s41592-019-0619-0
+  - text: "Traag V.A., Waltman L., van Eck N.J. (2019). From Louvain to Leiden: guaranteeing well-connected communities. Scientific Reports 9:5233."
+    url: https://doi.org/10.1038/s41598-019-41695-z
+  - text: "McInnes L., Healy J., Melville J. (2018). UMAP: Uniform Manifold Approximation and Projection for dimension reduction. arXiv:1802.03426."
+    url: https://arxiv.org/abs/1802.03426
+kind: [batch, interactive]
+requires: [scanpy, anndata, harmonypy, leidenalg, igraph, pandas, numpy, matplotlib, openpyxl]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.singlecell.scrna.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the samples table. 10x names work, for example <sample>_S1_L001_R1_001.fastq.gz."
+    demo: fastq
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: >
+      One row per sample (or per sequencing lane of a sample: rows with the same name are combined).
+      Read 1 holds the cell barcode and UMI; read 2 holds the cDNA. Condition and batch are used to
+      compare and to correct for batches in the live session.
+    columns:
+      - {id: sample, label: Sample, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fastq_1, label: Read 1 FASTQ (barcodes), wide: true}
+      - {id: fastq_2, label: Read 2 FASTQ (cDNA), wide: true}
+      - {id: expected_cells, label: Expected cells, optional: true, pattern: "[0-9]*", pattern_help: "should be a whole number, or empty"}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: batch, label: Batch, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: reads_dir, label: Find samples in the reads folder}
+
+params:
+  - id: mito_genes
+    label: Mitochondrial genes
+    type: text
+    default: "^(MT-|mt-)"
+    group: Live session
+    help: "Gene names that count as mitochondrial (a regular expression). MT- for human, mt- for mouse; leave empty if your genome has none named this way."
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/scrnaseq
+  revision: "4.2.0"
+  schema: pipeline/nextflow_schema.json
+  samplesheet: {from: samples, columns: [sample, fastq_1, fastq_2, expected_cells], param: input}
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix, max_multiqc_email_size]
+  # Intent: the default aligner (simpleaf) cannot detect the chemistry itself; 10x v3 is the most common today.
+  defaults: {protocol: 10XV3}
+  demo: everyome.modules.singlecell.scrna.demo_pipeline
+  demo_values: {fasta: genome/genome.fa, gtf: genome/genes.gtf}   # pipeline settings filled in on the demo cluster
+  report: everyome.modules.singlecell.scrna.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "72:00:00", session: {cpus: 4, mem: 32G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.singlecell.scrna.helpers:scan
+
+interactive:
+  engine: everyome.modules.singlecell.scrna.engine:Engine
+  ui: [../shared/cells_ui.js, ui.js]
+  steps:
+    - {id: load, title: Load the cells}
+    - {id: qc, title: Filter cells}
+    - {id: cluster, title: Integrate and cluster}
+    - {id: markers, title: Explore markers}
+    - {id: annotate, title: Name clusters}
+    - {id: compare, title: Compare and export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    matrix: docs/guides/matrix.md
+    cells_per_sample: docs/guides/cells_per_sample.md
+    filter_cells: ../shared/guides/filter_cells.md
+    mito: ../shared/guides/mito.md
+    clusters: ../shared/guides/clusters.md
+    markers: docs/guides/markers.md
+    dotplot: ../shared/guides/dotplot.md
+    composition: ../shared/guides/composition.md
+  playground:
+    scripts: [../shared/playground/umap-js.min.js, ../shared/playground/play_core.js, ../shared/playground/play_ui.js]
+    object: Playground
+    lede: >
+      A toy dataset you can push through simplified versions of filtering,
+      clustering, markers and composition, to see how each setting changes the result.
+    intro:
+      - "The data are simulated, so the true cell type of every cell is known. That lets the panels score each result: how well clusters match the true types, how well batches mix, and whether a real treatment effect survives batch correction. About 1,200 barcodes: eight cell types (one of them a stem-to-neural continuum and one present only in treated samples), two conditions, two batches, plus 5% doublets and 4% near-empty barcodes."
+      - "The steps are the same ones this module's live session uses after the pipeline has counted your cells. Pick a scenario below or move the sliders yourself. Everything runs in your browser; nothing is sent to the cluster."
+    caveats:
+      - "Batch correction shifts each batch's centre in PC space. It behaves like Harmony for this demo, but Harmony corrects cluster by cluster and is less blunt."
+      - "Highly variable genes are ranked by variance of log-normalised expression rather than Scanpy's binned dispersion."
+      - "Clustering uses Louvain on an unweighted neighbour graph. Leiden, used by the module, gives similar partitions with better-connected clusters."
+      - "The toy data have no mitochondrial genes or ambient RNA; the module's live session and nf-core/scrnaseq (CellBender) handle those."
+      - "Numbers here are for intuition about the direction and size of effects. Do not copy parameter values from the toy data to real data."
+    credit: "The playground was created by Helen R Horkan PhD for SPLiTscape. It uses UMAP-JS (Apache License 2.0)."
+
+demo:
+  build: everyome.modules.singlecell.scrna.demo_data:build

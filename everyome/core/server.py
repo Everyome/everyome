@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 
 from everyome import __version__
 
-from . import demo, modules, projects, records, runs, sessions, slurm, suites
+from . import community, demo, modules, pipelines, projects, records, runs, sessions, slurm, suites
 from .backends import LocalBackend, SSHBackend, describe_ssh_error
 from .session import TOKEN_HEADER, call_engine, load_engine, result_file
 
@@ -44,7 +44,7 @@ class AppState:
         # "This computer": projects and example data live here (EVERYOME_LOCAL_ROOT moves it, for example for testing).
         self.local_root = Path(os.environ.get("EVERYOME_LOCAL_ROOT") or Path.home() / "Everyome")
         self.demo_root = HOME / "demo_cluster"
-        self.modules, self.module_problems = modules.discover()
+        self.modules, self.module_problems = modules.available()
         self.suites = suites.load()
         self.module_problems += suites.check(self.suites, self.modules)
 
@@ -112,6 +112,15 @@ def state():
             "session": bool(S.session), "version": __version__}
 
 
+def _site_prefix() -> str:
+    """The job-name prefix saved for this computer (a site setting), or Everyome's default."""
+    return _load_settings().get("job_prefix", slurm.JOB_PREFIX)
+
+
+def _pipeline_key(m):
+    return pipelines.key(m.nextflow["pipeline"], str(m.nextflow["revision"])) if m.nextflow else None
+
+
 @app.post("/api/connect")
 def connect(b: dict = Body(...)):
     if S.backend:
@@ -124,24 +133,32 @@ def connect(b: dict = Body(...)):
         demo.example_data(root / "examples", {k: m for k, m in S.modules.items() if "local" in m.kind})
         S.backend, S.demo = LocalBackend(root, None, label="this computer"), False
         S.conn = {"mode": "local", "user": S.backend.user, "python": sys.executable,
-                  "projects_root": f"{root}/projects", "data_root": f"{root}/examples", "partition": "", "bind": "127.0.0.1"}
+                  "projects_root": f"{root}/projects", "data_root": f"{root}/examples", "partition": "", "bind": "127.0.0.1",
+                  "pipelines_dir": f"{root}/pipelines", "job_prefix": _site_prefix()}
     elif b.get("mode") == "demo":
         bin_dir = demo.setup(S.demo_root, S.modules)
         S.backend, S.demo = LocalBackend(S.demo_root, bin_dir, label="demo cluster"), True
         root = str(S.demo_root)
         S.conn = {"mode": "demo", "user": S.backend.user, "python": sys.executable,
-                  "projects_root": f"{root}/projects", "data_root": f"{root}/data", "partition": "", "bind": "127.0.0.1"}
+                  "projects_root": f"{root}/projects", "data_root": f"{root}/data", "partition": "", "bind": "127.0.0.1",
+                  "pipelines_dir": f"{root}/pipelines", "job_prefix": _site_prefix()}
     else:
         need = ["host", "user", "python", "projects_root"]
         missing = [k for k in need if not b.get(k)]
         if missing:
             raise HTTPException(400, "Please fill in: " + ", ".join(missing))
+        if not slurm.PREFIX_OK.fullmatch(b.get("job_prefix", slurm.JOB_PREFIX)):
+            raise HTTPException(400, "The job-name prefix may use letters, digits, _ and - only (up to 32).")
         be = SSHBackend(b["host"], b["user"], int(b.get("port") or 22))
         rc, out, err = be.run("echo ok && hostname", timeout=30)
         if rc:
             raise HTTPException(400, describe_ssh_error(err))
         S.backend, S.demo = be, False
-        S.conn = {k: b.get(k, "") for k in ["mode", "host", "user", "port", "python", "projects_root", "data_root", "partition"]}
+        S.conn = {k: b.get(k, "") for k in ["mode", "host", "user", "port", "python", "projects_root", "data_root", "partition", "pipelines_dir"]}
+        S.conn["job_prefix"] = b.get("job_prefix", slurm.JOB_PREFIX)
+        if not S.conn["pipelines_dir"]:
+            # Intent: by default each person keeps pipelines in their own home folder; IT can set a shared folder instead.
+            S.conn["pipelines_dir"] = be.run('printf %s "$HOME"', timeout=30)[1].strip() + "/.everyome/pipelines"
         S.conn["bind"] = "0.0.0.0"
         SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
         SETTINGS_FILE.write_text(json.dumps({k: S.conn[k] for k in S.conn if k != "bind"}, indent=1))
@@ -201,7 +218,7 @@ def suggest(b: dict = Body(default={})):
 @app.get("/api/modules")
 def module_list():
     return {"modules": [m.as_dict() for m in S.modules.values()], "problems": S.module_problems,
-            "community": modules.COMMUNITY_ENABLED}
+            "community": community.enabled()}
 
 
 @app.get("/api/modules/{mid}")
@@ -240,7 +257,8 @@ def module_ui(mid: str):
     m = _module(mid)
     if not m.ui:
         raise HTTPException(404, "This module has no views of its own.")
-    return Response((m.dir / m.ui).read_text(), media_type="text/javascript")
+    # Intent: a module may list shared views first (for example, the single-cell steps), then its own.
+    return Response("\n;\n".join((m.dir / f).read_text() for f in m.ui), media_type="text/javascript")
 
 
 @app.post("/api/modules/{mid}/helpers/{name}")
@@ -265,6 +283,8 @@ def module_check(mid: str):
         for cmd in ("nextflow", "java"):
             if be.run(f"command -v {cmd}", timeout=60)[0]:
                 missing.append(f"{cmd} (command)")
+        if m.nextflow.get("profile") == "apptainer" and be.run("command -v apptainer || command -v singularity", timeout=60)[0]:
+            missing.append("apptainer (command)")
     for pkg in m.requires:
         rc, _, _ = be.run(f"{shlex.quote(S.conn['python'])} -c {shlex.quote('import ' + pkg)}", timeout=120)
         if rc:
@@ -308,7 +328,8 @@ def run_create(b: dict = Body(...)):
         raise HTTPException(400, f"{m.name} runs on this computer. Choose 'This computer' (or the demo cluster) on the Connect page to use it.")
     res = {**(b.get("resources") or {}), "partition": (b.get("resources") or {}).get("partition") or S.conn.get("partition", "")}
     try:
-        S.run = runs.create(be, p, m, b.get("values") or {}, res, demo=S.demo)
+        S.run = runs.create(be, p, m, b.get("values") or {}, res, demo=S.demo,
+                            site={k: S.conn.get(k, "") for k in ("job_prefix", "pipelines_dir")})
     except ValueError as e:
         raise HTTPException(400, str(e))
     S.session = None
@@ -413,17 +434,41 @@ def run_close():
 def run_preview(b: dict = Body(default={})):
     r = _need_run()
     try:
-        return {"scripts": runs.preview(r, _module(r["module"]), S.conn["python"], b.get("start_at"))}
+        m = _module(r["module"])
+        return {"scripts": runs.preview(r, m, S.conn["python"], b.get("start_at")), "pipeline": _pipeline_status(r, m)}
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+def _pipeline_status(r, m) -> dict | None:
+    """For the Run page: which pipeline, where it goes on the cluster, and whether it is already there."""
+    if not m.nextflow:
+        return None
+    k = _pipeline_key(m)
+    e = pipelines.lock()[k]
+    out = {"key": k, "dir": pipelines.remote_dir(r.get("pipelines_dir", ""), k), "bytes": e["bytes"], "demo": bool(r.get("demo")),
+           "containers": len(e["containers"]), "installed": False, "here": True, "problem": ""}
+    if r.get("demo"):
+        return out
+    out["installed"] = pipelines.installed(_need_backend(), r["pipelines_dir"], k)
+    if not out["installed"]:
+        try:
+            pipelines.find(k)
+        except (FileNotFoundError, ValueError, LookupError) as err:
+            out["here"], out["problem"] = False, str(err)
+    return out
 
 
 @app.post("/api/run/submit")
 def run_submit(b: dict = Body(default={})):
     r, be = _need_run(), _need_backend()
+    m = _module(r["module"])
     try:
+        if m.nextflow and not r.get("demo"):
+            # Intent: pressing Run first installs the shipped, checked copy of the pipeline (once per cluster folder).
+            pipelines.install(be, r["pipelines_dir"], _pipeline_key(m), S.conn["python"])
         jobs = runs.submit(be, r, _module(r["module"]), S.conn["python"], b.get("start_at"))
-    except (RuntimeError, ValueError) as e:
+    except (RuntimeError, ValueError, LookupError, FileNotFoundError, OSError) as e:
         raise HTTPException(400, str(e))
     return {"jobs": jobs}
 

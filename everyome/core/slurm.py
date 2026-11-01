@@ -8,14 +8,17 @@ from __future__ import annotations
 import re
 import shlex
 
-# Intent: Stowers policy names every Claude-created job Claude_<user>_<tool>_<stage>.
+# Intent: job names say who made them: <prefix>_<user>_everyome_<module>_<stage>. The prefix is a site
+# setting (some institutions require one); the default follows the policy of the site Everyome was built at.
 JOB_PREFIX = "Claude"
+PREFIX_OK = re.compile(r"[A-Za-z0-9_-]{0,32}")
 
 
-def job_name(user: str, module_id: str, stage: str) -> str:
-    """Claude_<user>_everyome_<module>_<stage>, with characters Slurm dislikes replaced."""
+def job_name(user: str, module_id: str, stage: str, prefix: str = JOB_PREFIX) -> str:
+    """<prefix>_<user>_everyome_<module>_<stage> (no prefix: <user>_everyome_...), with characters Slurm dislikes replaced."""
     clean = lambda s: re.sub(r"[^A-Za-z0-9_-]+", "_", s)
-    return f"{JOB_PREFIX}_{clean(user)}_everyome_{clean(module_id)}_{clean(stage)}"
+    head = "_".join(filter(None, [clean(prefix), clean(user), "everyome", clean(module_id)]))
+    return f"{head}_{clean(stage)}"
 
 
 def script(name: str, log: str, resources: dict, body: list[str]) -> str:

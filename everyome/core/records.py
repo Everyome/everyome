@@ -32,6 +32,15 @@ EVERYOME_CITE = {"text": f"Horkan H.R. (2026). Everyome: every -ome, for everyon
 FOLDER_LIST_MAX = 500
 
 
+
+def _pipeline_record(m) -> dict:
+    """Which pipeline ran: release, and the checksum of the exact code and plugins Everyome installed."""
+    from . import pipelines
+    e = pipelines.lock().get(pipelines.key(m.nextflow["pipeline"], str(m.nextflow["revision"])), {})
+    return {**{k: m.nextflow.get(k) for k in ("pipeline", "revision", "profile")}, "source": e.get("source"),
+            "code_sha256": e.get("sha256"), "plugins": [f"{p['id']} {p['version']}" for p in e.get("plugins", [])],
+            "containers": e.get("containers", [])}
+
 def _file_info(backend, path: str) -> dict:
     q = shlex.quote(path)
     cmd = (f"if [ -f {q} ]; then s=$(wc -c < {q} | tr -d ' '); echo \"file $s\"; "
@@ -95,7 +104,7 @@ def build(backend, conn: dict, project: dict, run: dict, m: Manifest) -> dict:
     return {
         "record_version": 1, "created": time.strftime("%Y-%m-%d %H:%M:%S"), "everyome": __version__,
         "module": {"id": m.id, "name": m.name, "version": m.version, "suite": m.suite},
-        "pipeline": {k: m.nextflow.get(k) for k in ("pipeline", "revision", "profile")} if m.nextflow else None,
+        "pipeline": _pipeline_record(m) if m.nextflow else None,
         "run": {"id": run["id"], "created": run.get("created"), "submitted": run.get("submitted"), "user": run.get("user"),
                 "demo": bool(run.get("demo")), "project": project["name"], "dir": run["dir"]},
         "computer": "demo cluster" if conn.get("mode") == "demo" else conn.get("host", ""),
@@ -154,7 +163,9 @@ def protocol(rec: dict) -> str:
          f"- **Run created:** {r['created']}" + (f"; jobs submitted {r['submitted']}" if r.get("submitted") else ""),
          f"- **Where it ran:** {rec['computer']}" + (" (practice data, not real results)" if r["demo"] else ""),
          f"- **Software:** Everyome {rec['everyome']}, module {mod['id']} version {mod['version']}",
-         *([f"- **Pipeline:** {rec['pipeline']['pipeline']} release {rec['pipeline']['revision']}, profile {rec['pipeline']['profile']}"] if rec.get("pipeline") else []),
+         *([f"- **Pipeline:** {rec['pipeline']['pipeline']} release {rec['pipeline']['revision']}, profile {rec['pipeline']['profile']}"
+            + (f" (code shipped with Everyome, SHA-256 `{rec['pipeline']['code_sha256'][:16]}…`; plugins {', '.join(rec['pipeline']['plugins'])})" if rec['pipeline'].get("code_sha256") else "")]
+           if rec.get("pipeline") else []),
          f"- **Run folder:** `{r['dir']}`", "", "## Inputs", "", "| Input | Path | Size | SHA-256 |", "|---|---|---|---|"]
     for i in rec["inputs"]:
         info = i.get("info") or {}

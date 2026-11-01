@@ -24,7 +24,7 @@ def script(run: dict, m: Manifest, conn: dict) -> str:
     body = [f"rm -f {shlex.quote(d + '/session/session.json')}",
             f"exec {shlex.quote(conn['python'])} -m everyome.core.session --run {shlex.quote(d)} "
             f"--engine {shlex.quote(m.engine)} --bind {conn.get('bind', '0.0.0.0')} --idle 60"]
-    return slurm.script(slurm.job_name(run["user"], m.id, "session"), f"{d}/logs/session.log", res, body)
+    return slurm.script(slurm.job_name(run["user"], m.id, "session", run.get("job_prefix", slurm.JOB_PREFIX)), f"{d}/logs/session.log", res, body)
 
 
 def start(backend, run: dict, m: Manifest, conn: dict) -> int:

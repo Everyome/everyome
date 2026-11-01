@@ -1,18 +1,17 @@
 """Finding modules.
 
-Only first-party modules shipped inside Everyome load. Community modules are
-built into the design but switched off: they run code on people's cluster
-accounts, so each must be reviewed, signed and pinned before it can be offered
-(docs/PLAN.md section 7). Nothing here downloads or loads outside code.
+First-party modules ship inside Everyome. Community modules are built in but
+switched off (core/community.py): each must be reviewed, signed and pinned
+before it can be offered (docs/PLAN.md section 7, docs/REVIEW_CHECKLIST.md).
 """
 from __future__ import annotations
 
 from pathlib import Path
 
+from . import community
 from .manifest import Manifest, ManifestError, load
 
 FIRST_PARTY = Path(__file__).resolve().parents[1] / "modules"
-COMMUNITY_ENABLED = False
 
 
 def discover(root: Path = FIRST_PARTY) -> tuple[dict[str, Manifest], list[str]]:
@@ -36,8 +35,17 @@ def discover(root: Path = FIRST_PARTY) -> tuple[dict[str, Manifest], list[str]]:
     return found, problems
 
 
-def community_registry():
-    """Placeholder for the reviewed community registry; stays off until review and signing exist."""
-    if not COMMUNITY_ENABLED:
-        raise PermissionError("Community modules are switched off in this version of Everyome.")
-    raise NotImplementedError
+def available() -> tuple[dict[str, Manifest], list[str]]:
+    """Everything the app offers: Everyome's own modules, then reviewed community ones (when switched on),
+    then an author's unreviewed folders. Everyome's own ids always win."""
+    found, problems = discover()
+    for more, probs in (community.installed(), community.unreviewed()):
+        problems += probs
+        for mid, m in more.items():
+            if mid in found:
+                problems.append(f"{m.dir}: id {mid} is already used by another module; not loaded")
+            elif not mid.startswith("community."):
+                problems.append(f"{m.dir}: community module ids start with 'community.'; not loaded")
+            else:
+                found[mid] = m
+    return found, problems

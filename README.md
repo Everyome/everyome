@@ -31,6 +31,9 @@ Modules so far:
 - **SPLiT-seq (SPLiTscape)**, single cell: SPLiT-seq sublibraries from raw reads
   to annotated cell types, on their own (for example, to build a first atlas) or
   merged with an existing atlas or dataset. Includes a playground.
+- **Single-cell RNA-seq (10x and similar)**, single cell: nf-core/scrnaseq
+  counts cells on the cluster and removes empty droplets; a live session then
+  filters, clusters, finds markers and names and compares cell types.
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **Primer design**, molecular biology: Primer3 primers on a plasmid map, with
@@ -46,6 +49,12 @@ pip install "everyome[all]==0.1.0a1"     # plus SPLiT-seq and bulk RNA-seq (Scan
 everyome                              # opens http://127.0.0.1:8777
 ```
 
+Analyses that run a Nextflow pipeline on your cluster (bulk and single-cell
+RNA-seq) also need the pipelines package, at the same version as Everyome, from
+the next release on: `pip install "everyome-pipelines==<version>"`. Everyome
+ships the pipelines, so your cluster never downloads code from GitHub; see
+[`docs/PIPELINES.md`](docs/PIPELINES.md), including for clusters without internet.
+
 Naming the version installs this early release of Everyome while everything it
 needs comes from normal, stable releases. (Avoid `pip install --pre`: it would
 also pull in unfinished versions of other packages.) Everyome needs Python 3.10
@@ -55,6 +64,13 @@ pretend job scheduler; demo data lives in `~/.everyome/demo_cluster` (delete it
 to start fresh). To use your own cluster, Everyome also needs to be installed in
 a Python environment there (ask IT for a shared one), and the readiness checks
 tell you what is missing.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). A community module registry is built in
+but switched off; every module submitted to it will be reviewed by a maintainer
+before anyone is offered it. Authors can write and try modules now
+([`docs/MODULE_AUTHORS.md`](docs/MODULE_AUTHORS.md)).
 
 ## Develop
 

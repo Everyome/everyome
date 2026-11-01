@@ -21,7 +21,7 @@ def test_every_module_is_complete(mid):
 @pytest.mark.parametrize("mid", sorted(FOUND))
 def test_views_and_guides_match(mid):
     m = FOUND[mid]
-    used = set(re.findall(r'guide\("([a-z0-9_]+)"', (m.dir / m.ui).read_text()))
+    used = set(re.findall(r'guide\("([a-z0-9_]+)"', "".join((m.dir / f).read_text() for f in m.ui)))
     have = set(m.learn["guides"])
     assert used - have == set(), f"{mid}: views ask for guides that do not exist: {used - have}"
     assert have - used == set(), f"{mid}: guides never shown in the views: {have - used}"

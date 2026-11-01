@@ -1,0 +1,23 @@
+# The pipelines Everyome ships, as a separate package so the app itself stays small.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "everyome-pipelines"
+version = "0.1.0a2"
+description = "Pinned, checksummed Nextflow pipelines (nf-core) and plugins for Everyome, so clusters run them without downloading code."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE.md"]
+authors = [{ name = "Helen R Horkan" }]
+
+[project.urls]
+Homepage = "https://github.com/Everyome/everyome"
+
+[tool.setuptools]
+packages = ["everyome_pipelines"]
+
+[tool.setuptools.package-data]
+everyome_pipelines = ["bundles/*.tar.gz", "bundles/*.zip"]

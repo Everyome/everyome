@@ -32,7 +32,8 @@ def test_unknown_types_are_skipped():
 def run_for(values, demo=False):
     vals, errors = check_values(M, values)
     assert not errors, errors
-    return {"id": "r1", "dir": "/proj/runs/r1", "user": "hh2891", "values": vals, "resources": {"cpus": 2, "partition": "short"}, "demo": demo}
+    return {"id": "r1", "dir": "/proj/runs/r1", "user": "hh2891", "values": vals, "resources": {"cpus": 2, "partition": "short"}, "demo": demo,
+            "pipelines_dir": "/site/pipelines"}
 
 
 SAMPLES = [{"sample": "a_1", "fastq_1": "/d/a_1_R1.fastq.gz", "fastq_2": "/d/a_1_R2.fastq.gz", "strandedness": "auto", "condition": "a"},
@@ -55,7 +56,14 @@ def test_head_job_is_pinned_and_named():
     run = run_for({"samples": SAMPLES})
     s = runs.stage_script(run, M, M.stages[0], "/opt/py")
     assert "#SBATCH --job-name=Claude_hh2891_everyome_rna_bulk_de_01_pipeline" in s
-    assert "nextflow run nf-core/rnaseq -r 3.27.0 -profile apptainer" in s and "-resume" in s and "-with-trace /proj/runs/r1/trace.txt" in s
+    # Intent: the cluster runs the copy Everyome installed, offline, with the shipped plugins and a shared container folder.
+    assert "nextflow run /site/pipelines/nf-core-rnaseq-3.27.0 -profile apptainer" in s and "-resume" in s and "-with-trace /proj/runs/r1/trace.txt" in s
+    assert "github" not in s and " -r " not in s
+    for line in ("export NXF_OFFLINE=true", "export NXF_PLUGINS_DIR=/site/pipelines/plugins", "export NXF_APPTAINER_CACHEDIR=/site/pipelines/containers"):
+        assert line in s, line
+    named = runs.stage_script({**run, "job_prefix": "lab"}, M, M.stages[0], "/opt/py")
+    assert "#SBATCH --job-name=lab_hh2891_everyome_rna_bulk_de_01_pipeline" in named
+    assert "#SBATCH --job-name=hh2891_everyome_rna_bulk_de_01_pipeline" in runs.stage_script({**run, "job_prefix": ""}, M, M.stages[0], "/opt/py")
     demo = runs.stage_script(run_for({"samples": SAMPLES}, demo=True), M, M.stages[0], "/opt/py")
     assert "nextflow" not in demo.split("export EVERYOME_DEMO=1")[1] and "demo_pipeline" in demo
 

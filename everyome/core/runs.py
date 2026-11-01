@@ -17,11 +17,11 @@ import json
 import shlex
 import time
 
-from . import projects, slurm
+from . import pipelines, projects, slurm
 from .manifest import Manifest, check_values
 
 
-def create(backend, project: dict, m: Manifest, values: dict, resources: dict, demo: bool = False) -> dict:
+def create(backend, project: dict, m: Manifest, values: dict, resources: dict, demo: bool = False, site: dict | None = None) -> dict:
     """Check the settings and write a new run folder; nothing is submitted."""
     vals, errors = check_values(m, values)
     if errors:
@@ -32,7 +32,9 @@ def create(backend, project: dict, m: Manifest, values: dict, resources: dict, d
            "user": project["user"], "values": vals,
            # Intent: inputs are always the user's own files; only settings have meaningful defaults.
            "defaults_changed": sorted(f.id for f in m.params if vals.get(f.id) != f.default),
-           "resources": {**m.resources, **{k: v for k, v in resources.items() if v}}, "jobs": {}, "demo": demo}
+           "resources": {**m.resources, **{k: v for k, v in resources.items() if v}}, "jobs": {}, "demo": demo,
+           # Intent: a run keeps the site settings it was made with, so its scripts and reruns stay the same.
+           "job_prefix": (site or {}).get("job_prefix", slurm.JOB_PREFIX), "pipelines_dir": (site or {}).get("pipelines_dir", "")}
     backend.run(f"mkdir -p {shlex.quote(d)}/jobs {shlex.quote(d)}/logs {shlex.quote(d)}/results")
     backend.write_text(f"{d}/params.json", json.dumps(vals, indent=1))
     for name, text in pipeline_files(run, m).items():
@@ -61,17 +63,18 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
     rows = v.get(sheet["from"]) or []
     csv = ",".join(sheet["columns"]) + "\n" + "".join(",".join(str(r.get(c, "")) for c in sheet["columns"]) + "\n" for r in rows)
     # Intent: pass only what differs from the pipeline's own defaults, so the pipeline decides the rest.
-    params = {f.id: v[f.id] for f in m.params if f.pipeline and v.get(f.id) not in (None, "") and v.get(f.id) != f.default}
+    base = lambda f: nf.get("upstream", {}).get(f.id, f.default)
+    params = {f.id: v[f.id] for f in m.params if f.pipeline and v.get(f.id) not in (None, "") and v.get(f.id) != base(f)}
     params.update({sheet["param"]: f"{d}/samplesheet.csv", "outdir": f"{d}/results"})
     res, user = run["resources"], run["user"]
-    prefix = slurm.job_name(user, m.id, "")
+    prefix = slurm.job_name(user, m.id, "", run.get("job_prefix", slurm.JOB_PREFIX))
     config = "\n".join([
         f"// Written by Everyome for run {run['id']}: how the pipeline's own tasks go to Slurm.",
         "process.executor = 'slurm'",
         *([f"process.queue = '{res['partition']}'"] if res.get("partition") else []),
         "executor {",
         "    queueSize = 50",
-        "    // Stowers policy: every job carries Claude and the username",
+        "    // Job names carry the job-name prefix and the username, so everyone can see whose job it is",
         f"    jobName = {{ '{prefix}' + task.process.tokenize(':')[-1] }}",
         "}", ""])
     return {"samplesheet.csv": csv, "nf_params.json": json.dumps(params, indent=1), "nextflow.config": config}
@@ -83,7 +86,9 @@ def nextflow_command(run: dict, m: Manifest, python: str) -> str:
         # Intent: no Nextflow or containers on the demo cluster; the module writes the same outputs instead.
         return f"{shlex.quote(python)} -m {nf['demo']}"
     q = shlex.quote
-    return (f"nextflow run {q(nf['pipeline'])} -r {q(str(nf['revision']))} -profile {q(nf['profile'])} -ansi-log false "
+    # Intent: run the copy Everyome installed (pinned and checked), never a download from GitHub.
+    where = pipelines.remote_dir(run["pipelines_dir"], pipelines.key(nf["pipeline"], str(nf["revision"])))
+    return (f"nextflow run {q(where)} -profile {q(nf['profile'])} -ansi-log false "
             f"-c {q(d + '/nextflow.config')} -params-file {q(d + '/nf_params.json')} -work-dir {q(d + '/work')} "
             f"-with-trace {q(d + '/trace.txt')} -resume")
 
@@ -112,10 +117,11 @@ def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
             f"export EVERYOME_STAGE={shlex.quote(stage.id)}", f"export EVERYOME_CPUS={int(res.get('cpus', 1))}",
             # Intent: on the demo cluster, modules stand in for tools that are not installed there.
             *(["export EVERYOME_DEMO=1"] if run.get("demo") else []),
+            *(pipelines.environment(run["pipelines_dir"]) if m.nextflow and not run.get("demo") else []),
             # Intent: module commands name the cluster's Python as {python}; nothing else is substituted.
             nextflow_command(run, m, python) if m.nextflow else stage.run.replace("{python}", shlex.quote(python)),
             f'echo "[$(date)] stage {stage.id} done"']
-    return slurm.script(slurm.job_name(run["user"], m.id, f"{stage.id}_{stage.name}"),
+    return slurm.script(slurm.job_name(run["user"], m.id, f"{stage.id}_{stage.name}", run.get("job_prefix", slurm.JOB_PREFIX)),
                         f"{d}/logs/{stage.id}_{stage.name}.log", res, body)
 
 

@@ -15,7 +15,10 @@ and treated. Two parts:
   (*Fasta*) and annotation (*Gtf* or *Gff*). Set these under *Reference genome options*.
 - **At least two samples per condition**; three or more is much better.
 - On the cluster: **Nextflow**, **Java** and **Apptainer** (ask IT). The pipeline
-  downloads its software as containers the first time it runs.
+  itself ships with Everyome (`everyome-pipelines`): pressing Run copies nf-core/rnaseq
+  to your cluster once and checks it; its software containers are downloaded the
+  first time they are needed. See `docs/PIPELINES.md`, including for clusters
+  without internet access.
 
 ## Samples table
 
@@ -41,7 +44,8 @@ pipeline. Common ones:
 | Remove ribosomal RNA | Filters rRNA reads before alignment. |
 
 The pipeline's own tasks are sent to Slurm by Nextflow, each named
-`Claude_<you>_everyome_rna_bulk_de_<task>`. Only one job (the pipeline itself)
+with your username, `everyome` and the module (`…_<you>_everyome_rna_bulk_de_<task>`), so
+you can find them in `squeue`. Only one job (the pipeline itself)
 is submitted when you press Run; it then submits the rest.
 
 ## Live session

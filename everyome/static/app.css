@@ -206,6 +206,7 @@ pre.script{background:var(--crypt);color:var(--topink);border-top:2px solid var(
 .suitebox p{font-size:14.5px;color:var(--muted);margin:0;flex:1}
 .suitebox .tag{align-self:flex-start}
 .tag.ready{color:var(--ok);border-color:var(--ok)}
+.tag.warn{color:var(--ox);border-color:var(--ox)}
 ol.sugg{list-style:none;margin:0;padding:0}
 ol.sugg li{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--rule)}
 ol.sugg p{margin:4px 0 0}

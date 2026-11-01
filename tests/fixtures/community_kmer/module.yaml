@@ -1,0 +1,55 @@
+# A test community module: used by Everyome's own tests to dry-run review, signing and installing.
+spec: 1
+id: community.kmer_spectrum
+name: K-mer spectrum
+suite: dna
+version: 1.0.0
+summary: >
+  Counts every k-mer in a FASTA file and shows the k-mer spectrum (how many k-mers
+  occur once, twice and so on). Runs on this computer.
+authors: ["Everyome test fixture"]
+licence: MIT
+cite:
+  - text: "Marçais G., Kingsford C. (2011). A fast, lock-free approach for efficient parallel counting of occurrences of k-mers. Bioinformatics 27:764–770."
+    url: https://doi.org/10.1093/bioinformatics/btr011
+kind: [local]
+methods: everyome_c_community_kmer_spectrum.engine:methods
+
+inputs:
+  - id: fasta
+    label: FASTA file
+    type: file
+    required: true
+    help: Nucleotide sequences, one record per '>' header line.
+    demo: reads.fasta
+
+params:
+  - id: k
+    label: K-mer length
+    type: int
+    default: 5
+    min: 1
+    max: 12
+    help: Longer k-mers are more specific but need more sequence to be seen more than once.
+
+interactive:
+  engine: everyome_c_community_kmer_spectrum.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: spectrum, title: Look at the spectrum}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/kmer_playground.js]
+    object: KmerPlayground
+    lede: How sequence length and k change the k-mer spectrum.
+    intro:
+      - "Random sequence of the length you choose; the bars count how many distinct k-mers occur once, twice and so on."
+    caveats:
+      - "Bases are drawn independently; real genomes have repeats, which add a tail of frequent k-mers."
+  guides:
+    spectrum: docs/guides/spectrum.md
+
+demo:
+  data: demo

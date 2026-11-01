@@ -127,7 +127,7 @@ helpers:
 
 interactive:
   engine: everyome.modules.singlecell.splitseq.engine:Engine
-  ui: ui.js
+  ui: [../shared/cells_ui.js, ui.js]
   steps:
     - {id: merge, title: Combine and label}
     - {id: qc, title: Filter cells}
@@ -145,13 +145,14 @@ learn:
     knee: docs/guides/knee.md
     combine: docs/guides/combine.md
     cells_per_sample: docs/guides/cells_per_sample.md
-    filter_cells: docs/guides/filter_cells.md
-    clusters: docs/guides/clusters.md
+    filter_cells: ../shared/guides/filter_cells.md
+    clusters: ../shared/guides/clusters.md
     markers: docs/guides/markers.md
-    dotplot: docs/guides/dotplot.md
-    composition: docs/guides/composition.md
+    dotplot: ../shared/guides/dotplot.md
+    composition: ../shared/guides/composition.md
+    mito: ../shared/guides/mito.md
   playground:
-    scripts: [docs/playground/umap-js.min.js, docs/playground/play_core.js, docs/playground/play_ui.js]
+    scripts: [../shared/playground/umap-js.min.js, ../shared/playground/play_core.js, ../shared/playground/play_ui.js]
     object: Playground
     lede: >
       A toy dataset you can push through simplified versions of filtering,

@@ -80,7 +80,7 @@ class Manifest:
     resources: dict = field(default_factory=dict)
     stages: list[Stage] = field(default_factory=list)
     engine: str = ""
-    ui: str = ""              # the module's own GUI views (a JS file in the module folder)
+    ui: list = field(default_factory=list)   # the module's GUI views: JS files, loaded in order (shared views first)
     steps: list[Step] = field(default_factory=list)
     learn: dict = field(default_factory=dict)
     demo: dict = field(default_factory=dict)
@@ -90,6 +90,8 @@ class Manifest:
     tools: list[dict] = field(default_factory=list)     # [{name, version: shell command}] recorded in the run record
     methods: str = ""         # "package.module:function(record) -> str": draft methods text for the write-up
     nextflow: dict = field(default_factory=dict)  # batch.engine nextflow: pipeline, revision, schema, samplesheet, profile, demo
+    source: str = "everyome"  # everyome (shipped), community (reviewed and signed) or unreviewed (an author's own folder)
+    review: dict = field(default_factory=dict)    # community: who reviewed it and when, from the signed registry index
 
     @property
     def fields(self) -> list[Field]:
@@ -99,6 +101,7 @@ class Manifest:
         """What the GUI needs (no file-system paths)."""
         return {"id": self.id, "name": self.name, "suite": self.suite, "version": self.version, "summary": self.summary,
                 "kind": self.kind, "authors": self.authors, "licence": self.licence, "cite": self.cite,
+                "source": self.source, "review": {k: self.review.get(k) for k in ("reviewed_by", "reviewed_at") if self.review.get(k)},
                 "inputs": [f.as_dict() for f in self.inputs], "params": [f.as_dict() for f in self.params],
                 "resources": self.resources,
                 "stages": [{"id": s.id, "name": s.name, "title": s.title} for s in self.stages],
@@ -160,7 +163,7 @@ def load(path: Path) -> Manifest:
     m = Manifest(id=d["id"], name=d["name"], suite=d["suite"], version=str(d["version"]), summary=d["summary"].strip(),
                  kind=kind, dir=path.parent, authors=d.get("authors", []), licence=d.get("licence", ""), cite=d.get("cite", []),
                  inputs=[_field(x, "inputs") for x in d.get("inputs", [])], params=[_field(x, "params") for x in d.get("params", [])],
-                 resources=batch.get("resources", {}), engine=inter.get("engine", ""), ui=inter.get("ui", ""),
+                 resources=batch.get("resources", {}), engine=inter.get("engine", ""), ui=[inter["ui"]] if isinstance(inter.get("ui"), str) else list(inter.get("ui") or []),
                  steps=[Step(s["id"], s["title"]) for s in inter.get("steps", [])],
                  learn=d.get("learn", {}), demo=d.get("demo", {}), helpers=d.get("helpers", {}),
                  report=batch.get("report", ""), requires=d.get("requires", []),
@@ -200,7 +203,7 @@ def load(path: Path) -> Manifest:
         for f in pg["scripts"]:
             if not (m.dir / f).is_file():
                 raise ManifestError(f"{path}: learn.playground script {f} is missing")
-    if m.ui and not (m.dir / m.ui).is_file():
+    if not all((m.dir / f).is_file() for f in m.ui):
         raise ManifestError(f"{path}: interactive.ui points to a missing file")
     if m.demo.get("data") and not (m.dir / m.demo["data"]).is_dir():
         raise ManifestError(f"{path}: demo.data points to a missing folder")
@@ -223,6 +226,10 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
             raise ManifestError(f"{path}: a nextflow batch needs {k}")
     if str(batch["revision"]) in ("", "latest", "master", "main", "dev"):
         raise ManifestError(f"{path}: pin the pipeline to a release (revision), never a branch")
+    from . import pipelines
+    if pipelines.key(batch["pipeline"], str(batch["revision"])) not in pipelines.lock():
+        raise ManifestError(f"{path}: {batch['pipeline']} {batch['revision']} is not in pipelines.lock.json; "
+                            "add it with python -m everyome.core.pipelines build --update-lock")
     try:
         schema = json.loads((m.dir / batch["schema"]).read_text())
     except (FileNotFoundError, ValueError):
@@ -233,14 +240,23 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
         raise ManifestError(f"{path}: batch.samplesheet needs 'from' (a table input), its 'columns' and the pipeline 'param'")
     skip = set(batch.get("skip", [])) | {sheet["param"], "outdir"}
     taken = {f.id for f in m.fields}
-    demo = batch.get("demo_values", {})
+    demo, over, upstream = batch.get("demo_values", {}), batch.get("defaults", {}), {}
     for f in nfschema.fields(schema, skip):
         if f.id in taken:
             raise ManifestError(f"{path}: pipeline parameter {f.id} clashes with a module input or setting")
         f.demo = demo.get(f.id, "")
+        if f.id in over:
+            # Intent: a module may start from a better default than the pipeline's own (for example, a protocol the
+            # default aligner needs); the pipeline's default is kept so the parameter file stays complete.
+            upstream[f.id] = f.default
+            f.default = over[f.id]
+            f.help = (f.help + " " if f.help else "") + f"Everyome starts from {over[f.id]!r}; the pipeline's own default is {upstream[f.id]!r}."
         m.params.append(f)
+    if set(over) - {f.id for f in m.params}:
+        raise ManifestError(f"{path}: batch.defaults names unknown pipeline parameters: {', '.join(sorted(set(over) - {f.id for f in m.params}))}")
     m.report = batch.get("report", m.report)
     m.nextflow = {k: batch.get(k) for k in ("pipeline", "revision", "schema", "samplesheet", "profile", "demo")}
+    m.nextflow["upstream"] = upstream
     m.nextflow["profile"] = m.nextflow.get("profile") or "apptainer"
     m.stages = [Stage("01", "pipeline", f"Run {batch['pipeline']} {batch['revision']}", run="")]
 

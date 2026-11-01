@@ -1,0 +1,42 @@
+# Checks each submitted module: Everyome's automated checks, then the module's own tests.
+# Runs on pull_request (not pull_request_target), so submitted code never sees secrets or a write token.
+name: check submission
+on:
+  pull_request:
+    paths: ["submissions/**"]
+permissions:
+  contents: read
+env:
+  EVERYOME_VERSION: "0.1.0a2"   # the first Everyome release with the registry tools; keep pinned
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install Everyome
+        run: pip install "everyome==${EVERYOME_VERSION}" pytest
+      - name: Find the changed modules
+        id: changed
+        run: |
+          dirs=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- submissions | cut -d/ -f2 | sort -u | tr '\n' ' ')
+          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
+      - name: Automated checks
+        run: |
+          status=0
+          for d in ${{ steps.changed.outputs.dirs }}; do
+            [ -d "submissions/$d" ] || continue
+            python -m everyome.registry check "submissions/$d" --markdown | tee -a "$GITHUB_STEP_SUMMARY" || status=1
+          done
+          exit $status
+      - name: The module's own tests
+        run: |
+          for d in ${{ steps.changed.outputs.dirs }}; do
+            [ -d "submissions/$d" ] || continue
+            (cd "submissions/$d" && PYTHONPATH=. python -m pytest -q -p no:cacheprovider tests/test_*.py)
+          done

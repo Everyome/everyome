@@ -28,7 +28,7 @@ def _say(msg):
 
 def prepare(bundle: Path, new: Path, submit: bool) -> dict:
     info = json.loads((bundle / "run.json").read_text())
-    found, _ = modules.discover()
+    found, _ = modules.available()
     m = found.get(info["module"])
     if not m:
         sys.exit(f"Module {info['module']} is not installed with this Everyome.")
@@ -49,7 +49,8 @@ def prepare(bundle: Path, new: Path, submit: bool) -> dict:
         run = {"id": new.name, "dir": str(new), "module": m.id, "module_version": m.version, "rerun_of": info["id"],
                "created": time.strftime("%Y-%m-%d %H:%M:%S"), "user": os.environ.get("USER", "user"), "values": vals,
                "defaults_changed": sorted(f.id for f in m.params if vals.get(f.id) != f.default),
-               "resources": info.get("resources", {}), "jobs": {}, "demo": bool(info.get("demo"))}
+               "resources": info.get("resources", {}), "jobs": {}, "demo": bool(info.get("demo")),
+               "job_prefix": info.get("job_prefix", "Claude"), "pipelines_dir": info.get("pipelines_dir", "")}
         (new / "params.json").write_text(json.dumps(vals, indent=1))
         for name, text in runs.pipeline_files(run, m).items():
             (new / name).write_text(text)
@@ -61,6 +62,12 @@ def prepare(bundle: Path, new: Path, submit: bool) -> dict:
     for s in scripts:
         Path(s["path"]).write_text(s["script"])
         _say(f"--- stage {s['stage']} · {s['title']}\n{s['path']}")
+    if submit and m.nextflow and not run.get("demo"):
+        from . import pipelines
+        k = pipelines.key(m.nextflow["pipeline"], str(m.nextflow["revision"]))
+        if not pipelines.installed(LocalBackend(new), run["pipelines_dir"], k):
+            sys.exit(f"{k} is not installed in {run['pipelines_dir']} on this cluster. Open the run in the Everyome app and press Run, "
+                     "or ask whoever set up Everyome here.")
     if submit:
         jobs = runs.submit(LocalBackend(new), run, m, sys.executable)
         _say("Submitted: " + ", ".join(f"stage {k} as job {v}" for k, v in jobs.items()))
@@ -72,7 +79,7 @@ def prepare(bundle: Path, new: Path, submit: bool) -> dict:
 def replay(bundle: Path, new: Path) -> None:
     calls = json.loads((bundle / "session_calls.json").read_text())
     run = json.loads((new / "run.json").read_text())
-    found, _ = modules.discover()
+    found, _ = modules.available()
     m = found[run["module"]]
     if m.stages:
         st = runs.status(LocalBackend(new), run, m)

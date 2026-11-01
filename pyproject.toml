@@ -55,5 +55,5 @@ version = { attr = "everyome.__version__" }
 include = ["everyome*"]
 
 [tool.setuptools.package-data]
-everyome = ["suites.yaml", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/demo/*/*", "modules/*/*/docs/*", "modules/*/*/docs/*/*",
-  "modules/*/*/workflow/*/*", "modules/*/*/templates/*", "modules/*/*/pipeline/*"]
+everyome = ["suites.yaml", "pipelines.lock.json", "static/*", "static/fonts/*", "modules/*/*/module.yaml", "modules/*/*/*.js", "modules/*/*/demo/*", "modules/*/*/demo/*/*", "modules/*/*/docs/*", "modules/*/*/docs/*/*",
+  "modules/*/*/workflow/*/*", "modules/*/*/templates/*", "modules/*/*/pipeline/*", "modules/*/shared/*/*"]

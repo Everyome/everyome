@@ -42,9 +42,9 @@ protocol and an editable methods section.
 | Topic | Decision |
 |---|---|
 | Name | Everyome |
-| Audience | Any lab, any Slurm cluster, plus local runs on a laptop. Stowers/Cerebro is one configuration. |
+| Audience | Any lab, any Slurm cluster, plus local runs on a laptop. The first test cluster is one configuration among many. |
 | Relation to SPLiTscape | New umbrella; SPLiTscape becomes the first single-cell module, attribution and citation kept |
-| Licence | MIT or BSD-3 (confirm with Stowers tech transfer) |
+| Licence | MIT or BSD-3 (confirm with the host institution's tech transfer office) |
 | Batch engine | Wrap nf-core / Snakemake pipelines |
 | Community modules | Built in, **switched off** at launch; every submission reviewed before acceptance |
 
@@ -316,10 +316,104 @@ Each phase ends with a check you can see working.
 | 4 | Batch engine + bulk RNA | Nextflow runner (head job, progress from trace, resume); forms from `nextflow_schema.json`; bulk DE module with DE explorer | Bulk RNA demo runs end to end on the demo cluster and a real test on a small public dataset |
 | 5 | Local modules | Local runner; primer design module with plasmid map viewer | Primer design works with no cluster connected |
 | 6 | Learning layer | Generalise manual/playground builder; interpretation-guide cards; catalogue rule (no manual → not listed) | All three modules have manual, playground, guides |
-| 7 | Community registry (off) | Registry repo, CI checks, signing, loader verification, review checklist | A test module goes through review in a dry run; registry stays disabled |
+| 7 | Community registry (off) | Registry repo, CI checks, signing, loader verification, review checklist | A test module goes through review in a dry run; registry stays disabled ✓ |
 | 8 | Suite roll-out | Add modules suite by suite (section 2), each with demo data and learning material | — ongoing |
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
+
+### Shipped pipelines and job-name prefix (2026-10-31)
+
+- **Pipelines ship with Everyome** instead of being fetched from GitHub at run
+  time. `everyome/pipelines.lock.json` pins each pipeline release and its Nextflow
+  plugins by SHA-256 (and lists its containers); `python -m everyome.core.pipelines
+  build` makes reproducible bundles (docs, tests and CI files left out) that go
+  in a separate package, `everyome-pipelines` (`pipelines/`; about 28 MB, mostly
+  nf-core/scrnaseq's 10x barcode lists). A module can only use a pipeline in the lock.
+- **Pressing Run** copies the bundle to the site's pipelines folder (checked on
+  both sides; once per folder), then the head job runs that copy with
+  `NXF_OFFLINE=true`, the shipped plugins, and a shared container folder beside it.
+  The *Check before submitting* window says what will be copied and where.
+  Reruns use the copy already on the cluster. The record gives the code's SHA-256,
+  plugins and container list.
+- **Containers** are not shipped (GBs, separate licences): Nextflow downloads
+  them once into the shared folder; air-gapped sites fill it with
+  `nf-core pipelines download` (docs/PIPELINES.md).
+- **Job-name prefix** (open question 1, resolved): a site setting on the Connect
+  page, saved with the connection and stored in each run; default `Claude`, which
+  the first test site requires; empty means names start with the username.
+- Tested: bundles build reproducibly from GitHub and the plugin registry; both
+  real bundles install into a cluster-style folder; tampered or missing files are
+  refused; Run installs then submits (`tests/test_pipelines.py`). **Not yet run
+  with real Nextflow**: whether offline mode finds the shipped plugins and still
+  pulls containers on a cluster with internet must be confirmed on a real cluster.
+
+### Phase 8 notes: single-cell RNA-seq (2026-10-31)
+
+First roll-out module: **Single-cell RNA-seq (10x and similar)**, `singlecell.scrna`.
+
+- **Cluster part:** nf-core/scrnaseq **4.2.0** (pinned; schema in `pipeline/`).
+  Every pipeline setting is on the settings page. A module can now start a
+  pipeline parameter from its own default (`batch.defaults`): here `protocol` is
+  `10XV3`, because the default aligner (simpleaf) cannot detect the chemistry;
+  the pipeline's own default (`auto`) is kept so the parameter file stays complete.
+- **Live session:** load one of the pipeline's combined matrices (CellBender's
+  by default), use gene symbols, add condition and batch from the samples
+  table, then the same filter, cluster, markers, naming and export steps as
+  SPLiT-seq, plus a **mitochondrial share** filter (setting: *Mitochondrial genes*).
+- **Shared single-cell code:** SPLiT-seq's part 2 was split into
+  `singlecell/cells.py` (engine), `singlecell/shared/cells_ui.js` (views),
+  `singlecell/writeup.py` (methods text), shared guides and the playground in
+  `singlecell/shared/`. A module's `interactive.ui` may now list several files
+  (shared views first). Both modules' tests pass unchanged in what they check.
+- **Demo:** four 10x-style samples of a toy blood-like tissue (six cell types with
+  well-known markers, interferon-responding monocytes only in treated samples,
+  a moderate day-to-day batch effect, damaged cells, doublets, empty droplets).
+  `tests/test_scrna_flow.py` checks the session finds every type's markers,
+  removes the damaged cells, mixes batches after Harmony, sees the treated-only
+  type, writes the methods, and that the rerun bundle reproduces the composition.
+- **Not yet checked on real data or a real cluster** (as for bulk RNA): output
+  paths follow nf-core/scrnaseq 4.2.0's documentation (`results/<aligner>/mtx_conversions/combined_<kind>_matrix.h5ad`);
+  confirm on a small public 10x dataset on a real cluster, including whether an empty
+  *Expected cells* column is accepted by the pipeline.
+
+### Phase 7 notes (2026-10-31)
+
+Built and dry-run tested; **the registry stays switched off** (`BUILD_ENABLED =
+False` in `everyome/core/community.py`, and a site must also set `"enabled": true`
+in `~/.everyome/community.json`; both locks must be open).
+
+- **Scope for now:** community modules are local only (`kind: [local]`). Cluster
+  modules would need their code installed on each cluster; left for later.
+- **Automated checks** (`everyome/registry/checks.py`, `python -m everyome.registry
+  check`): manifest valid, id `community.<name>`, code only in its own package
+  `everyome_c_community_<name>`, open-source licence and LICENSE file, manual,
+  example data, playground and guides, tests, source only (no binaries, archives
+  or hidden files), under 20 MB. Warnings for a human: network imports, running
+  programs, `eval`/`exec`, environment and home-folder access, credential-like
+  strings, browser web requests. The checks never run the module's code.
+- **Signing:** OpenSSH (`ssh-keygen -Y sign/verify`, namespace `everyome-module`);
+  no new dependency, maintainers use their own SSH keys. Reproducible archives
+  (same files, same bytes) so a checksum can be checked by anyone.
+- **Registry layout and tools:** `approve` (check, pack, sign, record reviewer),
+  `index` (build and sign), `revoke`. Template for the separate registry repo in
+  `registry-template/`, with a CI workflow that runs on `pull_request` only (no
+  secrets or write token for submitted code). The repo itself is not created yet.
+- **Loader:** verifies the index signature against the site's trusted keys every
+  time it is read, the archive's SHA-256 and signature, unpacks only ordinary
+  files inside its folder, re-runs the checks, and stops offering withdrawn
+  versions. Modules show **Community · reviewed** (with the reviewer and date).
+- **Authors** can load their own folder with `EVERYOME_DEV_MODULES`; it shows as
+  **Unreviewed** and is never fetched from anywhere.
+- **Dry run** (`tests/test_registry.py`): a test module (`tests/fixtures/community_kmer`,
+  a k-mer spectrum) is checked, approved, signed, indexed, installed and run in
+  the app with its record and methods; a tampered archive, an index signed by an
+  unknown key, a withdrawn version and unsafe archives (path escape, absolute
+  paths, symlinks, hidden files) are all refused; with the switch off nothing loads.
+- Docs: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/MODULE_AUTHORS.md`,
+  `docs/REVIEW_CHECKLIST.md`.
+- Before switching on: create the registry repo, name maintainers and their keys,
+  a contact address for conduct reports, and decide whether the switch should
+  also be settable by a site-wide (not per-user) config.
 
 ### Phase 6 notes (2026-10-31)
 
@@ -390,7 +484,7 @@ results (volcano, MA, searchable table, per-gene counts) and exports them.
 
 **Not done from the "done when":** a real run on a small public dataset. This
 Mac has no Nextflow, Java runtime or Apptainer, so the pipeline has not run for
-real anywhere yet. That needs a cluster with those three (Cerebro, once IT
+real anywhere yet. That needs a cluster with those three (the first test cluster, once IT
 confirms) and a small public dataset such as nf-core's own test data.
 
 Also fixed: a colour helper (`hexRgb`) missing since Phase 2, which broke the
@@ -436,7 +530,7 @@ SPLiTscape repository is untouched.
   the cluster's Python has the module's packages, generated demo data, and
   shared viewers (embedding map, log histograms, stacked bars, knee plot, dot plot).
 - Tested end to end on the demo cluster in pytest (about a minute) and in the
-  browser. Not yet run on real reads or on Cerebro.
+  browser. Not yet run on real reads or on a real cluster.
 - Follow-up (same day): the SPLiTscape playground is back, as the module's
   Playground page under *Learn* (theme-aware, runs in the browser, UMAP-JS under
   Apache 2.0). Merging with an atlas or other dataset is now optional at both
@@ -474,13 +568,13 @@ in the spec but have no runner until phase 5.
 
 ## 10. Prerequisites outside the code
 
-- **Stowers IT** (already open for SPLiTscape): SSH-key logins from laptops,
+- **Cluster IT at the first test site** (already open for SPLiTscape): SSH-key logins from laptops,
   port forwarding to compute nodes, partition/time limits for sessions, a shared
   install location. New for Everyome: Apptainer, Java and Nextflow availability
-  on Cerebro; GPU partition access for the protein suite.
-- **Stowers tech transfer**: licence choice and trademark search for
+  on that cluster; GPU partition access for the protein suite.
+- **Tech transfer at the host institution**: licence choice and trademark search for
   "Everyome".
-- **Testing gaps carried over**: real Slurm on Cerebro, real FASTQ data, Windows.
+- **Testing gaps carried over**: real Slurm on a production cluster, real FASTQ data, Windows.
 
 ---
 
@@ -492,7 +586,7 @@ in the spec but have no runner until phase 5.
 | Wrapped pipelines change underneath us | Pin revisions and container digests; upgrade deliberately with tests |
 | Users misread results | Interpretation guides, sensible defaults, warnings on unusual settings |
 | Malicious community modules | Registry off at launch; review, signing, pinning (section 7) |
-| Cluster diversity outside Stowers | Scheduler interface, readiness checks, site config file |
+| Cluster diversity across institutions | Scheduler interface, readiness checks, site config file |
 | Generated methods text contains errors | Always generated from the run record; user must review before export |
 | Restrictive licences on some tools or model weights | Manifest declares licences; core shows them before first run |
 
@@ -500,10 +594,8 @@ in the spec but have no runner until phase 5.
 
 ## 12. Open questions
 
-1. **Job names outside Stowers.** Stowers policy requires
-   `Claude_<user>_..._<stage>`. Proposal: a site setting for the job-name
-   prefix, defaulting to `Claude_<user>_everyome_<module>_<stage>` in the
-   Stowers configuration, so other institutions can set their own.
+1. **Job names across institutions.** Resolved: the prefix in
+   `<prefix>_<user>_everyome_<module>_<stage>` is a site setting (default `Claude`).
 2. **Repository.** New repo now, or restructure this one and rename later?
 3. **Funding and maintainers** for long-term upkeep once other labs depend on it.
 4. **Which second module?** Bulk RNA DE is proposed; confirm.

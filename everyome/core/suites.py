@@ -26,7 +26,7 @@ def check(cat: dict, modules: dict) -> list[str]:
     for m in modules.values():
         if m.suite not in suite_ids:
             problems.append(f"{m.dir}/module.yaml: suite {m.suite!r} is not one of {', '.join(sorted(suite_ids))}")
-        if m.id not in {t.get("module") for _, t in tools.values()}:
+        if m.source == "everyome" and m.id not in {t.get("module") for _, t in tools.values()}:
             problems.append(f"suites.yaml: module {m.id} is not listed as a tool of any suite")
     for kind in ("data_types", "aims"):
         for x in cat[kind]:
@@ -42,6 +42,9 @@ def public(cat: dict, modules: dict) -> dict:
     for s in cat["suites"]:
         tools = [{"id": t["id"], "name": t["name"], "module": t.get("module", ""),
                   "ready": bool(t.get("module")) and t["module"] in modules} for t in s["tools"]]
+        # Intent: community and unreviewed modules appear in their suite, after Everyome's own tools.
+        tools += [{"id": m.id, "name": m.name, "module": m.id, "ready": True, "source": m.source}
+                  for m in modules.values() if m.suite == s["id"] and m.source != "everyome"]
         suites.append({"id": s["id"], "name": s["name"], "blurb": s["blurb"], "tools": tools,
                        "ready": any(t["ready"] for t in tools)})
     return {"suites": suites, "data_types": [{"id": d["id"], "label": d["label"]} for d in cat["data_types"]],

@@ -6,7 +6,7 @@ material from others, each under its own licence, with the licence text next to 
 | What | Where | Licence |
 |---|---|---|
 | Fonts (Fontsource builds of open-source typefaces) | `everyome/static/fonts/` | SIL Open Font License 1.1; one `*-LICENSE` file per family |
-| UMAP-JS (used by the SPLiT-seq playground) | `everyome/modules/singlecell/splitseq/docs/playground/umap-js.min.js` | Apache License 2.0; `UMAP-JS-LICENSE` in the same folder |
+| UMAP-JS (used by the single-cell playground) | `everyome/modules/singlecell/shared/playground/umap-js.min.js` | Apache License 2.0; `UMAP-JS-LICENSE` in the same folder |
 | nf-core/rnaseq 3.27.0 parameter and samplesheet schemas | `everyome/modules/rna/bulk_de/pipeline/` | MIT; `LICENSE-nf-core-rnaseq` in the same folder |
 
 Everyome runs, but does not include, other tools (for example nf-core/rnaseq,

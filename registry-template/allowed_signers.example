@@ -1,0 +1,4 @@
+# Maintainers whose signatures Everyome trusts. One line per key:
+#   <identity> namespaces="everyome-module" <public key>
+# Sites copy this file and list the identities in ~/.everyome/community.json ("signers").
+maintainer@example.org namespaces="everyome-module" ssh-ed25519 AAAA...replace-with-a-real-public-key

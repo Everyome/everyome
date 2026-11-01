@@ -15,17 +15,24 @@ current when decisions change.
 | `everyome/core/backends.py` | `SSHBackend` (system ssh, key-only, ControlMaster) and `LocalBackend` (this computer; demo cluster when given fake Slurm) |
 | `everyome/core/slurm.py` | sbatch/squeue/sacct/scancel, job naming, script headers |
 | `everyome/core/manifest.py` | `module.yaml` spec v1: fields, stages, steps; value checking |
-| `everyome/core/modules.py` | Finds first-party modules; community registry switched off |
+| `everyome/core/modules.py` | Finds modules: first-party, then reviewed community ones (when switched on), then an author's unreviewed folder (`EVERYOME_DEV_MODULES`) |
+| `everyome/core/community.py` | Community loader: two off-switches (`BUILD_ENABLED`, `~/.everyome/community.json`), signed index, checksum and signature checks, safe unpacking, withdrawals |
+| `everyome/registry/` | Registry tools: `checks.py` (automated checks), `bundle.py` (pack, sign, verify, approve, index), `python -m everyome.registry` |
+| `registry-template/` | Starting point for the separate `everyome-modules` registry repo (not created yet) |
+| `tests/fixtures/community_kmer/` | Test community module used by the registry dry run |
 | `everyome/core/projects.py`, `runs.py` | Project folders; runs (params, job scripts, afterok chain, status, logs) |
 | `everyome/core/engine.py`, `session.py`, `sessions.py` | Interactive engines (base class), the compute-node session server, and the app side (start, tunnel, ping, stop) |
 | `everyome/suites.yaml`, `everyome/core/suites.py` | The suites, their tools (ready = has a module; otherwise planned), and the data-type and aim rules behind "Find the right analysis". A module's `suite` must be one of these ids and it must be listed as a tool |
 | `everyome/core/nfschema.py` | Every parameter in a Nextflow pipeline's `nextflow_schema.json` becomes a field (its groups, defaults, choices; hidden ones under Advanced) |
 | `everyome/core/records.py`, `rerun.py` | Run record (inputs with checksums, settings, jobs, versions, session steps) and the write-ups made from it: protocol, methods, references, rerun bundle. `python -m everyome.core.rerun BUNDLE NEW_DIR [--submit / --session]` repeats a run; the user runs it |
+| `everyome/core/pipelines.py`, `everyome/pipelines.lock.json`, `pipelines/` | Shipped Nextflow pipelines: pinned bundles (code + plugins, SHA-256), built into the separate `everyome-pipelines` package; installed on the cluster when Run is pressed and run offline (`docs/PIPELINES.md`) |
 | `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
 | `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |
 | `everyome/modules/rna/bulk_de/` | Bulk RNA-seq: nf-core/rnaseq 3.27.0 (pinned; schemas in `pipeline/`) for reads to counts, then a PyDESeq2 live session; `demo_pipeline.py` stands in for Nextflow on the demo cluster |
+| `everyome/modules/singlecell/cells.py`, `shared/`, `writeup.py` | Shared single-cell live session (filter incl. mitochondrial share, Harmony, Leiden, markers, naming, composition, export), its views (`shared/cells_ui.js`), guides, playground and methods text; used by SPLiT-seq and 10x |
+| `everyome/modules/singlecell/scrna/` | Single-cell RNA-seq (10x and similar): nf-core/scrnaseq 4.2.0 (pinned; `batch.defaults` sets protocol 10XV3), then load a combined matrix and the shared steps; `demo_pipeline.py` stands in for Nextflow |
 | `everyome/modules/singlecell/splitseq/` | SPLiTscape as a module: `workflow/` (the SPLiTscape bash and Python stages), `stage.py` (writes `reads.env` from settings, runs a stage or its demo stand-in), `helpers.py` (folder scan, read-QC report), `engine.py` (part 2), `ui.js`, `demo_data.py` |
 | `everyome/static/` | App shell (`app.js`: home page, suite pages, views, shared viewers, markdown), `app.css`, `themes.json`, fonts |
 | `design/themes/` | 67 cnidarian themes; `python design/themes/export_app_themes.py` regenerates `everyome/static/themes.json` |
@@ -86,8 +93,10 @@ EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
   only when the user clicks Run, under their own account. Don't add auto-submission.
 - **Process naming:** all Claude-created processes/jobs include `Claude` and the
   username: `Claude_<user>_everyome_<module>_<stage>`.
-- **Community modules** stay disabled until review, signing and pinning are in place
-  (`docs/PLAN.md` section 7).
+  The prefix is a site setting for other institutions (default `Claude`); keep `Claude` for anything Claude creates here.
+- **Community modules** stay disabled (`BUILD_ENABLED = False`); switching on is Helen's
+  decision. Every submission is reviewed against `docs/REVIEW_CHECKLIST.md`. Don't create the
+  registry repo or add trusted keys without asking.
 - **Data governance:** no PII/PHI in code or logs; never store passwords or keys.
 - **Design:** Nematostella in light mode is the default for new users (Gothic Cream remains the house style); every theme passes WCAG AA in light and dark. The app always opens on the home page.
 - **Licence:** MIT (copyright line names Helen R Horkan; Stowers tech transfer may ask for the Institute). Third-party files keep their licences, listed in `THIRD_PARTY_NOTICES.md`.

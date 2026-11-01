@@ -1,0 +1,13 @@
+# Third-party pipelines and plugins in this package
+
+Everyome's own files here are under the MIT licence (LICENSE). The bundles are
+unchanged copies of other projects' releases, with their documentation, tests
+and CI files left out, and keep their own licences:
+
+| Bundle | Source | Licence |
+|---|---|---|
+| nf-core-rnaseq-3.27.0.tar.gz | https://github.com/nf-core/rnaseq/tree/3.27.0 | MIT (LICENSE inside the bundle), © the nf-core/rnaseq team |
+| nf-core-scrnaseq-4.2.0.tar.gz | https://github.com/nf-core/scrnaseq/tree/4.2.0 | MIT (LICENSE inside the bundle), © the nf-core/scrnaseq team; the 10x barcode whitelists in assets/ are distributed by nf-core with the pipeline |
+| nf-schema-*.zip | https://github.com/nextflow-io/nf-schema | Apache License 2.0 |
+
+The software containers the pipelines use are not included; each tool keeps its own licence.

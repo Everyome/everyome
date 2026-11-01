@@ -487,8 +487,10 @@ VIEWS.connect = async el => {
          ["partition", "Partition (optional)", "Leave empty for the default"],
          ["python", "Python with Everyome installed, on the cluster", "e.g. /path/to/shared/everyome-env/bin/python"],
          ["projects_root", "Where projects are saved", "A folder you can write to, e.g. /path/to/lab/everyome_projects"],
-         ["data_root", "Where your data usually lives", "The file browser opens here"]]
-        .map(([k, l, h]) => `<label class="field"><span>${l}</span><input type="text" class="mono" name="${k}" value="${esc(sv[k] ?? (k === "port" ? "22" : ""))}"><small>${h}</small></label>`).join("")}
+         ["data_root", "Where your data usually lives", "The file browser opens here"],
+         ["pipelines_dir", "Where pipelines are kept (optional)", "Leave empty for your own ~/.everyome/pipelines, or use a shared folder from IT so pipelines and their software download once"],
+         ["job_prefix", "Job name prefix", "Some institutions require one on every job; leave as it is if unsure"]]
+        .map(([k, l, h]) => `<label class="field"><span>${l}</span><input type="text" class="mono" name="${k}" value="${esc(sv[k] ?? ({ port: "22", job_prefix: "Claude" }[k] || ""))}"><small>${h}</small></label>`).join("")}
       </div><div class="row"><button class="btn primary" id="go-ssh">Connect</button><span class="small muted">Your IT team can tell you the shared paths.</span></div></div></div>
     <div id="checks"></div>`;
   const showChecks = checks => {
@@ -545,9 +547,19 @@ VIEWS.project = async el => {
   });
 };
 
+// Intent: say what happens to the pipeline before its jobs go in: shipped with Everyome, copied once, checked.
+const pipelineNote = pl => !pl || pl.demo ? "" : !pl.here
+  ? `<div class="notice warn">${esc(pl.problem)}</div>`
+  : `<div class="notice small">${pl.installed ? `${esc(pl.key)} is already installed on the cluster in <code>${esc(pl.dir)}</code>.`
+      : `First, Everyome copies ${esc(pl.key)} (${(pl.bytes / 1e6).toFixed(1)} MB, shipped with Everyome) to <code>${esc(pl.dir)}</code> and checks it there.`}
+    The pipeline runs from that copy without contacting GitHub. Its ${pl.containers} software containers are downloaded into the folder beside it the first time they are needed, unless your site has already filled it.</div>`;
 const suiteName = id => ST.suites?.suites.find(s => s.id === id)?.name || id;
+// Intent: say plainly where a module came from: shipped with Everyome, reviewed by the community registry, or not reviewed at all.
+const sourceTag = m => m.source === "community" ? `<span class="tag ready" title="Reviewed${m.review?.reviewed_by ? " by " + esc(m.review.reviewed_by) : ""}${m.review?.reviewed_at ? " on " + esc(m.review.reviewed_at) : ""}">Community · reviewed</span>`
+  : m.source === "unreviewed" ? `<span class="tag warn">Unreviewed</span>` : "";
 const moduleCard = m => `<div class="choice" aria-pressed="${curModule()?.id === m.id}"><div class="label">${esc(suiteName(m.suite))} · v${esc(m.version)}</div><h3>${esc(m.name)}</h3><p>${esc(m.summary)}</p>
-  <div class="tags">${m.kind.map(k => `<span class="tag">${{ batch: "Cluster jobs", interactive: "Live session", local: "Runs here" }[k]}</span>`).join("")}</div>
+  <div class="tags">${m.kind.map(k => `<span class="tag">${{ batch: "Cluster jobs", interactive: "Live session", local: "Runs here" }[k]}</span>`).join("")}${sourceTag(m)}</div>
+  ${m.source === "unreviewed" ? `<p class="small muted" style="margin-top:8px">Your own module, loaded from your folder. It has not been reviewed; only run code you trust.</p>` : ""}
   ${isLocalMode() && !isLocal(m) ? `<p class="small muted" style="margin-top:8px">Needs a cluster: connect to yours, or try it on the demo cluster.</p>` : ""}
   <div class="acts"><button class="btn primary small" data-pick="${esc(m.id)}" ${isLocalMode() && !isLocal(m) ? "disabled" : ""}>Start a new run</button>${m.has_manual ? `<button class="btn small" data-man="${esc(m.id)}">Read the manual</button>` : ""}${m.playground ? `<button class="btn small" data-go="playground:${esc(m.id)}">Try the playground</button>` : ""}</div></div>`;
 function wireModuleCards(el) {
@@ -572,7 +584,8 @@ VIEWS.modules = async el => {
     suites.map(su => `<h2>${esc(su.name)}</h2><div class="grid g2">${r.modules.filter(m => m.suite === su.id).map(moduleCard).join("")}</div>`).join("") +
     `<p class="small" style="margin-top:18px">More suites are on the way. <button class="btn small" data-go="home">See all suites</button></p>` +
     (r.problems.length ? `<h2>Modules that could not load</h2>${r.problems.map(p => `<div class="notice warn mono small">${esc(p)}</div>`).join("")}` : "") +
-    `<p class="small muted" style="margin-top:22px">Community modules are ${r.community ? "on" : "switched off in this version"}. Only modules shipped with Everyome are listed.</p>`;
+    `<p class="small muted" style="margin-top:22px">${r.community ? "Community modules are on: those marked <i>Community · reviewed</i> were checked and signed by the registry's reviewers."
+      : "Community modules are switched off in this version."}${r.modules.some(m => m.source === "unreviewed") ? " Modules marked <i>Unreviewed</i> come from your own folder (EVERYOME_DEV_MODULES)." : ""}</p>`;
   wireModuleCards(el);
 };
 
@@ -778,6 +791,7 @@ VIEWS.run = async el => {
     const p = await api("/api/run/preview", { method: "POST", body: { start_at: from } });
     const ok = await modal("Check before submitting",
       `<p>Everyome will submit <b>${p.scripts.length} job${p.scripts.length > 1 ? "s" : ""}</b> to <b>${esc(ST.state.label)}</b> under your account (<b>${esc(run.user)}</b>). These are the exact scripts:</p>` +
+      pipelineNote(p.pipeline) +
       p.scripts.map(s => `<div class="label" style="margin-top:12px">Stage ${esc(s.stage)} · ${esc(s.title)}</div><pre class="script">${esc(s.script)}</pre>`).join(""),
       [{ text: "Cancel", value: false }, { text: `Submit ${p.scripts.length} job${p.scripts.length > 1 ? "s" : ""}`, value: true, primary: true }]);
     if (!ok) return;
