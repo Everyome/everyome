@@ -1,5 +1,5 @@
 # Intent: the source package carries the tests (and their helper), the citation and the licences.
-include LICENSE THIRD_PARTY_NOTICES.md CITATION.cff README.md
+include LICENSE THIRD_PARTY_NOTICES.md ACKNOWLEDGEMENTS.md CITATION.cff README.md
 recursive-include tests *.py
 include CONTRIBUTING.md CODE_OF_CONDUCT.md
 recursive-include tests/fixtures *

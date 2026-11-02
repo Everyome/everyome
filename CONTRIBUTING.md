@@ -16,8 +16,9 @@ patient data, unpublished sequences, passwords, keys and cluster host names.
 3. Every module keeps its manual, example data, playground and "how to read this"
    guides; `tests/test_learning.py` checks this.
 4. Never add code that submits cluster jobs on its own: jobs run only when the
-   person clicks Run, under their own account. Job names start with
-   `Claude_<user>_everyome_` when an AI assistant created the process.
+   person clicks Run, under their own account. Job names are `<user>_everyome_…`, with a
+   prefix if the site sets one. If an AI assistant starts processes while you develop (tests,
+   demo runs), set `EVERYOME_JOB_PREFIX` to the assistant's name so they are labelled.
 5. Literature references include a DOI or URL.
 
 ## Writing a module for the community registry

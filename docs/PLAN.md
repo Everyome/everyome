@@ -597,7 +597,7 @@ results (volcano, MA, searchable table, per-gene counts) and exports them.
   groups (specialist ones under *Advanced*); only changed values reach the
   pipeline. One head job runs `nextflow run … -r 3.27.0 -profile apptainer
   -resume`; a generated `nextflow.config` sends the pipeline's tasks to Slurm,
-  each named `Claude_<user>_everyome_rna_bulk_de_<task>`. Progress comes from the
+  each named `<user>_everyome_rna_bulk_de_<task>` (with the site's prefix, if any). Progress comes from the
   trace file; the MultiQC report opens sandboxed from the Run page.
 - The samplesheet is a table filled from a reads folder (condition guessed from
   sample names, then checked by the user); extra columns stay out of the CSV.

@@ -14,8 +14,9 @@ def main():
     a = ap.parse_args()
     try:
         import setproctitle
+        from everyome.core.slurm import proc_name
         # Intent: the app's process name says who started it, with the same prefix as job names (core/slurm.py).
-        setproctitle.setproctitle(f"Claude_{os.environ.get('USER', 'user')}_everyome_app")
+        setproctitle.setproctitle(proc_name(os.environ.get("USER", "user"), "everyome_app"))
     except ImportError:
         pass
     url = f"http://127.0.0.1:{a.port}"

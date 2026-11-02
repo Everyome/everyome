@@ -103,7 +103,17 @@ pip install -e ".[test,all]"
 pytest
 ```
 
+## Acknowledgements
+
+Everyome was created by Helen R Horkan PhD (Stowers Institute for Medical
+Research). Much of its code and documentation was written with Claude
+(Anthropic; https://www.anthropic.com/claude), an AI assistant, through Claude
+Code (https://claude.com/claude-code), under her direction. It is built on
+nf-core, Nextflow, BioContainers and many open-source scientific tools and
+libraries; [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) thanks each of them and
+gives the references to cite.
+
 ## Licence
 
-MIT (see `LICENSE`). Fonts, UMAP-JS and the nf-core/rnaseq schemas that ship
-with Everyome keep their own licences; see `THIRD_PARTY_NOTICES.md`.
+MIT (see `LICENSE`). Fonts, UMAP-JS and the nf-core pipelines and schemas that
+ship with Everyome keep their own licences; see `THIRD_PARTY_NOTICES.md`.

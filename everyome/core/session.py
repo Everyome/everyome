@@ -100,7 +100,8 @@ def main():
     a = ap.parse_args()
     try:
         import setproctitle
-        setproctitle.setproctitle(f"Claude_{os.environ.get('USER', 'user')}_everyome_session")
+        from everyome.core.slurm import proc_name
+        setproctitle.setproctitle(proc_name(os.environ.get("USER", "user"), "everyome_session"))
     except ImportError:
         pass
     with socket.socket() as s:

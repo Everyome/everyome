@@ -50,7 +50,7 @@ def prepare(bundle: Path, new: Path, submit: bool) -> dict:
                "created": time.strftime("%Y-%m-%d %H:%M:%S"), "user": os.environ.get("USER", "user"), "values": vals,
                "defaults_changed": sorted(f.id for f in m.params if vals.get(f.id) != f.default),
                "resources": info.get("resources", {}), "jobs": {}, "demo": bool(info.get("demo")),
-               "job_prefix": info.get("job_prefix", "Claude"), "pipelines_dir": info.get("pipelines_dir", "")}
+               "job_prefix": info.get("job_prefix", slurm.JOB_PREFIX), "pipelines_dir": info.get("pipelines_dir", "")}
         (new / "params.json").write_text(json.dumps(vals, indent=1))
         for name, text in runs.pipeline_files(run, m).items():
             (new / name).write_text(text)
@@ -107,7 +107,7 @@ def main():
     a = ap.parse_args()
     try:
         import setproctitle
-        setproctitle.setproctitle(f"{slurm.JOB_PREFIX}_{os.environ.get('USER', 'user')}_everyome_rerun")
+        setproctitle.setproctitle(slurm.proc_name(os.environ.get("USER", "user"), "everyome_rerun"))
     except ImportError:
         pass
     bundle, new = Path(a.bundle).resolve(), Path(a.new_run_dir).resolve()

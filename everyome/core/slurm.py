@@ -5,18 +5,29 @@ user's own account. Nothing here submits on its own.
 """
 from __future__ import annotations
 
+import os
 import re
 import shlex
 
-# Intent: job names say who made them: <prefix>_<user>_everyome_<module>_<stage>. The prefix is a site
-# setting (some institutions require one); the default follows the policy of the site Everyome was built at.
-JOB_PREFIX = "Claude"
+# Intent: job names say who made them: [<prefix>_]<user>_everyome_<module>_<stage>. Jobs are the user's own, so there
+# is no prefix by default. A site that requires one sets it on the Connect page (Job name prefix) or with the
+# EVERYOME_JOB_PREFIX environment variable; an AI assistant running Everyome sets EVERYOME_JOB_PREFIX=Claude so the
+# processes it starts carry its name.
 PREFIX_OK = re.compile(r"[A-Za-z0-9_-]{0,32}")
+JOB_PREFIX = os.environ.get("EVERYOME_JOB_PREFIX", "") if PREFIX_OK.fullmatch(os.environ.get("EVERYOME_JOB_PREFIX", "")) else ""
+
+
+def clean(s: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_-]+", "_", s)
+
+
+def proc_name(*parts: str) -> str:
+    """Name for one of Everyome's own processes: [<prefix>_]<part>_<part>..., for ps and top."""
+    return "_".join(filter(None, [clean(JOB_PREFIX), *(clean(p) for p in parts)]))
 
 
 def job_name(user: str, module_id: str, stage: str, prefix: str = JOB_PREFIX) -> str:
     """<prefix>_<user>_everyome_<module>_<stage> (no prefix: <user>_everyome_...), with characters Slurm dislikes replaced."""
-    clean = lambda s: re.sub(r"[^A-Za-z0-9_-]+", "_", s)
     head = "_".join(filter(None, [clean(prefix), clean(user), "everyome", clean(module_id)]))
     return f"{head}_{clean(stage)}"
 

@@ -97,9 +97,11 @@ python -m everyome.core.containers pull phylo.tree --into <pipelines folder>/con
 
 ## Job names
 
-Each job is named `<prefix>_<you>_everyome_<module>_<stage>`. Some
-institutions require a prefix on every job; set it on the Connect page
-(*Job name prefix*), or leave it empty to start names with your username.
+Each job is named `<you>_everyome_<module>_<stage>`, for example
+`jsmith_everyome_phylo_tree_03_tree`. Some institutions require a prefix on every
+job; set it on the Connect page (*Job name prefix*), or for everyone using one
+installation with the `EVERYOME_JOB_PREFIX` environment variable. Processes
+inside the jobs (and Everyome's own app and session) carry the same prefix.
 
 ## For maintainers: adding or updating a pipeline
 

@@ -148,6 +148,8 @@ def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
             f"cd {shlex.quote(d)}",
             f"export EVERYOME_RUN_DIR={shlex.quote(d)}", f"export EVERYOME_PARAMS={shlex.quote(d + '/params.json')}",
             f"export EVERYOME_STAGE={shlex.quote(stage.id)}", f"export EVERYOME_CPUS={int(res.get('cpus', 1))}",
+            # Intent: processes inside the job carry the same name prefix as the job itself.
+            f"export EVERYOME_JOB_PREFIX={shlex.quote(run.get('job_prefix', slurm.JOB_PREFIX))}",
             # Intent: on the demo cluster, modules stand in for tools that are not installed there.
             *(["export EVERYOME_DEMO=1"] if run.get("demo") else []),
             *(pipelines.environment(run["pipelines_dir"]) if m.nextflow and not run.get("demo") else []),

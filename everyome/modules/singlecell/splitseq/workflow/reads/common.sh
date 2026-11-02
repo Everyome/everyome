@@ -23,11 +23,11 @@ require() {
   done
 }
 
-# Run a command with argv[0] set to Claude_<user>_<tag> so it is identifiable
-# in ps/top. (Interpreter-launched tools may still show the interpreter name.)
+# Run a command with argv[0] set to [<prefix>_]<user>_<tag> so it is identifiable in ps/top; the prefix comes
+# from EVERYOME_JOB_PREFIX, as for job names. (Interpreter-launched tools may still show the interpreter name.)
 run_named() {
   local tag="$1"; shift
-  ( exec -a "Claude_${PIPELINE_USER}_${tag}" "$@" )
+  ( exec -a "${EVERYOME_JOB_PREFIX:+${EVERYOME_JOB_PREFIX}_}${PIPELINE_USER}_${tag}" "$@" )
 }
 
 # Run a function for every sublibrary × run, at most MAX_PARALLEL at a time,

@@ -499,8 +499,8 @@ VIEWS.connect = async el => {
          ["projects_root", "Where projects are saved", "A folder you can write to, e.g. /path/to/lab/everyome_projects"],
          ["data_root", "Where your data usually lives", "The file browser opens here"],
          ["pipelines_dir", "Where pipelines are kept (optional)", "Leave empty for your own ~/.everyome/pipelines, or use a shared folder from IT so pipelines and their software download once"],
-         ["job_prefix", "Job name prefix", "Some institutions require one on every job; leave as it is if unsure"]]
-        .map(([k, l, h]) => `<label class="field"><span>${l}</span><input type="text" class="mono" name="${k}" value="${esc(sv[k] ?? ({ port: "22", job_prefix: "Claude" }[k] || ""))}"><small>${h}</small></label>`).join("")}
+         ["job_prefix", "Job name prefix", "Leave empty unless your institution requires a prefix on every job; job names then start with your username"]]
+        .map(([k, l, h]) => `<label class="field"><span>${l}</span><input type="text" class="mono" name="${k}" value="${esc(sv[k] ?? ({ port: "22", job_prefix: "" }[k] || ""))}"><small>${h}</small></label>`).join("")}
       </div><div class="row"><button class="btn primary" id="go-ssh">Connect</button><span class="small muted">Your IT team can tell you the shared paths.</span></div></div></div>
     <div id="checks"></div>`;
   const showChecks = checks => {

@@ -54,9 +54,9 @@ class Config(dict):
 
 
 def _name_process(cfg: Config, step: str) -> None:
-    """Name the process Claude_<user>_<step> (needs the optional setproctitle)."""
+    """Name the process [<prefix>_]<user>_<step>, prefix from EVERYOME_JOB_PREFIX (needs the optional setproctitle)."""
     user = cfg.get("user") or os.environ.get("PIPELINE_USER") or os.environ.get("USER", "unknown")
-    title = f"Claude_{user}_{step}"
+    title = "_".join(filter(None, [os.environ.get("EVERYOME_JOB_PREFIX", ""), user, step]))
     try:
         import setproctitle
 

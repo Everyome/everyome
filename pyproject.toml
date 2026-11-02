@@ -43,6 +43,7 @@ Homepage = "https://github.com/Everyome/everyome"
 Source = "https://github.com/Everyome/everyome"
 Issues = "https://github.com/Everyome/everyome/issues"
 Citation = "https://github.com/Everyome/everyome/blob/main/CITATION.cff"
+Acknowledgements = "https://github.com/Everyome/everyome/blob/main/ACKNOWLEDGEMENTS.md"
 
 [project.scripts]
 everyome = "everyome.__main__:main"

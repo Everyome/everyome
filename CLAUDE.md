@@ -76,7 +76,7 @@ projects in `~/Everyome` (`EVERYOME_LOCAL_ROOT` moves it). `seqMap()` is the
 shared plasmid/sequence map. `batch.engine: nextflow` (pipeline, pinned revision, bundled schema,
 samplesheet from a table input, profile, skip list, demo stand-in, demo_values):
 one head job runs the pipeline with a generated `nextflow.config` that names
-every task `Claude_<user>_everyome_<module>_<task>`; only changed settings go in
+every task `[<prefix>_]<user>_everyome_<module>_<task>`; only changed settings go in
 `nf_params.json`; `learn.playground` (scripts loaded in order that define an object with `mount`,
 `presetsHtml`, `applyPreset`, plus lede, intro, caveats and credit text).
 Stages see `$EVERYOME_CPUS`, and `$EVERYOME_DEMO=1` on the demo cluster.
@@ -96,9 +96,11 @@ EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 
 - **Stowers HPC policy:** Claude never submits sbatch jobs on Cerebro. The app submits
   only when the user clicks Run, under their own account. Don't add auto-submission.
-- **Process naming:** all Claude-created processes/jobs include `Claude` and the
-  username: `Claude_<user>_everyome_<module>_<stage>`.
-  The prefix is a site setting for other institutions (default `Claude`); keep `Claude` for anything Claude creates here.
+- **Process naming:** jobs Everyome submits are the user's own (they press Run), so by default they have no
+  prefix: `<user>_everyome_<module>_<stage>`. A site can set one (Connect page, or `EVERYOME_JOB_PREFIX`).
+  Anything Claude itself starts here (tests, the demo app, scripts) must include `Claude` and the username:
+  the test suite sets `EVERYOME_JOB_PREFIX=Claude` (`tests/conftest.py`), the preview launcher does too, and
+  ad-hoc scripts are named `claude_<user>_*`.
 - **Community modules** stay disabled (`BUILD_ENABLED = False`); switching on is Helen's
   decision. Every submission is reviewed against `docs/REVIEW_CHECKLIST.md`. Don't create the
   registry repo or add trusted keys without asking.
