@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="author" content="Helen R Horkan PhD">
 <title>Everyome</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="app.css">
 <script>
@@ -16,13 +18,16 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="#" data-go="home" aria-label="Everyome home"><em>Every</em>ome</a>
+  <a class="brand" href="#" data-go="home" aria-label="Everyome home"><svg class="brand-mark" id="brand-mark" viewBox="0 0 100 100" aria-hidden="true"></svg><span class="brand-word">every<b>ome</b></span></a>
   <span class="tagline">Every -ome, for everyone.</span>
   <span class="spacer"></span>
   <div class="style-picker">
     <span class="tdots" id="tdots" aria-hidden="true"></span>
-    <label class="label" for="theme-select">Style</label>
-    <select id="theme-select" aria-label="Colour style"></select>
+    <span class="label" id="theme-label">Style</span>
+    <div class="theme-pick">
+      <button type="button" id="theme-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="theme-label theme-btn"></button>
+      <div id="theme-list" role="listbox" tabindex="-1" aria-labelledby="theme-label" hidden></div>
+    </div>
     <select id="mode-select" aria-label="Light or dark">
       <option value="system">Match system</option><option value="light">Light</option><option value="dark">Dark</option>
     </select>

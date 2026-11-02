@@ -40,7 +40,7 @@ current when decisions change.
 | `everyome/modules/singlecell/scrna/` | Single-cell RNA-seq (10x and similar): nf-core/scrnaseq 4.2.0 (pinned; `batch.defaults` sets protocol 10XV3), then load a combined matrix and the shared steps; `demo_pipeline.py` stands in for Nextflow |
 | `everyome/modules/singlecell/splitseq/` | SPLiTscape as a module: `workflow/` (the SPLiTscape bash and Python stages), `stage.py` (writes `reads.env` from settings, runs a stage or its demo stand-in), `helpers.py` (folder scan, read-QC report), `engine.py` (part 2), `ui.js`, `demo_data.py` |
 | `everyome/static/` | App shell (`app.js`: home page, suite pages, views, shared viewers, markdown), `app.css`, `themes.json`, fonts |
-| `design/themes/` | 67 cnidarian themes; `python design/themes/export_app_themes.py` regenerates `everyome/static/themes.json` |
+| `design/themes/` | 68 cnidarian themes; `python design/themes/export_app_themes.py` regenerates `everyome/static/themes.json` |
 | `tests/` | Manifest, Slurm naming, and an end-to-end demo flow (real session process) |
 | `docs/PLAN.md` | Design plan and phases |
 
@@ -103,7 +103,7 @@ EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
   decision. Every submission is reviewed against `docs/REVIEW_CHECKLIST.md`. Don't create the
   registry repo or add trusted keys without asking.
 - **Data governance:** no PII/PHI in code or logs; never store passwords or keys.
-- **Design:** Nematostella in light mode is the default for new users (Gothic Cream remains the house style); every theme passes WCAG AA in light and dark. The app always opens on the home page.
+- **Design:** House Style 1: Creation (the Entacmaea theme) in light mode is the default for new users; House Style 2: Creator is Gothic Cream, the SPLiTscape style. The logo is the Growth rings mark (`docs/brand/`; the app draws it in the active theme's colours with `ringsMark()` in `app.js`); every theme passes WCAG AA in light and dark. The app always opens on the home page.
 - **Licence:** MIT (copyright line names Helen R Horkan; Stowers tech transfer may ask for the Institute). Third-party files keep their licences, listed in `THIRD_PARTY_NOTICES.md`.
 - **Version:** one place, `everyome/__init__.py`. First PyPI release prepared as 0.1.0a1.
 - Comments state intent; keep UI text plain-language and written for biologists.

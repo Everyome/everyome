@@ -13,6 +13,16 @@ const fmt = n => Number(n).toLocaleString();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // "#RRGGBB" -> [r, g, b], for blending theme colours in heatmaps and expression scales.
 const hexRgb = h => [1, 3, 5].map(i => parseInt(String(h).slice(i, i + 2), 16));
+const mixHex = (x, y, t) => { const A = hexRgb(x), B = hexRgb(y); return "#" + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, "0")).join(""); };
+// The Everyome mark (Growth rings): four open arcs, each turned a little further, fading from colour a towards d.
+// Same geometry as the logo files (docs/brand), so the app's mark matches them in every theme.
+function ringsMark(a, d) {
+  const end = mixHex(a, d, .75), pt = (r, deg) => [50 + r * Math.cos(deg * Math.PI / 180), 50 + r * Math.sin(deg * Math.PI / 180)];
+  return [34, 25, 16, 7].map((r, i) => {
+    const a0 = -40 + i * 25, [x0, y0] = pt(r, a0), [x1, y1] = pt(r, a0 + 260);
+    return `<path d="M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 1 1 ${x1.toFixed(2)} ${y1.toFixed(2)}" fill="none" stroke="${mixHex(a, end, i / 3)}" stroke-width="5" stroke-linecap="round"/>`;
+  }).join("");
+}
 // Colours used in plots. Filled from the active theme by applyTheme(); these are the house-style defaults.
 const COL = { gold: "#C2A24A", golddk: "#8F7529", goldlt: "#DFC684", ox: "#6E1B2B", wine: "#8E2438", plum: "#32203A", ink: "#1C1620",
   muted: "#5A5260", rule: "#D6CBB6", card: "#FBF7EF", parch: "#E7DECC", ok: "#5E6B2E" };
@@ -593,7 +603,7 @@ VIEWS.modules = async el => {
 VIEWS.home = async el => {
   const cat = ST.suites, A = ST.answers;
   const chips = (list, key) => `<div class="chips" role="group">${list.map(x => `<button type="button" class="chip" data-${key}="${esc(x.id)}" aria-pressed="${A[key === "d" ? "data" : "aims"].includes(x.id)}">${esc(x.label)}</button>`).join("")}</div>`;
-  el.innerHTML = `<div class="hero"><div class="label">Welcome to Everyome</div><h1>Every -ome, for everyone.</h1>
+  el.innerHTML = `<div class="hero"><svg class="hero-mark" viewBox="0 0 100 100" aria-hidden="true">${ringsMark(COL.gold, COL.ox)}</svg><div class="label">Welcome to Everyome</div><h1>Every -ome, for everyone.</h1>
       <p class="lede">Everyome helps biologists analyse omics data without writing code. Choose an analysis, point it at your data,
       and Everyome runs it for you, explains what each result means, and keeps a record of exactly what was done.</p>
       <div class="grid g4 points">
@@ -899,8 +909,8 @@ VIEWS.playground = async (el, mid) => {
 };
 
 // ------------------------------------------------------------------ themes
-// Intent: new users start in Nematostella, light mode; a style they pick is remembered.
-const DEFAULT_THEME = "nematostella", DEFAULT_MODE = "light";
+// Intent: new users start in House Style 1: Creation (Entacmaea), light mode; a style they pick is remembered.
+const DEFAULT_THEME = "entacmaea", DEFAULT_MODE = "light";
 const THEME = { list: [], groups: [], id: localStorage.getItem("everyome-theme") || DEFAULT_THEME, mode: localStorage.getItem("everyome-mode") || DEFAULT_MODE };
 const darkQuery = matchMedia("(prefers-color-scheme: dark)");
 const effectiveMode = () => THEME.mode === "system" ? (darkQuery.matches ? "dark" : "light") : THEME.mode;
@@ -916,18 +926,59 @@ function applyTheme(rerender = true) {
     rule: v.rule, card: v.card, parch: v.parch, ok: v.ok });
   PALETTE = v.palette.slice();
   $("#tdots").innerHTML = t.swatches.map(c => `<i style="background:${c}"></i>`).join("");
-  $("#theme-select").title = `${t.name}: ${t.species} (${t.common})`;
+  $("#brand-mark").innerHTML = ringsMark(v.goldlt, v.topink);            // on the dark top bar
+  themeButton(t);
   localStorage.setItem("everyome-vars", JSON.stringify({ vars, mode }));
   if (rerender && ST.page) go(ST.page);
+}
+// Theme menu: a listbox (a native select cannot show colours), with each theme's main colours as small boxes.
+const themeBoxes = t => { const v = t[effectiveMode()];
+  return `<span class="tboxes" aria-hidden="true">${[v.bone, v.gold, v.ox, v.crypt].map(c => `<i style="background:${c}"></i>`).join("")}</span>`; };
+const themeLabel = t => `${esc(t.name)}${t.style === "vivid" ? " ✦" : ""}<span class="tcommon"> · ${esc(t.common)}</span>`;
+function themeButton(t) {
+  const b = $("#theme-btn");
+  b.innerHTML = `${themeBoxes(t)}<span class="tname">${esc(t.name)}</span><span class="tcaret" aria-hidden="true">▾</span>`;
+  b.title = `${t.name}: ${t.species} (${t.common})`;
+}
+function themeMenu() {
+  const btn = $("#theme-btn"), list = $("#theme-list");
+  const opts = () => [...list.querySelectorAll("[role=option]")];
+  const draw = () => {
+    list.innerHTML = THEME.groups.map((g, gi) => { const ts = THEME.list.filter(t => t.group === g); if (!ts.length) return "";
+      return `<div role="group" aria-labelledby="tg${gi}"><div class="tgroup" id="tg${gi}">${esc(g)}</div>${ts.map(t =>
+        `<div role="option" id="topt-${t.id}" data-id="${t.id}" aria-selected="${t.id === THEME.id}">${themeBoxes(t)}<span>${themeLabel(t)}</span></div>`).join("")}</div>`; }).join("");
+  };
+  const active = el => { opts().forEach(o => o.classList.toggle("active", o === el)); if (el) { list.setAttribute("aria-activedescendant", el.id); el.scrollIntoView({ block: "nearest" }); } };
+  const open = () => { draw(); list.hidden = false; btn.setAttribute("aria-expanded", "true"); list.focus(); active($(`#topt-${THEME.id}`)); };
+  const close = (focus = true) => { list.hidden = true; btn.setAttribute("aria-expanded", "false"); if (focus) btn.focus(); };
+  const pick = id => { THEME.id = id; localStorage.setItem("everyome-theme", id); close(); applyTheme(); };
+  btn.onclick = () => list.hidden ? open() : close();
+  btn.onkeydown = e => { if (["ArrowDown", "ArrowUp"].includes(e.key)) { e.preventDefault(); open(); } };
+  list.onclick = e => { const o = e.target.closest("[role=option]"); if (o) pick(o.dataset.id); };
+  list.onmousemove = e => { const o = e.target.closest("[role=option]"); if (o) active(o); };
+  let typed = "", typedAt = 0;
+  list.onkeydown = e => {
+    const all = opts(), cur = all.findIndex(o => o.classList.contains("active"));
+    const go_ = i => { e.preventDefault(); active(all[Math.max(0, Math.min(all.length - 1, i))]); };
+    if (e.key === "ArrowDown") go_(cur + 1); else if (e.key === "ArrowUp") go_(cur - 1);
+    else if (e.key === "Home") go_(0); else if (e.key === "End") go_(all.length - 1);
+    else if (e.key === "PageDown") go_(cur + 8); else if (e.key === "PageUp") go_(cur - 8);
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (all[cur]) pick(all[cur].dataset.id); }
+    else if (e.key === "Escape" || e.key === "Tab") close(e.key === "Escape");
+    else if (e.key.length === 1) {
+      // Intent: type the first letters of a theme to jump to it, as in a native menu.
+      typed = (Date.now() - typedAt < 700 ? typed : "") + e.key.toLowerCase(); typedAt = Date.now();
+      const hit = all.find(o => THEME.list.find(t => t.id === o.dataset.id).name.toLowerCase().startsWith(typed)); if (hit) active(hit);
+    }
+  };
+  document.addEventListener("mousedown", e => { if (!list.hidden && !e.target.closest(".theme-pick")) close(false); });
 }
 async function initThemes() {
   try { const d = await (await fetch("themes.json")).json(); THEME.list = d.themes; THEME.groups = d.groups; }
   catch { return; }
-  $("#theme-select").innerHTML = THEME.groups.map(g => `<optgroup label="${esc(g)}">${THEME.list.filter(t => t.group === g)
-    .map(t => `<option value="${t.id}">${esc(t.name)}${t.style === "vivid" ? " ✦" : ""} · ${esc(t.common)}</option>`).join("")}</optgroup>`).join("");
   if (!THEME.list.some(t => t.id === THEME.id)) THEME.id = DEFAULT_THEME;
-  $("#theme-select").value = THEME.id; $("#mode-select").value = THEME.mode;
-  $("#theme-select").onchange = e => { THEME.id = e.target.value; localStorage.setItem("everyome-theme", THEME.id); applyTheme(); };
+  $("#mode-select").value = THEME.mode;
+  themeMenu();
   $("#mode-select").onchange = e => { THEME.mode = e.target.value; localStorage.setItem("everyome-mode", THEME.mode); applyTheme(); };
   darkQuery.addEventListener("change", () => { if (THEME.mode === "system") applyTheme(); });
   applyTheme(false);

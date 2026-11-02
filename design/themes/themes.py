@@ -107,6 +107,15 @@ def contrast(a, b):
 # Dark mode suits these best: it reads like a reef tank under actinic light.
 # ----------------------------------------------------------------------------
 VIVID = [
+    {"id": "anthopleura", "name": "Anthopleura", "species": "Anthopleura elegantissima", "common": "aggregating anemone",
+     "story": "Hot-pink tentacle tips over a green column, in clonal carpets on intertidal rock; colours chosen to echo GitHub's pink and green.",
+     "fonts": {"display": "Hanken Grotesk", "body": "Instrument Sans", "label": "Hanken Grotesk", "mono": "JetBrains Mono"},
+     "source": [("#DB61A2", "tentacle tip"), ("#BF3989", "tip, deeper"), ("#2DA44E", "column"), ("#216E39", "column, shaded"), ("#9BE9A8", "pale morph"), ("#0D1117", "night rock")],
+     "light": {"bg": "#F6F8FA", "surface": "#FFFFFF", "surface2": "#EFF2F5", "ink": "#1F2328", "body": "#24292F", "muted": "#59636E", "rule": "#D1D9E0",
+               "primary": "#1A7F37", "rulecol": "#2DA44E", "accent": "#BF3989", "highlight": "#DB61A2", "topbar": "#1F2328", "topbar_ink": "#F6F8FA", "topbar_accent": "#3FB950"},
+     "dark": {"bg": "#0D1117", "surface": "#161B22", "surface2": "#21262D", "ink": "#E6EDF3", "body": "#C9D1D9", "muted": "#9198A1", "rule": "#30363D",
+              "primary": "#3FB950", "rulecol": "#2EA043", "accent": "#F778BA", "highlight": "#DB61A2", "topbar": "#010409", "topbar_ink": "#E6EDF3", "topbar_accent": "#F778BA"},
+     "data": ["#2DA44E", "#BF3989", "#216E39", "#DB61A2", "#9BE9A8", "#8C1D5D", "#40C463", "#FFADDA"]},
     {"id": "zoanthus", "name": "Zoanthus", "species": "Zoanthus sociatus", "common": "green button polyp (zoanthid)",
      "story": "Fluorescent green oral discs with magenta skirts and orange mouths, glowing under actinic blue light.",
      "fonts": {"display": "Unbounded", "body": "Figtree", "label": "Figtree", "mono": "JetBrains Mono"},

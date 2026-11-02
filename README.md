@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/everyome_wide_dark.svg">
+    <img alt="Everyome" src="docs/brand/everyome_wide_light.svg" width="440">
+  </picture>
+</p>
+
 # Everyome
 
 *Every -ome, for everyone.*
@@ -10,9 +17,10 @@ simple point-and-click interface while keeping every setting visible and editabl
 It runs on your own computer or on your own Slurm cluster account over SSH, so
 your data stays where it is.
 
-Planned suites: DNA, RNA, single cell, spatial, protein, molecular biology and
-phylogenetics. Every module will come with a manual, a playground, guides to
-reading its output, and a lab-book protocol and methods section for every run.
+Suites: DNA, RNA, single cell, spatial, protein, molecular biology and
+phylogenetics, each with at least one ready tool. Every module comes with a
+manual, a playground, guides to reading its output, and a lab-book protocol and
+methods section for every run.
 
 Everyome grows out of SPLiTscape (SPLiT-seq reads to annotated cell atlases),
 which becomes its first single-cell module and keeps its own citation.
