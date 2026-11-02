@@ -36,7 +36,9 @@ singlecell = ["numpy", "pandas", "scipy", "scanpy>=1.9", "anndata>=0.9", "harmon
 rna = ["numpy", "pandas", "matplotlib", "pydeseq2"]
 # Intent: what the molecular biology tools need (they run on this computer).
 molbio = ["primer3-py", "biopython"]
-all = ["everyome[singlecell,rna,molbio]"]
+# Intent: the nf-core pipelines Everyome installs on clusters; always the same version as Everyome (docs/RELEASING.md).
+pipelines = ["everyome-pipelines==0.1.0a2"]
+all = ["everyome[singlecell,rna,molbio,pipelines]"]
 
 [project.urls]
 Homepage = "https://github.com/Everyome/everyome"

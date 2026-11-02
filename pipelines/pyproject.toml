@@ -17,7 +17,9 @@ authors = [{ name = "Helen R Horkan" }]
 Homepage = "https://github.com/Everyome/everyome"
 
 [tool.setuptools]
-packages = ["everyome_pipelines"]
+# Intent: the bundle folder is declared as its own package, so setuptools always ships it (it warns, and may later
+# drop it, when a folder Python can import is left out of this list).
+packages = ["everyome_pipelines", "everyome_pipelines.bundles"]
 
 [tool.setuptools.package-data]
-everyome_pipelines = ["bundles/*.tar.gz", "bundles/*.zip"]
+"everyome_pipelines.bundles" = ["*.tar.gz", "*.zip"]

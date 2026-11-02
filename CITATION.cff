@@ -6,6 +6,6 @@ authors:
   - family-names: Horkan
     given-names: Helen R.
     affiliation: Stowers Institute for Medical Research
-version: 0.1.0a1
+version: 0.1.0a2
 license: MIT
 repository-code: "https://github.com/Everyome/everyome"

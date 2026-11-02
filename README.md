@@ -67,21 +67,24 @@ Modules so far:
 ## Install
 
 ```bash
-pip install "everyome==0.1.0a1"          # the app and the tutorial
-pip install "everyome[all]==0.1.0a1"     # plus SPLiT-seq and bulk RNA-seq (Scanpy, PyDESeq2, ...)
-everyome                              # opens http://127.0.0.1:8777
+pip install "everyome==0.1.0a2"          # the app and the tutorial
+pip install "everyome[all]==0.1.0a2"     # every analysis, with the pipelines it runs on clusters
+everyome                                 # opens http://127.0.0.1:8777
 ```
 
 Analyses that run a Nextflow pipeline on your cluster (bulk and single-cell
-RNA-seq, genome assembly) also need the pipelines package, at the same version as Everyome, from
-the next release on: `pip install "everyome-pipelines==<version>"`. Everyome
+RNA-seq, genome assembly, protein structure prediction) use the pipelines
+package, `everyome-pipelines`, at the same version as Everyome; `everyome[all]`
+includes it, or add it with `pip install "everyome[pipelines]==0.1.0a2"`. Everyome
 ships the pipelines, so your cluster never downloads code from GitHub; see
 [`docs/PIPELINES.md`](docs/PIPELINES.md), including for clusters without internet.
 
 Naming the version installs this early release of Everyome while everything it
 needs comes from normal, stable releases. (Avoid `pip install --pre`: it would
 also pull in unfinished versions of other packages.) Everyome needs Python 3.10
-or newer and runs on macOS and Linux. Choose **Demo
+or newer and runs on macOS and Linux. It is tested on Python 3.10 and 3.12, and
+3.13 and 3.14 should work; Python 3.15 is not supported yet, because some of the
+scientific packages it uses do not install there. Choose **Demo
 cluster** to try everything on your own computer, with example data and a
 pretend job scheduler; demo data lives in `~/.everyome/demo_cluster` (delete it
 to start fresh). To use your own cluster, Everyome also needs to be installed in

@@ -51,6 +51,8 @@ def bundles(tmp_path, monkeypatch):
     (tmp_path / "lock.json").write_text(json.dumps({**real, **lock}))
     monkeypatch.setattr(pipelines, "LOCK", tmp_path / "lock.json")
     monkeypatch.setattr(pipelines, "USER_BUNDLES", tmp_path / "no_user_bundles")
+    # Intent: hide an installed everyome-pipelines too, so only these stand-in files are found (as in a clean checkout).
+    monkeypatch.setitem(sys.modules, "everyome_pipelines", None)
     monkeypatch.setenv("EVERYOME_PIPELINE_BUNDLES", str(d))
     return {"dir": d, "code": code, "containers": containers}
 

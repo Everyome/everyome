@@ -19,7 +19,7 @@ PyPI token. Nothing in this repository uploads on its own.
    ```
 
 4. Build the pipelines package too, at the same version (set it in
-   `pipelines/pyproject.toml`). The build stops if anything fetched differs from
+   `pipelines/pyproject.toml`, and in the `pipelines` extra in `pyproject.toml`). The build stops if anything fetched differs from
    `everyome/pipelines.lock.json`:
 
    ```bash
