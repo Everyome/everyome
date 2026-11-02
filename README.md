@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/everyome_wide_dark.svg">
-    <img alt="Everyome" src="docs/brand/everyome_wide_light.svg" width="440">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/everyome_stacked-tagline_dark.svg">
+    <img alt="Everyome: free, open, for everyone. Learn as you explore." src="docs/brand/everyome_stacked-tagline_light.svg" width="260">
   </picture>
 </p>
 

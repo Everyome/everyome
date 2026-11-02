@@ -6,9 +6,9 @@ whichever theme is active. Logo designed by Helen R Horkan PhD for Everyome.
 
 | File | Use |
 |---|---|
-| `everyome_wide_light.svg`, `everyome_wide_dark.svg` | Logo with the name, on light or dark backgrounds (the README uses these) |
+| `everyome_wide_light.svg`, `everyome_wide_dark.svg` | Logo with the name on one line, on light or dark backgrounds |
 | `everyome_mark_light.svg`, `everyome_mark_dark.svg` | The mark alone |
-| `everyome_stacked-tagline_light.svg`, `…_dark.svg` | Mark over the name, with the tagline |
+| `everyome_stacked-tagline_light.svg`, `…_dark.svg` | Mark over the name, with the tagline (the README and social preview use this) |
 | `everyome_icon_light_512.png`, `…_dark_512.png` | App icon |
 | `everyome_social_preview_1280x640.png` | The repository's social preview (GitHub: Settings, General, Social preview) |
 
