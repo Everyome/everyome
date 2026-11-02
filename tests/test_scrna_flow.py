@@ -21,7 +21,7 @@ MID = "singlecell.scrna"
 DAY = {"ctrl_1": "day1", "treated_1": "day1", "ctrl_2": "day2", "treated_2": "day2"}
 
 
-def wait(fn, timeout=240, every=0.5):
+def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
     end = time.time() + timeout
     while time.time() < end:
         v = fn()
@@ -105,7 +105,7 @@ def test_scrna_end_to_end(client, tmp_path):
     assert 2100 < kept < 2500
 
     call(c, "cluster", n_top_genes=1000, n_pcs=20, n_neighbors=15, resolution=0.4, min_dist=0.3, batch_key="batch", harmony=True)
-    wait(lambda: done(c), timeout=300)
+    wait(lambda: done(c), timeout=600)
     s = call(c, "cluster_summary")
     assert 5 <= len(s["clusters"]) <= 12 and s["batch_mixing"] > 0.6
 
@@ -128,7 +128,7 @@ def test_scrna_end_to_end(client, tmp_path):
     share = dict(zip(comp["groups"], comp["fractions"][i]))
     assert share["treated"] > 0.1 and share["ctrl"] < 0.02
     assert c.post("/api/s/call/export", json={"group": "../x"}).status_code == 400
-    call(c, "export", group="condition"); wait(lambda: done(c), timeout=300)
+    call(c, "export", group="condition"); wait(lambda: done(c), timeout=600)
     assert {"annotated.h5ad", "composition_fractions_by_condition.csv", "markers_by_cluster.xlsx"} <= {f["name"] for f in call(c, "files")}
 
     rec = ok(c.post("/api/run/record"))

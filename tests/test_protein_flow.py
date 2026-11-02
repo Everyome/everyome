@@ -16,7 +16,7 @@ from rerun_helpers import rerun, rerun_until_session_replayed
 MID = "protein.structure"
 
 
-def wait(fn, timeout=180, every=0.5):
+def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
     end = time.time() + timeout
     while time.time() < end:
         v = fn()

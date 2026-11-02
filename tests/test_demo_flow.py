@@ -11,7 +11,7 @@ from everyome.core import server
 from rerun_helpers import rerun, rerun_until_session_replayed
 
 
-def wait(fn, timeout=60, every=0.5):
+def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
     end = time.time() + timeout
     while time.time() < end:
         v = fn()

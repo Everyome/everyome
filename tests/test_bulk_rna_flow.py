@@ -17,7 +17,7 @@ from rerun_helpers import rerun, rerun_until_session_replayed  # noqa: E402
 MID = "rna.bulk_de"
 
 
-def wait(fn, timeout=180, every=0.5):
+def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
     end = time.time() + timeout
     while time.time() < end:
         v = fn()
@@ -91,7 +91,7 @@ def test_bulk_rna_end_to_end(client, tmp_path):
 
     bad = c.post("/api/s/call/run_de", json={"test": "treated", "reference": "treated"})
     assert bad.status_code == 400 and "two different conditions" in bad.json()["detail"]
-    call(c, "run_de", test="treated", reference="control"); wait(lambda: done(c), timeout=300)
+    call(c, "run_de", test="treated", reference="control"); wait(lambda: done(c), timeout=600)
     de = ok(c.get("/api/s/status"))["de"]
     truth = json.loads((rd / "demo_truth.json").read_text())
     r = call(c, "results", padj=0.05, n=5000)

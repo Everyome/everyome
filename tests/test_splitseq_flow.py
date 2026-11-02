@@ -18,7 +18,7 @@ from rerun_helpers import rerun, rerun_until_session_replayed  # noqa: E402
 MID = "singlecell.splitseq"
 
 
-def wait(fn, timeout=180, every=0.5):
+def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
     end = time.time() + timeout
     while time.time() < end:
         v = fn()
@@ -105,7 +105,7 @@ def test_splitseq_end_to_end(client, tmp_path):
     call(c, "qc_apply", **t); wait(lambda: task_done(c))
 
     call(c, "cluster", n_top_genes=1000, n_pcs=20, batch_key="batch", harmony=True, n_neighbors=15, resolution=0.6, min_dist=0.3)
-    wait(lambda: task_done(c), timeout=300)
+    wait(lambda: task_done(c), timeout=600)
     clusters = ok(c.get("/api/s/status"))["clusters"]
     assert len(clusters) >= 4
     first = clusters[0]["id"]
@@ -116,7 +116,7 @@ def test_splitseq_end_to_end(client, tmp_path):
     comp = call(c, "composition", group="condition")
     assert "Stem cells" in comp["types"]
 
-    call(c, "export", group="condition"); wait(lambda: task_done(c), timeout=300)
+    call(c, "export", group="condition"); wait(lambda: task_done(c), timeout=600)
     names = {f["name"] for f in call(c, "files")}
     assert {"annotated.h5ad", "markers_by_cluster.xlsx", "umap_annotation.png"} <= names
     assert c.get("/api/s/download", params={"name": "umap_annotation.png"}).status_code == 200

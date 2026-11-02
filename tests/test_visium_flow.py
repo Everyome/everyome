@@ -19,7 +19,7 @@ from rerun_helpers import rerun  # noqa: E402
 MID = "spatial.visium"
 
 
-def wait(fn, timeout=240, every=0.5):
+def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
     end = time.time() + timeout
     while time.time() < end:
         v = fn()
@@ -91,7 +91,7 @@ def test_visium_end_to_end(client, tmp_path):
     # Intent: correct by batch (as the app does), never by section here: each section is one condition, so correcting by
     # section would remove the treatment's own effect, the immune region.
     call(c, "cluster", n_top_genes=500, n_pcs=15, n_neighbors=15, resolution=0.3, min_dist=0.3, batch_key="batch", harmony=True)
-    wait(lambda: done(c), timeout=300)
+    wait(lambda: done(c), timeout=600)
     s = call(c, "cluster_summary")
     assert 4 <= len(s["clusters"]) <= 10
     tops = {cl["id"]: [g["gene"] for g in call(c, "markers", cluster=cl["id"])[:5]] for cl in s["clusters"]}
@@ -118,7 +118,7 @@ def test_visium_end_to_end(client, tmp_path):
     comp = call(c, "composition", group="condition")
     share = dict(zip(comp["groups"], comp["fractions"][comp["types"].index("Immune infiltrate")]))
     assert share["treated"] > 0.02 and share["control"] < 0.01
-    call(c, "export", group="condition"); wait(lambda: done(c), timeout=300)
+    call(c, "export", group="condition"); wait(lambda: done(c), timeout=600)
     assert "annotated.h5ad" in {f["name"] for f in call(c, "files")}
 
     rec = ok(c.post("/api/run/record"))

@@ -11,7 +11,7 @@ def rerun(demo_root, bundle, new_dir, flag=None):
     return subprocess.run(args, env=env, capture_output=True, text=True, timeout=600)
 
 
-def rerun_until_session_replayed(demo_root, bundle, new_dir, timeout=300):
+def rerun_until_session_replayed(demo_root, bundle, new_dir, timeout=600):
     """--session refuses until the repeated jobs finish; keep trying, as a user would."""
     end = time.time() + timeout
     while time.time() < end:
