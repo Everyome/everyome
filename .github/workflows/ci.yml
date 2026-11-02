@@ -1,13 +1,23 @@
-# Intent: run the tests on every push and pull request, on the oldest and newest supported Python, Linux and macOS.
+# Intent: run the tests on every push and pull request on Linux, with the oldest and newest supported Python.
+# macOS runs on demand (Actions tab: CI, "Run workflow"; or `gh workflow run CI -f macos=true`) and on release tags,
+# because macOS minutes count ten times against the organisation's Actions allowance.
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: "Also test on macOS (macOS minutes count ten times)"
+        type: boolean
+        default: true
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: ${{ fromJSON(((github.event_name == 'workflow_dispatch' && inputs.macos) || startsWith(github.ref, 'refs/tags/')) && '["ubuntu-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
         python: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v7

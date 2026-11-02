@@ -7,7 +7,9 @@ PyPI token. Nothing in this repository uploads on its own.
 
 1. Set the version in `everyome/__init__.py` (the only place it lives) and in
    `CITATION.cff`. Use `0.1.0a1`-style numbers for pre-releases.
-2. Run the tests: `pytest` (with `pip install -e ".[test,all]"`).
+2. Run the tests: `pytest` (with `pip install -e ".[test,all]"`). Pushes are tested on Linux only; before a
+   release, also run the macOS jobs: on GitHub, Actions, CI, *Run workflow* (or `gh workflow run CI -f macos=true`),
+   and wait for all four jobs to pass. Pushing a release tag (`v…`) runs them too.
 3. Build and check:
 
    ```bash
