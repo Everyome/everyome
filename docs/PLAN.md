@@ -321,6 +321,36 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Phylogenetics suite: alignment and tree building (2026-11-01)
+
+- **Alignment and tree building**, `phylo.tree`: three cluster stages, MAFFT
+  7.525 (align), trimAl 1.5.1 (trim) and IQ-TREE 3.1.4 (ModelFinder, maximum
+  likelihood, UFBoot and SH-aLRT), then a live session. No Nextflow: a staged
+  module whose tools run in containers.
+- **Containers pinned by digest** (new in the core, `core/containers.py`): a staged
+  module lists `batch.containers` as `repository:tag@sha256:<digest>`; the manifest
+  refuses a tag without a digest. Jobs pull each image once into
+  `<pipelines folder>/containers` (shared with the Nextflow pipelines) and run the
+  tool with `apptainer exec`; the run record and methods name each image and
+  digest. `python -m everyome.core.containers pull` fills the folder in advance
+  for clusters without internet on compute nodes.
+- Live session: check the alignment (trimmed columns shown, partial or divergent
+  sequences flagged, never removed); the model table and support histograms; the
+  tree viewer (root at midpoint, on an outgroup or on a clicked branch; support
+  moves with its branch; collapse, ladderize, cladogram; colour by the user's
+  table, with a check of whether each value forms one clade); export of the
+  rooted Newick, an SVG figure with legend, and tip and group tables.
+- Demo: one gene simulated in 22 cnidarians and two bilaterian outgroups (real
+  species, simulated sequences, insertions and deletions, one partial sequence,
+  one weakly supported branch); quick stand-ins replace the three tools on the
+  demo cluster. Test in `tests/test_phylo_flow.py`, including the real tool
+  commands (not run) and an exact repeat.
+- Playground: six species, neighbour joining with bootstrap; alignment length,
+  short inner branches, long-branch attraction and corrected distances.
+- Not yet: a real cluster run (Apptainer pulling by digest; IQ-TREE 3's `iqtree3`
+  command in the image), RAxML-NG, partitioned (multi-gene) analyses, circular
+  tree layout.
+
 ### Spatial suite: 10x Visium (2026-11-01)
 
 - **Spatial transcriptomics (10x Visium)**, `spatial.visium`: starts from Space

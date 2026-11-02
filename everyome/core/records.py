@@ -41,6 +41,12 @@ def _pipeline_record(m) -> dict:
             "code_sha256": e.get("sha256"), "plugins": [f"{p['id']} {p['version']}" for p in e.get("plugins", [])],
             "containers": e.get("containers", [])}
 
+def _container_record(m) -> list[dict]:
+    """The exact images a staged module's tools ran in (pinned by digest in its manifest)."""
+    from . import containers
+    return [{"name": n, "image": ref, "label": containers.label(ref)} for n, ref in m.containers.items()]
+
+
 def _file_info(backend, path: str) -> dict:
     q = shlex.quote(path)
     cmd = (f"if [ -f {q} ]; then s=$(wc -c < {q} | tr -d ' '); echo \"file $s\"; "
@@ -105,6 +111,7 @@ def build(backend, conn: dict, project: dict, run: dict, m: Manifest) -> dict:
         "record_version": 1, "created": time.strftime("%Y-%m-%d %H:%M:%S"), "everyome": __version__,
         "module": {"id": m.id, "name": m.name, "version": m.version, "suite": m.suite},
         "pipeline": _pipeline_record(m) if m.nextflow else None,
+        "containers": _container_record(m),
         "run": {"id": run["id"], "created": run.get("created"), "submitted": run.get("submitted"), "user": run.get("user"),
                 "demo": bool(run.get("demo")), "project": project["name"], "dir": run["dir"]},
         "computer": "demo cluster" if conn.get("mode") == "demo" else conn.get("host", ""),
@@ -166,6 +173,8 @@ def protocol(rec: dict) -> str:
          *([f"- **Pipeline:** {rec['pipeline']['pipeline']} release {rec['pipeline']['revision']}, profile {rec['pipeline']['profile']}"
             + (f" (code shipped with Everyome, SHA-256 `{rec['pipeline']['code_sha256'][:16]}…`; plugins {', '.join(rec['pipeline']['plugins'])})" if rec['pipeline'].get("code_sha256") else "")]
            if rec.get("pipeline") else []),
+         *([f"- **Containers (pinned by digest):** " + "; ".join(f"{c['name']} `{c['label']}`" for c in rec["containers"])]
+           if rec.get("containers") and not r["demo"] else []),
          f"- **Run folder:** `{r['dir']}`", "", "## Inputs", "", "| Input | Path | Size | SHA-256 |", "|---|---|---|---|"]
     for i in rec["inputs"]:
         info = i.get("info") or {}

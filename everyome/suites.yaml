@@ -61,7 +61,7 @@ suites:
     name: Phylogenetics
     blurb: How sequences and species are related.
     tools:
-      - {id: phylo.tree, name: Alignment and tree building}
+      - {id: phylo.tree, name: Alignment and tree building, module: phylo.tree}
 
 data_types:
   - {id: dna_reads, label: "DNA sequencing reads (whole genome, exome or targeted)", tools: [dna.variants, dna.assembly, dna.bacterial]}

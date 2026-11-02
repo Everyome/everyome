@@ -17,7 +17,7 @@ import json
 import shlex
 import time
 
-from . import pipelines, projects, slurm
+from . import containers, pipelines, projects, slurm
 from .manifest import Manifest, check_values
 
 
@@ -133,6 +133,7 @@ def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
             # Intent: on the demo cluster, modules stand in for tools that are not installed there.
             *(["export EVERYOME_DEMO=1"] if run.get("demo") else []),
             *(pipelines.environment(run["pipelines_dir"]) if m.nextflow and not run.get("demo") else []),
+            *(containers.environment(run["pipelines_dir"]) if m.containers and not run.get("demo") else []),
             # Intent: module commands name the cluster's Python as {python}; nothing else is substituted.
             nextflow_command(run, m, python) if m.nextflow else stage.run.replace("{python}", shlex.quote(python)),
             f'echo "[$(date)] stage {stage.id} done"']

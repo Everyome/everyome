@@ -18,7 +18,7 @@ def test_every_planned_suite_is_listed():
 
 def test_ready_and_planned_tools():
     pub = {s["id"]: s for s in suites.public(CAT, MODS)["suites"]}
-    assert pub["tutorial"]["ready"] and pub["dna"]["ready"] and pub["spatial"]["ready"] and not pub["protein"]["ready"]
+    assert pub["tutorial"]["ready"] and pub["dna"]["ready"] and pub["spatial"]["ready"] and pub["phylo"]["ready"] and not pub["protein"]["ready"]
     assert pub["tutorial"]["tools"][0]["ready"] is True
 
 
@@ -58,7 +58,7 @@ def test_api_needs_no_connection():
     r = c.post("/api/suggest", json={"data": ["constructs"], "aims": ["design"]}).json()["suggestions"]
     assert r[0]["id"] == "molbio.primers" and r[0]["ready"] is True          # ready tools come first among equals
     r = c.post("/api/suggest", json={"data": ["sequences"], "aims": ["evolution"]}).json()["suggestions"]
-    assert r[0]["suite"] == "phylo" and r[0]["ready"] is False
+    assert r[0]["id"] == "phylo.tree" and r[0]["ready"] is True
 
 
 def test_not_sure_alone_points_to_the_worked_example():

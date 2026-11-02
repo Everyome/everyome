@@ -67,6 +67,24 @@ cluster's `<pipelines folder>/containers/`. Everyome's copy of the pipeline is
 still the one that runs; only the containers come from the download. Repeat
 for each pipeline you use (`nf-core/scrnaseq --revision 4.2.0`, and so on).
 
+## Tools in containers, without Nextflow
+
+Some modules run a few tools directly, as cluster stages, rather than a
+Nextflow pipeline (for example, alignment and tree building runs MAFFT, trimAl
+and IQ-TREE). Each tool runs in a container pinned by its **digest** in the
+module's `module.yaml` (`batch.containers`): a tag can later point to a
+different image, a digest cannot. The first run pulls each image into the same
+`<pipelines folder>/containers/` folder; later runs reuse it. The run record
+lists every image with its digest.
+
+If compute nodes cannot reach the internet, fill the folder from a login node
+that can (Apptainer must be available there):
+
+```bash
+python -m everyome.core.containers list
+python -m everyome.core.containers pull phylo.tree --into <pipelines folder>/containers
+```
+
 ## Job names
 
 Each job is named `<prefix>_<you>_everyome_<module>_<stage>`. Some

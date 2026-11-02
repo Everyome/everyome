@@ -1,0 +1,164 @@
+# Alignment and tree building: MAFFT aligns, trimAl removes unreliable columns and IQ-TREE builds a maximum-likelihood
+# tree with branch support, each in a container pinned by digest; then a live session checks the alignment and draws the tree.
+spec: 1
+id: phylo.tree
+name: Alignment and tree building
+suite: phylo
+version: 0.1.0
+summary: >
+  Works out how a set of DNA or protein sequences are related. Aligns them
+  (MAFFT), removes columns that cannot be aligned reliably (trimAl), chooses a
+  model of evolution and builds a maximum-likelihood tree with branch support
+  (IQ-TREE). Then check the alignment, read the model and support, and explore
+  the tree: root it, collapse groups, colour tips by a table of your own and see
+  whether a group forms one branch, and export a figure.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Katoh K., Standley D.M. (2013). MAFFT multiple sequence alignment software version 7: improvements in performance and usability. Molecular Biology and Evolution 30:772–780."
+    url: https://doi.org/10.1093/molbev/mst010
+  - text: "Capella-Gutiérrez S., Silla-Martínez J.M., Gabaldón T. (2009). trimAl: a tool for automated alignment trimming in large-scale phylogenetic analyses. Bioinformatics 25:1972–1973."
+    url: https://doi.org/10.1093/bioinformatics/btp348
+  - text: "Wong T.K.F. et al. (2025). IQ-TREE 3: phylogenomic inference software using complex evolutionary models. EcoEvoRxiv (preprint)."
+    url: https://doi.org/10.32942/X2P62N
+  - text: "Minh B.Q. et al. (2020). IQ-TREE 2: new models and efficient methods for phylogenetic inference in the genomic era. Molecular Biology and Evolution 37:1530–1534."
+    url: https://doi.org/10.1093/molbev/msaa015
+  - text: "Kalyaanamoorthy S. et al. (2017). ModelFinder: fast model selection for accurate phylogenetic estimates. Nature Methods 14:587–589."
+    url: https://doi.org/10.1038/nmeth.4285
+  - text: "Hoang D.T. et al. (2018). UFBoot2: improving the ultrafast bootstrap approximation. Molecular Biology and Evolution 35:518–522."
+    url: https://doi.org/10.1093/molbev/msx281
+  - text: "Guindon S. et al. (2010). New algorithms and methods to estimate maximum-likelihood phylogenies: assessing the performance of PhyML 3.0. Systematic Biology 59:307–321."
+    url: https://doi.org/10.1093/sysbio/syq010
+  - text: "Kurtzer G.M., Sochat V., Bauer M.W. (2017). Singularity: scientific containers for mobility of compute. PLoS ONE 12:e0177459."
+    url: https://doi.org/10.1371/journal.pone.0177459
+kind: [batch, interactive]
+requires: []
+tools:
+  - {name: apptainer, version: "apptainer --version || singularity --version"}
+methods: everyome.modules.phylo.tree.methods:methods
+
+inputs:
+  - id: sequences
+    label: Sequences (FASTA)
+    type: file
+    required: true
+    help: >
+      DNA or protein sequences, one per species or gene, at least four. Each sequence's name is the first
+      word of its '>' line, so make those words different. They do not need to be aligned.
+    demo: sequences.fasta
+  - id: metadata
+    label: Table about the sequences (optional)
+    type: file
+    help: >
+      A CSV or tab-separated table: the first column is the sequence name (the first word of its '>' line),
+      the other columns are anything you want to colour the tree by, such as species group, habitat or gene family.
+    demo: species.csv
+
+params:
+  - {id: seq_type, label: Sequence type, type: choice, choices: [auto, dna, protein], default: auto, group: Sequences,
+     help: "auto decides from the letters. Choose protein for protein sequences that use mostly A, C, G and T letters."}
+  - {id: already_aligned, label: Sequences are already aligned, type: bool, default: false, group: Alignment,
+     help: "Skip MAFFT and use the sequences as they are (they must all be the same length, with gaps as -)."}
+  - id: mafft_strategy
+    label: Alignment strategy
+    type: choice
+    choices: [auto, linsi, ginsi, einsi, fftns2]
+    default: auto
+    group: Alignment
+    help: >
+      auto lets MAFFT choose by the number and length of sequences. linsi (L-INS-i) is the most accurate for up to
+      about 200 sequences with one shared conserved region; ginsi (G-INS-i) suits sequences similar along their whole
+      length; einsi (E-INS-i) suits sequences with long unalignable stretches; fftns2 (FFT-NS-2) is fast for thousands
+      of sequences.
+  - {id: mafft_extra, label: Extra MAFFT options, type: text, default: "", group: Alignment, advanced: true,
+     help: "Passed to MAFFT as they are, for example --adjustdirection for DNA that may be reverse-complemented."}
+  - id: trim_method
+    label: Trimming
+    type: choice
+    choices: [automated1, gappyout, strict, strictplus, gap_threshold, none]
+    default: automated1
+    group: Trimming
+    help: >
+      Removes alignment columns that are mostly gaps or poorly aligned. automated1 (trimAl's recommendation for
+      maximum-likelihood trees) chooses a method from the alignment; gappyout removes gappy columns only; strict and
+      strictplus also remove poorly conserved columns; gap_threshold keeps columns where at least the share below of
+      sequences have a letter; none keeps everything.
+  - {id: min_present, label: Share of sequences that must have a letter (gap_threshold), type: float, default: 0.9, min: 0, max: 1, group: Trimming,
+     help: "Used only with gap_threshold. 0.9 keeps columns where at least 90% of sequences have a letter."}
+  - {id: trimal_extra, label: Extra trimAl options, type: text, default: "", group: Trimming, advanced: true,
+     help: "Passed to trimAl as they are."}
+  - id: model
+    label: Model of evolution
+    type: text
+    default: MFP
+    group: Tree
+    help: >
+      MFP lets ModelFinder test models and pick the best by BIC, then builds the tree with it. Or name a model, for
+      example GTR+F+G4 for DNA or LG+G4 for protein (IQ-TREE's documentation lists them).
+  - {id: bootstrap, label: Ultrafast bootstrap replicates (UFBoot), type: int, default: 1000, min: 0, max: 100000, group: Tree,
+     help: "Branch support; 1000 or more (0 turns it off). A branch is well supported at 95% or above."}
+  - {id: alrt, label: SH-aLRT replicates, type: int, default: 1000, min: 0, max: 100000, group: Tree,
+     help: "A second, independent branch support (0 turns it off). A branch is well supported at 80% or above."}
+  - id: outgroup
+    label: Outgroup (optional)
+    type: text
+    default: ""
+    group: Tree
+    help: >
+      Sequence names, separated by commas, known to sit outside the group you are studying. They root the tree. You can
+      also root it later in the live session.
+  - {id: seed, label: Random seed, type: int, default: 12345, min: 1, group: Tree,
+     help: "Makes the tree search and bootstrap repeatable. The same seed, data and settings give the same tree."}
+  - {id: iqtree_extra, label: Extra IQ-TREE options, type: text, default: "", group: Tree, advanced: true,
+     help: "Passed to IQ-TREE as they are, for example --bnni to reduce the risk of overestimating UFBoot support."}
+
+batch:
+  engine: staged
+  resources: {cpus: 8, mem: 16G, time: "24:00:00", session: {cpus: 1, mem: 4G, time: "04:00:00"}}
+  report: everyome.modules.phylo.tree.helpers:report
+  # Pinned by digest: a tag can be moved to a different image, a digest cannot. Pulled once into <pipelines folder>/containers.
+  containers:
+    mafft: quay.io/biocontainers/mafft:7.525--h031d066_1@sha256:b8ccc402a9156868fefda5caa8693f847b47dcc69aae848557f7115850e60790
+    trimal: quay.io/biocontainers/trimal:1.5.1--h9948957_0@sha256:2ddc872b92ac2634961cdd1f234d2d7779fccbd03b8c717e0bbbfe74dc7fb4dd
+    iqtree: quay.io/biocontainers/iqtree:3.1.4--h8471819_0@sha256:6e5792be5219238604dcf8b7b8ba6677c49b7764e410475dd00cbc691594fc63
+  stages:
+    - {id: "01", name: align, title: Align the sequences (MAFFT), run: "{python} -m everyome.modules.phylo.tree.stage align"}
+    - {id: "02", name: trim, title: Remove unreliable columns (trimAl), run: "{python} -m everyome.modules.phylo.tree.stage trim"}
+    - {id: "03", name: tree, title: "Choose a model and build the tree (IQ-TREE)", run: "{python} -m everyome.modules.phylo.tree.stage tree"}
+
+interactive:
+  engine: everyome.modules.phylo.tree.engine:Engine
+  ui: [ui.js]
+  steps:
+    - {id: alignment, title: Check the alignment}
+    - {id: model, title: Model and support}
+    - {id: tree, title: Explore the tree}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    run_report: docs/guides/run_report.md
+    alignment: docs/guides/alignment.md
+    trimming: docs/guides/trimming.md
+    model: docs/guides/model.md
+    support: docs/guides/support.md
+    rooting: docs/guides/rooting.md
+    groups: docs/guides/groups.md
+    export: docs/guides/export.md
+  playground:
+    scripts: [docs/playground/phylo_playground.js]
+    object: PhyloPlayground
+    lede: >
+      How the amount of data, the speed of evolution and the method change the tree you get, on sequences
+      simulated along a tree you choose, so the true tree is known.
+    intro:
+      - "Sequences evolve along the true tree on the left; a tree is then rebuilt from them (on the right) and compared with the truth. Support is the share of bootstrap replicates (alignments resampled column by column) that contain each group."
+      - "Pick a scenario below or change the settings. Everything runs in your browser."
+    caveats:
+      - "Trees here are built by neighbour joining on distances, which is quick enough to run in a browser. IQ-TREE uses maximum likelihood with a fitted model, which is more accurate and copes better with long branches."
+      - "Support here is the ordinary bootstrap. IQ-TREE's ultrafast bootstrap (UFBoot) reads higher; treat 95% UFBoot as roughly 70% ordinary bootstrap."
+      - "Sites evolve independently under one simple model (Jukes–Cantor, with or without rate variation). Real genes have insertions, deletions and selection."
+
+demo:
+  build: everyome.modules.phylo.tree.demo_data:build

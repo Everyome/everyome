@@ -93,6 +93,7 @@ class Manifest:
     nextflow: dict = field(default_factory=dict)  # batch.engine nextflow: pipeline, revision, schema, samplesheet, profile, demo
     source: str = "everyome"  # everyome (shipped), community (reviewed and signed) or unreviewed (an author's own folder)
     review: dict = field(default_factory=dict)    # community: who reviewed it and when, from the signed registry index
+    containers: dict = field(default_factory=dict)  # staged: {name: repository:tag@sha256:digest} the stages run their tools in
 
     @property
     def fields(self) -> list[Field]:
@@ -111,6 +112,7 @@ class Manifest:
                 "guides": sorted((self.learn.get("guides") or {})),
                 "batch_engine": "nextflow" if self.nextflow else ("staged" if self.stages else ""),
                 "pipeline": {k: self.nextflow.get(k) for k in ("pipeline", "revision", "profile")} if self.nextflow else None,
+                "containers": self.containers,
                 "playground": ({**{k: v for k, v in self.learn["playground"].items() if k != "scripts"},
                                 "n_scripts": len(self.learn["playground"]["scripts"])} if self.learn.get("playground") else None)}
 
@@ -186,6 +188,14 @@ def load(path: Path) -> Manifest:
             m.stages.append(Stage(str(s["id"]), s["name"], s["title"], s["run"], s.get("resources", {})))
         if not m.stages:
             raise ManifestError(f"{path}: a batch module needs at least one stage")
+        from . import containers
+        m.containers = dict(batch.get("containers") or {})
+        for name, ref in m.containers.items():
+            try:
+                containers.parse(ref)
+            except ValueError as e:
+                # Intent: a tag alone can be moved to a different image; only a digest pins it.
+                raise ManifestError(f"{path}: batch.containers.{name}: {e}")
     if "local" in kind and len(kind) > 1:
         raise ManifestError(f"{path}: a local module runs only on this computer; it cannot also be batch or interactive")
     if ("interactive" in kind or "local" in kind) and (not m.engine or ":" not in m.engine):

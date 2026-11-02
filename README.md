@@ -37,6 +37,9 @@ Modules so far:
 - **Spatial transcriptomics (10x Visium)**, spatial: from Space Ranger's output,
   see every spot on the tissue image, find tissue regions, their markers and
   spatially variable genes, and compare regions between conditions.
+- **Alignment and tree building**, phylogenetics: MAFFT, trimAl and IQ-TREE in
+  containers pinned by digest; check the alignment, then root, collapse and colour
+  the tree by your own table, and export a figure.
 - **Genome assembly (PacBio, Nanopore, Illumina)**, DNA: nf-core/genomeassembler
   builds genomes from long reads, polished with Illumina reads and with genes
   lifted from a relative; compare strategies side by side and choose one.

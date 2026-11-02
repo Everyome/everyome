@@ -285,6 +285,9 @@ def module_check(mid: str):
                 missing.append(f"{cmd} (command)")
         if m.nextflow.get("profile") == "apptainer" and be.run("command -v apptainer || command -v singularity", timeout=60)[0]:
             missing.append("apptainer (command)")
+    # Intent: a module whose stages run in pinned containers needs Apptainer (or Singularity) on the cluster.
+    if m.containers and not S.demo and be.run("command -v apptainer || command -v singularity", timeout=60)[0]:
+        missing.append("apptainer (command)")
     for pkg in m.requires:
         rc, _, _ = be.run(f"{shlex.quote(S.conn['python'])} -c {shlex.quote('import ' + pkg)}", timeout=120)
         if rc:
