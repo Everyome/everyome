@@ -321,6 +321,42 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Protein suite: structure prediction (2026-11-01)
+
+With this, every suite has at least one tool (Helen's release gate).
+
+- **Structure prediction**, `protein.structure`: nf-core/proteinfold 2.0.0 (needs
+  Nextflow 25.10.2 or newer), shipped and pinned like the other pipelines. Every
+  method it offers can be chosen, several at once; AlphaFold2 is the default
+  (the pipeline's own). Proteins come from a folder of FASTA files (one
+  prediction per file; several sequences in a file make a complex).
+- **GPUs** (new in the core, `batch.gpu`): when *Use GPU* is on, the run adds the
+  pipeline's `gpu` profile, and the generated Nextflow config sends tasks labelled
+  `process_gpu` to the *GPU partition* with `--gres=gpu:N` in `clusterOptions`
+  (Slurm ignores Nextflow's `accelerator` setting).
+- **A module check before a run** (new in the core, `batch.check`): the module
+  refuses AlphaFold2, ColabFold and the other database-heavy methods when no
+  reference data folder is set, rather than letting the pipeline download
+  hundreds of GB to TB into the run folder.
+- Live session: every prediction (pLDDT bands, pTM, ipTM, confident domains from
+  pLDDT and PAE by a simple, documented rule); one structure in a small canvas 3D
+  view (Cα trace coloured by pLDDT, domain or chain), pLDDT along the sequence for
+  every ranked model, and the PAE map with domains marked; methods compared by
+  RMSD (all, confident residues, and each domain on its own, Kabsch); export of
+  whole or trimmed models (by pLDDT or to the domains) and a summary table.
+- The lock's container scan now reads double-quoted names too, so the lists now
+  include the prediction images (and a few images missed before in the
+  single-cell and genome assembly pipelines). Code checksums are unchanged.
+- Demo: three made-up proteins (two domains on a linker; a compact hairpin; a
+  disordered protein); the stand-in pipeline writes the real output layout, and
+  its ESMFold places the second domain differently. Test in
+  `tests/test_protein_flow.py`, including an exact repeat.
+- Playground: a two-domain protein whose true order, packing, linker and loose
+  ends you set; shows pLDDT, PAE, domains found and pTM.
+- Not yet: a real GPU run (GPU routing, Apptainer `--nv`, databases); complexes
+  with nucleic acids or ligands (YAML or JSON inputs for AlphaFold 3 and Boltz);
+  Foldseek results in the session; side chains in the viewer.
+
 ### Phylogenetics suite: alignment and tree building (2026-11-01)
 
 - **Alignment and tree building**, `phylo.tree`: three cluster stages, MAFFT

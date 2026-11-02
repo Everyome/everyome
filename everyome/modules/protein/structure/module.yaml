@@ -1,0 +1,131 @@
+# Structure prediction: nf-core/proteinfold predicts protein structures (AlphaFold2, ESMFold, ColabFold, AlphaFold3,
+# Boltz and others) on the cluster's GPUs; a live session shows each structure coloured by confidence, its predicted
+# aligned error and confident domains, compares methods, and exports whole or trimmed models.
+spec: 1
+id: protein.structure
+name: Structure prediction
+suite: protein
+version: 0.1.0
+summary: >
+  Predicts the 3D structure of proteins from their sequences with
+  nf-core/proteinfold: AlphaFold2 by default, or ESMFold, ColabFold, AlphaFold3,
+  Boltz and others, one or several at once. Then look at each structure coloured
+  by how confident the prediction is, see which parts are placed reliably
+  relative to each other (predicted aligned error, domains), compare methods,
+  and export whole models or only their confident parts.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "nf-core/proteinfold. Zenodo."
+    url: https://doi.org/10.5281/zenodo.7629996
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Jumper J. et al. (2021). Highly accurate protein structure prediction with AlphaFold. Nature 596:583–589."
+    url: https://doi.org/10.1038/s41586-021-03819-2
+  - text: "Lin Z. et al. (2023). Evolutionary-scale prediction of atomic-level protein structure with a language model. Science 379:1123–1130."
+    url: https://doi.org/10.1126/science.ade2574
+  - text: "Mirdita M. et al. (2022). ColabFold: making protein folding accessible to all. Nature Methods 19:679–682."
+    url: https://doi.org/10.1038/s41592-022-01488-1
+  - text: "Abramson J. et al. (2024). Accurate structure prediction of biomolecular interactions with AlphaFold 3. Nature 630:493–500."
+    url: https://doi.org/10.1038/s41586-024-07487-w
+  - text: "Kabsch W. (1976). A solution for the best rotation to relate two sets of vectors. Acta Crystallographica A32:922–923."
+    url: https://doi.org/10.1107/S0567739476001873
+kind: [batch, interactive]
+requires: [numpy]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+  - {name: nvidia-smi, version: "nvidia-smi --query-gpu=name,driver_version --format=csv,noheader"}
+methods: everyome.modules.protein.structure.methods:methods
+
+inputs:
+  - id: fasta_dir
+    label: Sequences folder
+    type: folder
+    help: "Used only to fill in the table below: Everyome lists the FASTA files in it, one prediction each."
+    demo: sequences
+  - id: proteins
+    label: Proteins to predict
+    type: table
+    required: true
+    help: >
+      One row per prediction: a name and a FASTA file. A file with one sequence predicts one protein; a file with
+      several sequences predicts them together as a complex (choose a multimer model), unless Split FASTA is on.
+    columns:
+      - {id: id, label: Name, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fasta, label: FASTA file, wide: true}
+    fill: {helper: scan, from: fasta_dir, label: Find FASTA files in the folder}
+
+params:
+  - id: gpu_partition
+    label: GPU partition
+    type: text
+    default: ""
+    group: Cluster
+    help: >
+      The Slurm partition with GPUs, for the prediction steps (ask IT). Leave empty to use the run's partition.
+      Only used when Use GPU is on; other steps run on the ordinary partition.
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/proteinfold
+  revision: "2.0.0"
+  schema: pipeline/nextflow_schema.json
+  samplesheet:
+    from: proteins
+    param: input
+    columns: [id, fasta]
+  profile: apptainer
+  # Everyome sets these itself, or they are about email, help screens and institutional configs rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, hook_url, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix, max_multiqc_email_size, publish_dir_mode,
+         custom_config_version, custom_config_base, config_profile_name, config_profile_description, config_profile_contact, config_profile_url]
+  # Intent: predictions are run on GPUs; on CPUs they take hours to days per protein.
+  defaults: {use_gpu: true}
+  gpu: {param: use_gpu, profile: gpu, label: process_gpu, partition: gpu_partition}
+  check: everyome.modules.protein.structure.helpers:check
+  demo: everyome.modules.protein.structure.demo_pipeline
+  report: everyome.modules.protein.structure.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "72:00:00", session: {cpus: 2, mem: 8G, time: "04:00:00"}}
+
+helpers:
+  scan: everyome.modules.protein.structure.helpers:scan
+
+interactive:
+  engine: everyome.modules.protein.structure.engine:Engine
+  ui: [ui.js]
+  steps:
+    - {id: overview, title: Predictions}
+    - {id: structure, title: Look at a structure}
+    - {id: compare, title: Compare methods}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    run_report: docs/guides/run_report.md
+    plddt: docs/guides/plddt.md
+    pae: docs/guides/pae.md
+    domains: docs/guides/domains.md
+    viewer: docs/guides/viewer.md
+    compare: docs/guides/compare.md
+    export: docs/guides/export.md
+  playground:
+    scripts: [docs/playground/protein_playground.js]
+    object: ProteinPlayground
+    lede: >
+      What pLDDT and the predicted aligned error say about a structure, on a simulated two-domain protein
+      whose true flexibility you choose.
+    intro:
+      - "A protein with two folded domains joined by a linker, and loose ends. Choose how ordered each part really is and how firmly the domains hold each other; the panels show the confidence a good predictor would report, and what that means for the parts you can trust."
+      - "Pick a scenario below or change the settings. Everything runs in your browser."
+    caveats:
+      - "The 'predictions' here follow the truth you set, as a well-calibrated predictor would. Real predictors can be confidently wrong, for example for proteins unlike anything they were trained on."
+      - "pLDDT and PAE are drawn from simple rules (ordered parts high, flexible parts low), not from a model."
+      - "pTM is approximated from the PAE in the way AlphaFold defines it, on this toy protein."
+
+demo:
+  build: everyome.modules.protein.structure.demo_data:build

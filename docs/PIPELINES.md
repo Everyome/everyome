@@ -67,6 +67,16 @@ cluster's `<pipelines folder>/containers/`. Everyome's copy of the pipeline is
 still the one that runs; only the containers come from the download. Repeat
 for each pipeline you use (`nf-core/scrnaseq --revision 4.2.0`, and so on).
 
+## GPUs
+
+Pipelines that need GPUs (structure prediction) run their GPU steps on the
+partition named in the run's *GPU partition* setting, and ask Slurm for one GPU
+each with `--gres=gpu:1` (Everyome adds this to the run's Nextflow config,
+because Slurm ignores Nextflow's own `accelerator` setting). The other steps
+stay on the run's ordinary partition. If your cluster requests GPUs differently
+(for example `--gpus=1` or a GPU type), tell the Everyome maintainers; the
+setting lives in `everyome/core/runs.py`.
+
 ## Tools in containers, without Nextflow
 
 Some modules run a few tools directly, as cluster stages, rather than a

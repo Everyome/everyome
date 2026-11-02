@@ -13,6 +13,7 @@ submitted when the user confirms.
 """
 from __future__ import annotations
 
+import importlib
 import json
 import shlex
 import time
@@ -26,6 +27,12 @@ def create(backend, project: dict, m: Manifest, values: dict, resources: dict, d
     vals, errors = check_values(m, values)
     if errors:
         raise ValueError(" ".join(errors.values()))
+    if m.check:
+        # Intent: a module can refuse settings that would waste a large download or a GPU allocation.
+        mod, _, fn = m.check.partition(":")
+        problems = getattr(importlib.import_module(mod), fn)(vals, demo)
+        if problems:
+            raise ValueError(" ".join(problems))
     rid = f"{m.id.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}"
     d = f"{project['dir']}/runs/{rid}"
     run = {"id": rid, "dir": d, "module": m.id, "module_version": m.version, "created": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -83,10 +90,18 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
     params.update({sheet["param"]: f"{d}/{fname}", "outdir": f"{d}/results"})
     res, user = run["resources"], run["user"]
     prefix = slurm.job_name(user, m.id, "", run.get("job_prefix", slurm.JOB_PREFIX))
+    gpu = nf.get("gpu") or {}
+    gpu_part = str(v.get(gpu.get("partition", ""), "") or "").strip() if gpu else ""
     config = "\n".join([
         f"// Written by Everyome for run {run['id']}: how the pipeline's own tasks go to Slurm.",
         "process.executor = 'slurm'",
         *([f"process.queue = '{res['partition']}'"] if res.get("partition") else []),
+        # Intent: Slurm ignores Nextflow's accelerator setting, so GPU tasks ask for their GPUs themselves,
+        # on the GPU partition when one is given.
+        *(["process {", f"    withLabel: '{gpu['label']}' {{",
+           *([f"        queue = '{gpu_part}'"] if gpu_part else []),
+           "        clusterOptions = { task.accelerator ? \"--gres=gpu:${task.accelerator.request}\" : '--gres=gpu:1' }",
+           "    }", "}"] if gpu and v.get(gpu["param"]) else []),
         "executor {",
         "    queueSize = 50",
         "    // Job names carry the job-name prefix and the username, so everyone can see whose job it is",
@@ -103,7 +118,10 @@ def nextflow_command(run: dict, m: Manifest, python: str) -> str:
     q = shlex.quote
     # Intent: run the copy Everyome installed (pinned and checked), never a download from GitHub.
     where = pipelines.remote_dir(run["pipelines_dir"], pipelines.key(nf["pipeline"], str(nf["revision"])))
-    return (f"nextflow run {q(where)} -profile {q(nf['profile'])} -ansi-log false "
+    gpu = nf.get("gpu") or {}
+    # Intent: the pipeline's GPU profile goes with the GPU setting (it gives GPU tasks their GPU and container flags).
+    profile = nf["profile"] + (f",{gpu['profile']}" if gpu and run["values"].get(gpu["param"]) else "")
+    return (f"nextflow run {q(where)} -profile {q(profile)} -ansi-log false "
             f"-c {q(d + '/nextflow.config')} -params-file {q(d + '/nf_params.json')} -work-dir {q(d + '/work')} "
             f"-with-trace {q(d + '/trace.txt')} -resume")
 

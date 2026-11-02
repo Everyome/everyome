@@ -37,7 +37,8 @@ USER_BUNDLES = Path.home() / ".everyome" / "pipeline_bundles"
 DROP_TOP = {"docs", "tests", ".github", ".devcontainer", ".vscode", ".hooks", "CHANGELOG.md", "nf-test.config", "tower.yml",
             "ro-crate-metadata.json", ".gitattributes", ".gitignore", ".editorconfig", ".prettierrc.yml", ".prettierignore",
             ".pre-commit-config.yaml", ".nf-core.yml", ".gitpod.yml", ".markdownlint.yml"}
-CONTAINER = re.compile(r"'((?:community\.wave\.seqera\.io|quay\.io|biocontainers|docker\.io|nf-core)/[^'\s]+)'")
+# Intent: container names in single or double quotes (nf-core modules use both).
+CONTAINER = re.compile(r"""['"]((?:community\.wave\.seqera\.io|quay\.io|biocontainers|docker\.io|nf-core)/[^'"\s$]+)['"]""")
 
 
 def lock() -> dict:

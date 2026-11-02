@@ -37,6 +37,10 @@ Modules so far:
 - **Spatial transcriptomics (10x Visium)**, spatial: from Space Ranger's output,
   see every spot on the tissue image, find tissue regions, their markers and
   spatially variable genes, and compare regions between conditions.
+- **Structure prediction**, protein: nf-core/proteinfold (AlphaFold2, ESMFold,
+  ColabFold, AlphaFold 3, Boltz and more) on the cluster's GPUs; see each
+  structure coloured by confidence with its predicted aligned error and domains,
+  compare methods, and export whole or trimmed models.
 - **Alignment and tree building**, phylogenetics: MAFFT, trimAl and IQ-TREE in
   containers pinned by digest; check the alignment, then root, collapse and colour
   the tree by your own table, and export a figure.

@@ -79,6 +79,7 @@
    "community.wave.seqera.io/library/minimap2_samtools:b09096fc890429ce",
    "community.wave.seqera.io/library/picard:3.5.0--842d4c70c98af9b4",
    "community.wave.seqera.io/library/quast:5.3.0--755a216045b6dbdd",
+   "docker.io/nanoporetech/dorado:sha00aa724a69ddc5f47d82bd413039f912fdaf4e77",
    "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
    "quay.io/biocontainers/gfatools:0.5--h577a1d6_5",
    "quay.io/biocontainers/hifiasm:0.25.0--h5ca1c30_0",
@@ -100,6 +101,53 @@
     "sha256": "084e5f8af6af38b23b43c4e5c3c5a16aba782fa769d11189eb3a21072c3d67da",
     "sha512": "40cf8669c81bda21a0914d985874b0546f23c430fa5dc60e88a82c17252892d4b447e12746febbbdba49eff04adc1a8007b88549e45a3c6d346a9f64a4049ddb",
     "url": "https://registry.nextflow.io/api/v1/plugins/nf-schema/2.7.2/download/nf-schema-2.7.2.zip"
+   }
+  ]
+ },
+ "nf-core/proteinfold@2.0.0": {
+  "pipeline": "nf-core/proteinfold",
+  "revision": "2.0.0",
+  "source": "https://github.com/nf-core/proteinfold/tree/2.0.0",
+  "archive": "nf-core-proteinfold-2.0.0.tar.gz",
+  "sha256": "e5f19422e1f39fd0f7fe1e0733a5dcd311874c1edb248ce86ad33eab86aedc80",
+  "bytes": 769095,
+  "containers": [
+   "biocontainers/aria2:1.36.0",
+   "biocontainers/foldseek:9.427df8a--pl5321hb365157_0",
+   "biocontainers/mmseqs2:14.7e284--pl5321hf1761c0_0",
+   "biocontainers/p7zip:16.02",
+   "biocontainers/python:3.8.3",
+   "community.wave.seqera.io/library/aria2_rsync:1627a7e9b559cfa0",
+   "community.wave.seqera.io/library/biopython:1.84--3318633dad0031e7",
+   "community.wave.seqera.io/library/biopython_matplotlib_pip_plotly:35975fa0fc54b2d3",
+   "community.wave.seqera.io/library/biopython_python:06582b7b722f3db3",
+   "community.wave.seqera.io/library/coreutils_grep_gzip_lbzip2_pruned:49568e208231bddc",
+   "community.wave.seqera.io/library/mmseqs2:18.8cc5c--af05c9a98d9f6139",
+   "community.wave.seqera.io/library/multiqc:1.32--d58f60e4deb769bf",
+   "community.wave.seqera.io/library/wget_zstd:588693a86d59d291",
+   "community.wave.seqera.io/library/zstd:b5faa75d5b75be7f",
+   "nf-core/proteinfold_alphafold2_pred:2.0.0",
+   "nf-core/proteinfold_alphafold2_standard:2.0.0",
+   "nf-core/proteinfold_alphafold3_standard:2.0.0",
+   "nf-core/proteinfold_boltz:2.0.0",
+   "nf-core/proteinfold_colabfold:2.0.0",
+   "nf-core/proteinfold_esmfold:2.0.0",
+   "nf-core/proteinfold_helixfold3:2.0.0",
+   "nf-core/proteinfold_mmseqs_colabfoldsearch:2.0.0",
+   "nf-core/proteinfold_rosettafold2na:2.0.0",
+   "nf-core/proteinfold_rosettafold_all_atom:2.0.0",
+   "nf-core/ubuntu:20.04",
+   "quay.io/biocontainers/python:3.8.3",
+   "quay.io/nf-core/proteinfold_rosettafold2na:2.0.0"
+  ],
+  "plugins": [
+   {
+    "id": "nf-schema",
+    "version": "2.6.1",
+    "archive": "nf-schema-2.6.1.zip",
+    "sha256": "8e6ae3e6a6d77517c8e6e3e4734e52445ecc64137ef78a1b9ce1a67f2c5a6e77",
+    "sha512": "467832f2987f90e2d2aa8e6d8387e45d4a0406ce8b5579a71fcd506155b85491bc6e978a536d767508a8ed1a4610a60c1f0cd3d9dc226f4fea1ce2973a23d043",
+    "url": "https://registry.nextflow.io/api/v1/plugins/nf-schema/2.6.1/download/nf-schema-2.6.1.zip"
    }
   ]
  },
@@ -192,11 +240,14 @@
    "community.wave.seqera.io/library/htslib_samtools_star_gawk:ae438e9a604351a4",
    "community.wave.seqera.io/library/multiqc:1.34--db7c73dae76bc9e6",
    "community.wave.seqera.io/library/pip_qcatch:03b88593a5cca75b",
+   "community.wave.seqera.io/library/scanpy:1.10.2--e83da2205b92a538",
    "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
    "quay.io/biocontainers/gffread:0.12.7--hdcf5f25_4",
    "quay.io/biocontainers/kb-python:0.28.2--pyhdfd78af_2",
    "quay.io/biocontainers/p7zip:16.02",
-   "quay.io/biocontainers/simpleaf:0.19.5--ha6fb395_0"
+   "quay.io/biocontainers/simpleaf:0.19.5--ha6fb395_0",
+   "quay.io/nf-core/cellranger-arc:2.0.2",
+   "quay.io/nf-core/cellranger:10.0.0"
   ],
   "plugins": [
    {

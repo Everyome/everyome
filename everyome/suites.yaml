@@ -47,7 +47,7 @@ suites:
     name: Protein
     blurb: Structure, interactions and function.
     tools:
-      - {id: protein.structure, name: Structure prediction}
+      - {id: protein.structure, name: Structure prediction, module: protein.structure}
       - {id: protein.interactions, name: Interaction prediction}
       - {id: protein.function, name: Function annotation}
   - id: molbio

@@ -94,6 +94,7 @@ class Manifest:
     source: str = "everyome"  # everyome (shipped), community (reviewed and signed) or unreviewed (an author's own folder)
     review: dict = field(default_factory=dict)    # community: who reviewed it and when, from the signed registry index
     containers: dict = field(default_factory=dict)  # staged: {name: repository:tag@sha256:digest} the stages run their tools in
+    check: str = ""           # "package.module:function(values, demo) -> [problems]": refuses a run before anything is written
 
     @property
     def fields(self) -> list[Field]:
@@ -172,7 +173,7 @@ def load(path: Path) -> Manifest:
                  steps=[Step(s["id"], s["title"]) for s in inter.get("steps", [])],
                  learn=d.get("learn", {}), demo=d.get("demo", {}), helpers=d.get("helpers", {}),
                  report=batch.get("report", ""), requires=d.get("requires", []),
-                 tools=d.get("tools", []), methods=d.get("methods", ""))
+                 tools=d.get("tools", []), methods=d.get("methods", ""), check=batch.get("check", ""))
     ids = [f.id for f in m.fields]
     if len(ids) != len(set(ids)):
         raise ManifestError(f"{path}: input and setting ids must be unique")
@@ -222,7 +223,7 @@ def load(path: Path) -> Manifest:
         raise ManifestError(f"{path}: demo.data points to a missing folder")
     if not all(isinstance(t, dict) and t.get("name") and t.get("version") for t in m.tools):
         raise ManifestError(f"{path}: every entry in tools needs a name and a version command")
-    for name, target in {**m.helpers, **({"report": m.report} if m.report else {}), **({"methods": m.methods} if m.methods else {}), **({"demo.build": m.demo["build"]} if m.demo.get("build") else {})}.items():
+    for name, target in {**m.helpers, **({"report": m.report} if m.report else {}), **({"methods": m.methods} if m.methods else {}), **({"batch.check": m.check} if m.check else {}), **({"demo.build": m.demo["build"]} if m.demo.get("build") else {})}.items():
         if ":" not in str(target):
             raise ManifestError(f"{path}: {name} should be 'package.module:function'")
     for f in m.fields:
@@ -271,7 +272,11 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
     if set(over) - {f.id for f in m.params}:
         raise ManifestError(f"{path}: batch.defaults names unknown pipeline parameters: {', '.join(sorted(set(over) - {f.id for f in m.params}))}")
     m.report = batch.get("report", m.report)
-    m.nextflow = {k: batch.get(k) for k in ("pipeline", "revision", "schema", "samplesheet", "profile", "demo")}
+    gpu = batch.get("gpu") or {}
+    if gpu and not ({"param", "profile", "label"} <= set(gpu) and gpu["param"] in {f.id for f in m.params}
+                    and (not gpu.get("partition") or gpu["partition"] in {f.id for f in m.params})):
+        raise ManifestError(f"{path}: batch.gpu needs param (a pipeline setting), profile and label, and partition if given must be a setting")
+    m.nextflow = {k: batch.get(k) for k in ("pipeline", "revision", "schema", "samplesheet", "profile", "demo", "gpu")}
     m.nextflow["upstream"] = upstream
     m.nextflow["profile"] = m.nextflow.get("profile") or "apptainer"
     m.stages = [Stage("01", "pipeline", f"Run {batch['pipeline']} {batch['revision']}", run="")]
