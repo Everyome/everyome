@@ -88,7 +88,9 @@ def test_visium_end_to_end(client, tmp_path):
     assert prev["total"] - prev["kept"] >= 0.9 * damaged
     call(c, "qc_apply", **th); wait(lambda: done(c))
 
-    call(c, "cluster", n_top_genes=500, n_pcs=15, n_neighbors=15, resolution=0.3, min_dist=0.3, batch_key="sample", harmony=True)
+    # Intent: correct by batch (as the app does), never by section here: each section is one condition, so correcting by
+    # section would remove the treatment's own effect, the immune region.
+    call(c, "cluster", n_top_genes=500, n_pcs=15, n_neighbors=15, resolution=0.3, min_dist=0.3, batch_key="batch", harmony=True)
     wait(lambda: done(c), timeout=300)
     s = call(c, "cluster_summary")
     assert 4 <= len(s["clusters"]) <= 10
@@ -120,9 +122,10 @@ def test_visium_end_to_end(client, tmp_path):
     assert "annotated.h5ad" in {f["name"] for f in call(c, "files")}
 
     rec = ok(c.post("/api/run/record"))
-    for phrase in ("2 10x Genomics Visium sections (control, treated)", "Each spot was treated as one observation", "corrected with Harmony",
+    for phrase in ("2 10x Genomics Visium sections (control, treated)", "Each spot was treated as one observation",
                    "Moran's I (Moran, 1950)", "more than 20% of UMIs from mitochondrial genes"):
         assert phrase in rec["methods"], phrase
+    assert "Harmony" not in rec["methods"]                      # one batch: nothing to correct, and the text says no such thing
 
     # Repeat from the bundle: no jobs, just the replayed session, same composition.
     new = tmp_path / "repeat_visium"

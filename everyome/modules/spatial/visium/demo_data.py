@@ -36,7 +36,8 @@ def _region(xn: np.ndarray, yn: np.ndarray, treated: bool) -> np.ndarray:
     s = lambda d, w=0.025: 1 / (1 + np.exp(-d / w))          # smooth step: spots near a boundary mix both sides
     epi, mus = s(0.22 - yn), s(yn - 0.78)
     fol = np.exp(-(((xn - 0.35) / 0.07) ** 2 + ((yn - 0.42) / 0.16) ** 2)) * (1 - epi)
-    imm = np.exp(-(((xn - 0.7) / 0.1) ** 2 + ((yn - 0.5) / 0.1) ** 2)) * (1 - epi) if treated else np.zeros_like(xn)
+    # Intent: a patch big and distinct enough (about 130 spots, flat-topped) to come out as its own region on any platform.
+    imm = np.minimum(1, 1.6 * np.exp(-(((xn - 0.7) / 0.13) ** 2 + ((yn - 0.5) / 0.13) ** 2))) * (1 - epi) if treated else np.zeros_like(xn)
     der = np.clip(1 - epi - mus - fol - imm, 0, None)
     w = np.stack([epi, der, fol, mus, imm], 1)
     return w / w.sum(1, keepdims=True)
