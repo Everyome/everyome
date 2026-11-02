@@ -66,6 +66,9 @@ Modules so far:
 
 ## Install
 
+**New to the command line?** The [step-by-step install guide](docs/INSTALL.md) walks you through
+opening a terminal, installing conda, and starting Everyome. If you already use Python:
+
 ```bash
 pip install "everyome==0.1.0a2"          # the app and the tutorial
 pip install "everyome[all]==0.1.0a2"     # every analysis, with the pipelines it runs on clusters

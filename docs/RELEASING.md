@@ -35,7 +35,8 @@ PyPI token. Nothing in this repository uploads on its own.
    the tests against it (this catches files left out of the package). Install it
    the way users will, by exact version and without `--pre`, so dependencies come
    from stable releases.
-6. For a pre-release, the README's install lines must name the exact version
+6. Update the version in the install commands of `README.md` and `docs/INSTALL.md`.
+   For a pre-release, those install lines must name the exact version
    (`pip install "everyome==0.1.0a1"`), not use `--pre`.
 
 ## 2. Rehearse on TestPyPI
