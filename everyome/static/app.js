@@ -115,8 +115,10 @@ async function refreshState() {
 
 async function go(id) {
   clearTimers(); ST.page = id; renderSide();
-  const page = $("#page");
-  page.innerHTML = "";
+  // Intent: a fresh page element on every visit. Views attach their click handlers to it; emptying and reusing the
+  // old one kept every earlier visit's handlers, so one Browse click opened a file dialog per visit.
+  const old = $("#page"), page = old.cloneNode(false);
+  old.replaceWith(page);
   try { await (id.startsWith("step:") ? moduleStep(page, id.slice(5)) : id.startsWith("manual:") ? VIEWS.manual(page, id.slice(7)) : id.startsWith("playground:") ? VIEWS.playground(page, id.slice(11)) : id.startsWith("suite:") ? suitePage(page, id.slice(6)) : VIEWS[id](page)); }
   catch (e) { page.innerHTML += `<div class="notice warn">${esc(e.message)}</div>`; }
   $("#main").scrollTop = 0;
