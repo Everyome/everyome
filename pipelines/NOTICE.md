@@ -1,6 +1,7 @@
 # Third-party pipelines and plugins in this package
 
-Everyome's own files here are under the MIT licence (LICENSE). The bundles are
+Everyome's own files here are under the GNU General Public License, version 3 or
+later (LICENSE). The bundles are
 unchanged copies of other projects' releases, with their documentation, tests
 and CI files left out, and keep their own licences:
 

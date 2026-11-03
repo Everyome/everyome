@@ -44,7 +44,7 @@ protocol and an editable methods section.
 | Name | Everyome |
 | Audience | Any lab, any Slurm cluster, plus local runs on a laptop. The first test cluster is one configuration among many. |
 | Relation to SPLiTscape | New umbrella; SPLiTscape becomes the first single-cell module, attribution and citation kept |
-| Licence | MIT or BSD-3 (confirm with the host institution's tech transfer office) |
+| Licence | GPL-3.0-or-later (chosen 2026-11-03 with the host institution's advice) |
 | Batch engine | Wrap nf-core / Snakemake pipelines |
 | Community modules | Built in, **switched off** at launch; every submission reviewed before acceptance |
 

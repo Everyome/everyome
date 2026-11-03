@@ -21,6 +21,11 @@ patient data, unpublished sequences, passwords, keys and cluster host names.
    demo runs), set `EVERYOME_JOB_PREFIX` to the assistant's name so they are labelled.
 5. Literature references include a DOI or URL.
 
+## Licence of contributions
+
+Everyome is under the GNU General Public License, version 3 or later. By sending a
+change you agree that it is released under the same licence.
+
 ## Writing a module for the community registry
 
 The community registry is built but **switched off** in this version of

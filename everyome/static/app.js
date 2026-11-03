@@ -192,12 +192,13 @@ function histChart(edges, counts, { lo, hi, w = 560, h = 200, xlab = "", digits 
   const inside = i => lo == null || (edges[i + 1] > lo && edges[i] < hi);
   let out = "";
   for (let i = 0; i < n; i++) if (counts[i]) out += `<rect x="${X(edges[i]) + .5}" y="${Y(counts[i])}" width="${Math.max(.5, X(edges[i + 1]) - X(edges[i]) - 1)}" height="${(h - B) - Y(counts[i])}" fill="${inside(i) ? COL.golddk : COL.rule}"><title>${edges[i].toFixed(digits)}–${edges[i + 1].toFixed(digits)}: ${counts[i]}</title></rect>`;
+  // Intent: a "min" at the left edge (e.g. 0% mitochondrial) says nothing, so it is not drawn.
   // Intent: label "min" to the right of its line and "max" to the left, so neither runs off the chart.
   const line = (v, t, end) => `<line x1="${X(v)}" x2="${X(v)}" y1="4" y2="${h - B}" stroke="${COL.ox}" stroke-dasharray="4 3" stroke-width="1.5"/><text x="${X(v) + (end ? -4 : 4)}" y="14" text-anchor="${end ? "end" : "start"}" class="ax">${t}</text>`;
   let ticks = ""; for (let k = 0; k <= 4; k++) { const v = x0 + (x1 - x0) * k / 4; ticks += `<text x="${X(v)}" y="${h - B + 16}" text-anchor="${k === 4 ? "end" : k === 0 ? "start" : "middle"}" class="ax">${v.toFixed(digits)}</text>`; }
   return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(xlab)} histogram">${out}
     <line x1="${L}" x2="${w - 8}" y1="${h - B}" y2="${h - B}" stroke="${COL.muted}"/><text x="${L - 6}" y="${Y(max) + 4}" text-anchor="end" class="ax">${max}</text>${ticks}
-    ${lo != null ? line(lo, "min") + line(hi, "max", true) : ""}<text x="${(w + L) / 2}" y="${h - 2}" text-anchor="middle" class="ax">${esc(xlab)}</text></svg>`;
+    ${lo != null ? (lo > x0 ? line(lo, "min") : "") + line(hi, "max", true) : ""}<text x="${(w + L) / 2}" y="${h - 2}" text-anchor="middle" class="ax">${esc(xlab)}</text></svg>`;
 }
 // Recolour categorical data with the active theme's palette (annotation colours are the user's own).
 function themed(c) {

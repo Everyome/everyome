@@ -9,7 +9,7 @@ version = "0.1.0a2"
 description = "Pinned, checksummed Nextflow pipelines (nf-core) and plugins for Everyome, so clusters run them without downloading code."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = "GPL-3.0-or-later"
 license-files = ["LICENSE", "NOTICE.md"]
 authors = [{ name = "Helen R Horkan" }]
 

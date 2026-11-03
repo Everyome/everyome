@@ -1,6 +1,6 @@
 # Third-party material in Everyome
 
-Everyome itself is under the MIT licence (`LICENSE`). It ships the following
+Everyome itself is under the GNU General Public License, version 3 or later (`LICENSE`). It ships the following
 material from others, each under its own licence, with the licence text next to it.
 
 | What | Where | Licence |
