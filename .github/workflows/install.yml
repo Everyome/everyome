@@ -26,11 +26,18 @@ jobs:
         os: ${{ fromJSON(((github.event_name == 'workflow_dispatch' && inputs.macos) || startsWith(github.ref, 'refs/tags/')) && '["ubuntu-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
         conda: ["no conda yet"]
         include:
-          # Intent: someone who already has conda (the runner's Miniconda, with Anaconda's channel) keeps it.
+          # Intent: someone who already has Anaconda's Miniconda (default channel with paid terms) keeps it, and the
+          # environment still comes from conda-forge only.
           - os: ubuntu-latest
             conda: "existing conda"
     steps:
       - uses: actions/checkout@v7
+      - name: Give the machine its own Miniconda first (newer runner images have none)
+        if: matrix.conda == 'existing conda'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/miniconda.sh" https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          bash "$RUNNER_TEMP/miniconda.sh" -b -p "$RUNNER_TEMP/miniconda"
+          echo "EXISTING_CONDA=$RUNNER_TEMP/miniconda" >> "$GITHUB_ENV"
       - name: Shellcheck
         if: runner.os == 'Linux'
         run: shellcheck install.sh
@@ -38,12 +45,18 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/home"
           path=/usr/bin:/bin:/usr/sbin:/sbin
-          if [ "${{ matrix.conda }}" = "existing conda" ]; then path="$CONDA/bin:$path"; fi
-          cat install.sh | env -i HOME="$RUNNER_TEMP/home" PATH="$path" SHELL=/bin/bash TERM=dumb bash
+          if [ "${{ matrix.conda }}" = "existing conda" ]; then path="$EXISTING_CONDA/bin:$path"; fi
+          cat install.sh | env -i HOME="$RUNNER_TEMP/home" PATH="$path" SHELL=/bin/bash TERM=dumb bash | tee "$RUNNER_TEMP/install.log"
+          if [ "${{ matrix.conda }}" = "existing conda" ]; then
+            grep -q "Using your conda: $EXISTING_CONDA/bin/conda" "$RUNNER_TEMP/install.log"
+            if grep -q "Downloading Miniforge" "$RUNNER_TEMP/install.log"; then echo "installed Miniforge anyway"; exit 1; fi
+            # Intent: the environment's packages came from conda-forge, not Anaconda's channel.
+            "$EXISTING_CONDA/bin/conda" list -n everyome --show-channel-urls python | grep -q conda-forge
+          fi
       - name: Everyome starts and answers
         run: |
           home="$RUNNER_TEMP/home"
-          if [ "${{ matrix.conda }}" = "existing conda" ]; then conda="$CONDA/bin/conda"; else conda="$home/miniforge3/bin/conda"; fi
+          if [ "${{ matrix.conda }}" = "existing conda" ]; then conda="$EXISTING_CONDA/bin/conda"; else conda="$home/miniforge3/bin/conda"; fi
           # Intent: ask conda where the environment is (an unwritable base puts it in ~/.conda/envs instead).
           prefix="$(HOME="$home" "$conda" run -n everyome python -c 'import sys; print(sys.prefix)')"
           exe="$prefix/bin/everyome"
