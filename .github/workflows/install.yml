@@ -3,7 +3,9 @@
 # the upload), and on demand; macOS joins on tags and on demand, like the main CI.
 name: Installer
 on:
+  # Intent: "branches" is needed next to "tags", or GitHub runs this for tag pushes only. (Tag pushes ignore "paths".)
   push:
+    branches: ["**"]
     paths: ["install.sh", ".github/workflows/install.yml"]
     tags: ["v*"]
   pull_request:
