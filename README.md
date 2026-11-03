@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/everyome_stacked-tagline_dark.svg">
-    <img alt="Everyome: free, open, for everyone. Learn as you explore." src="docs/brand/everyome_stacked-tagline_light.svg" width="500">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Everyome/everyome/main/docs/brand/everyome_stacked-tagline_dark.svg">
+    <img alt="Everyome: free, open, for everyone. Learn as you explore." src="https://raw.githubusercontent.com/Everyome/everyome/main/docs/brand/everyome_stacked-tagline_light.svg" width="500">
   </picture>
 </p>
 
@@ -66,7 +66,7 @@ Modules so far:
 
 ## Install
 
-**New to the command line?** The [step-by-step install guide](docs/INSTALL.md) walks you through
+**New to the command line?** The [step-by-step install guide](https://github.com/Everyome/everyome/blob/main/docs/INSTALL.md) walks you through
 opening a terminal, installing conda, and starting Everyome. If you already use Python:
 
 ```bash
@@ -80,7 +80,7 @@ RNA-seq, genome assembly, protein structure prediction) use the pipelines
 package, `everyome-pipelines`, at the same version as Everyome; `everyome[all]`
 includes it, or add it with `pip install "everyome[pipelines]==0.1.0a2"`. Everyome
 ships the pipelines, so your cluster never downloads code from GitHub; see
-[`docs/PIPELINES.md`](docs/PIPELINES.md), including for clusters without internet.
+[`docs/PIPELINES.md`](https://github.com/Everyome/everyome/blob/main/docs/PIPELINES.md), including for clusters without internet.
 
 Naming the version installs this early release of Everyome while everything it
 needs comes from normal, stable releases. (Avoid `pip install --pre`: it would
@@ -96,10 +96,10 @@ tell you what is missing.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). A community module registry is built in
+See [`CONTRIBUTING.md`](https://github.com/Everyome/everyome/blob/main/CONTRIBUTING.md). A community module registry is built in
 but switched off; every module submitted to it will be reviewed by a maintainer
 before anyone is offered it. Authors can write and try modules now
-([`docs/MODULE_AUTHORS.md`](docs/MODULE_AUTHORS.md)).
+([`docs/MODULE_AUTHORS.md`](https://github.com/Everyome/everyome/blob/main/docs/MODULE_AUTHORS.md)).
 
 ## Develop
 
@@ -116,7 +116,7 @@ Research). Much of its code and documentation was written with Claude
 (Anthropic; https://www.anthropic.com/claude), an AI assistant, through Claude
 Code (https://claude.com/claude-code), under her direction. It is built on
 nf-core, Nextflow, BioContainers and many open-source scientific tools and
-libraries; [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) thanks each of them and
+libraries; [`ACKNOWLEDGEMENTS.md`](https://github.com/Everyome/everyome/blob/main/ACKNOWLEDGEMENTS.md) thanks each of them and
 gives the references to cite.
 
 ## Licence
