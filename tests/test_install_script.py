@@ -30,4 +30,4 @@ def test_every_installer_has_a_checksum():
 @pytest.mark.skipif(not shutil.which("shellcheck"), reason="shellcheck not installed")
 def test_shellcheck():
     p = subprocess.run(["shellcheck", str(SCRIPT)], capture_output=True, text=True)
-    assert p.returncode == 0, p.stdout
+    assert p.returncode == 0, p.stdout + p.stderr

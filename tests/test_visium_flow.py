@@ -14,7 +14,7 @@ pytest.importorskip("leidenalg")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
-from rerun_helpers import rerun  # noqa: E402
+from rerun_helpers import rerun, wait_for_session  # noqa: E402
 
 MID = "spatial.visium"
 
@@ -69,7 +69,7 @@ def test_visium_end_to_end(client, tmp_path):
     # Intent: no cluster stages; the live session starts straight away.
     assert ok(c.post("/api/run/preview", json={}))["scripts"] == []
     ok(c.post("/api/session/start"))
-    wait(lambda: ok(c.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(c, rd)
 
     call(c, "load"); wait(lambda: done(c))
     n = call(c, "spots_per_sample")

@@ -13,7 +13,7 @@ pytest.importorskip("harmonypy")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
-from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run  # noqa: E402
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run, wait_for_session  # noqa: E402
 
 MID = "singlecell.splitseq"
 
@@ -84,7 +84,7 @@ def test_splitseq_end_to_end(client, tmp_path):
     assert {"reads", "regions", "dge", "knee"} <= set(rep) and len(rep["dge"]) == 2
 
     ok(c.post("/api/session/start"))
-    wait(lambda: ok(c.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(c, tmp_path / "demo_cluster/projects/split/runs" / run["id"])
 
     # On its own first (no atlas), then merged with the atlas.
     call(c, "merge", experiment="expt", include_atlas=False); wait(lambda: task_done(c))

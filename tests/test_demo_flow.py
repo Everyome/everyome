@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from everyome.core import server
-from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run, wait_for_session
 
 
 def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
@@ -64,7 +64,7 @@ def test_tutorial_module_end_to_end(client, tmp_path):
     assert gc[0] == "id\tlength\tgc" and len(gc) > 10
 
     ok(client.post("/api/session/start"))
-    wait(lambda: ok(client.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(client)
     s = ok(client.post("/api/s/call/summary", json={}))
     assert s["sequences"] == len(gc) - 1
     assert client.post("/api/s/call/not_allowed", json={}).status_code == 404

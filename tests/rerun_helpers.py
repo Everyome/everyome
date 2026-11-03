@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 
 def rerun(demo_root, bundle, new_dir, flag=None):
@@ -45,3 +46,23 @@ def wait_for_run(client, timeout=600, every=0.5):
             return st
         time.sleep(every)
     raise AssertionError(f"run not finished after {timeout} s; stages: {states}")
+
+
+def wait_for_session(client, run_dir=None, timeout=600, every=0.5):
+    """Wait until the run's live session answers (state READY).
+
+    The status is the session job's Slurm state while it is not running, so a session that failed or ended stops
+    the wait at once; either way the message carries the end of the session's log, when the run folder is given."""
+    end, state = time.time() + timeout, None
+    def log():
+        f = Path(run_dir) / "logs/session.log" if run_dir else None
+        return "\n--- end of logs/session.log ---\n" + "\n".join(f.read_text().splitlines()[-30:]) if f and f.exists() else ""
+    while time.time() < end:
+        r = client.get("/api/session/status")
+        assert r.status_code == 200, r.text
+        state = r.json()["state"]
+        if state == "READY":
+            return r.json()
+        assert state not in STOPPED | {"COMPLETED"}, f"session job stopped: {state}{log()}"
+        time.sleep(every)
+    raise AssertionError(f"session not ready after {timeout} s (last state {state}){log()}")

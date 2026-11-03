@@ -73,6 +73,7 @@ main() {
         esac
         local tmp; tmp="$(mktemp -d)"
         # Intent: expanded now, because $tmp is local to main() and gone by the time the shell exits.
+        # shellcheck disable=SC2064
         trap "rm -rf '$tmp'" EXIT
         say "Downloading Miniforge $MINIFORGE (about 100 MB)"
         curl -fL --progress-bar -o "$tmp/$file" \

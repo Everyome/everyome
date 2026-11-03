@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from everyome.core import server
-from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run, wait_for_session
 
 
 def wait(fn, timeout=600, every=0.5):  # generous: CI runners can be several times slower than a laptop
@@ -45,7 +45,7 @@ def run_pipeline_and_session(c):
     wait_for_run(c)
     assert ok(c.get("/api/run/progress"))["failed"] == 0
     ok(c.post("/api/session/start"))
-    wait(lambda: ok(c.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(c)
 
 
 def by_label(c):

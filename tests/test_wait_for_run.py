@@ -1,20 +1,20 @@
-"""The end-to-end tests' wait for a run: finished, stopped by a failed stage, or still going at the timeout."""
+"""The end-to-end tests' waits for a run and for its live session: done, stopped by a failure, or still going at
+the timeout."""
 import sys
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent))
-from rerun_helpers import wait_for_run  # noqa: E402
+from rerun_helpers import wait_for_run, wait_for_session  # noqa: E402
 
 
 class Client:
-    """Stands in for the app's test client; returns one run status after another."""
+    """Stands in for the app's test client; returns one status after another."""
     def __init__(self, *statuses):
         self.statuses = list(statuses)
 
     def get(self, url):
-        assert url == "/api/run/status"
         st = self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
         return type("R", (), {"status_code": 200, "text": "", "json": lambda self: st})()
 
@@ -39,3 +39,20 @@ def test_timeout_says_how_far_each_stage_got():
     c = Client(status(qc="COMPLETED", trim="RUNNING"))
     with pytest.raises(AssertionError, match=r"not finished after 0.2 s; stages: \{'qc': 'COMPLETED', 'trim': 'RUNNING'\}"):
         wait_for_run(c, timeout=0.2, every=0.05)
+
+
+def test_session_ready():
+    c = Client({"state": "PENDING"}, {"state": "STARTING"}, {"state": "READY", "node": "n1"})
+    assert wait_for_session(c, timeout=5, every=0)["node"] == "n1"
+
+
+def test_session_that_failed_stops_at_once_and_shows_its_log(tmp_path):
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs/session.log").write_text("starting\nModuleNotFoundError: No module named 'pydeseq2'\n")
+    with pytest.raises(AssertionError, match=r"(?s)session job stopped: FAILED.*No module named 'pydeseq2'"):
+        wait_for_session(Client({"state": "FAILED"}), tmp_path, timeout=600, every=0)
+
+
+def test_session_timeout_gives_the_last_state():
+    with pytest.raises(AssertionError, match=r"session not ready after 0.2 s \(last state STARTING\)"):
+        wait_for_session(Client({"state": "STARTING"}), timeout=0.2, every=0.05)

@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from everyome.core import pipelines, runs, server
 from everyome.modules.protein.structure import helpers
 from everyome.modules.protein.structure import structure as st
-from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run, wait_for_session
 
 MID = "protein.structure"
 
@@ -109,7 +109,7 @@ def test_structure_prediction_end_to_end(client, tmp_path):
     rep = ok(c.get("/api/run/report"))
     assert len(rep["structures"]) == 6 and any(p.startswith("alphafold2/split_msa_prediction/top_ranked_structures/") for p in rep["structures"])
     ok(c.post("/api/session/start"))
-    wait(lambda: ok(c.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(c, rd)
     assert call(c, "load") == {"predictions": 6, "proteins": 3, "methods": ["alphafold2", "esmfold"]}
     P = {p["key"]: p for p in call(c, "predictions")}
     two, hp, dis = P["alphafold2/twodomain"], P["alphafold2/hairpin"], P["alphafold2/disordered"]

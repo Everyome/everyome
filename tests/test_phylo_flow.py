@@ -11,7 +11,7 @@ from everyome.core import containers, server
 from everyome.core.manifest import ManifestError, load
 from everyome.modules.phylo.tree import engine as eng_mod
 from everyome.modules.phylo.tree import newick as nw
-from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run, wait_for_session
 
 MID = "phylo.tree"
 OUT = ["Homo_sapiens", "Drosophila_melanogaster"]
@@ -144,7 +144,7 @@ def test_tree_building_end_to_end(client, tmp_path):
     assert rep["sequences"] == 24 and rep["kept"] < rep["columns"] and rep["model"] == "K2P+G4" and rep["tree"]
 
     ok(c.post("/api/session/start"))
-    wait(lambda: ok(c.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(c, rd)
     info = call(c, "load")
     assert info["sequences"] == 24 and info["type"] == "dna" and info["model"] == "K2P+G4" and info["selected_by"] == "BIC"
     s = call(c, "summary")

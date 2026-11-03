@@ -15,7 +15,7 @@ pytest.importorskip("leidenalg")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
-from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run  # noqa: E402
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run, wait_for_session  # noqa: E402
 
 MID = "singlecell.scrna"
 DAY = {"ctrl_1": "day1", "treated_1": "day1", "ctrl_2": "day2", "treated_2": "day2"}
@@ -84,7 +84,7 @@ def test_scrna_end_to_end(client, tmp_path):
     assert [m["kind"] for m in rep["matrices"]] == ["cellbender_filter", "raw"] and rep["multiqc"]
 
     ok(c.post("/api/session/start"))
-    wait(lambda: ok(c.get("/api/session/status"))["state"] == "READY")
+    wait_for_session(c, rd)
     assert [m["kind"] for m in call(c, "matrices") if m["exists"]] == ["cellbender_filter", "raw"]
     call(c, "load"); wait(lambda: done(c))
     st = ok(c.get("/api/s/status"))
