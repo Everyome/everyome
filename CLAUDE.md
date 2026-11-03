@@ -87,7 +87,7 @@ Python 3.10 or newer (3.9 is end-of-life and no longer on GitHub's Ubuntu runner
 CI tests 3.10 and 3.12 on Linux and macOS.
 
 ```bash
-pip install -e ".[test,all]" && everyome     # http://127.0.0.1:8777
+pip install -e ".[dev]" && everyome     # http://127.0.0.1:8777
 pytest          # the SPLiT-seq end-to-end test is skipped without the singlecell extra
 EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 ```

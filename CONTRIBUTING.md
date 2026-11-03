@@ -11,7 +11,7 @@ patient data, unpublished sequences, passwords, keys and cluster host names.
 
 ## Changing Everyome itself
 
-1. `pip install -e ".[test,all]"` and `pytest` (see the README).
+1. `pip install -e ".[dev]"` and `pytest` (see the README).
 2. Keep comments to the *intent* of the code, and UI text plain and short.
 3. Every module keeps its manual, example data, playground and "how to read this"
    guides; `tests/test_learning.py` checks this.

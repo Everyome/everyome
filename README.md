@@ -105,7 +105,7 @@ before anyone is offered it. Authors can write and try modules now
 
 ```bash
 git clone https://github.com/Everyome/everyome && cd everyome
-pip install -e ".[test,all]"
+pip install -e ".[dev]"
 pytest
 ```
 
