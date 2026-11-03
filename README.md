@@ -66,6 +66,17 @@ Modules so far:
 
 ## Install
 
+**One line, on macOS or Linux.** Open a terminal, paste this and press Return:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Everyome/everyome/main/install.sh | bash
+```
+
+It installs conda (Miniforge) if you don't have it, makes an `everyome` environment
+and installs Everyome with every analysis, all inside your home folder; no
+administrator rights needed. It tells you how to start Everyome when it finishes.
+[Read the script](https://github.com/Everyome/everyome/blob/main/install.sh) first if you like; it is short.
+
 **New to the command line?** The [step-by-step install guide](https://github.com/Everyome/everyome/blob/main/docs/INSTALL.md) walks you through
 opening a terminal, installing conda, and starting Everyome. If you already use Python:
 

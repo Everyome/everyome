@@ -1,12 +1,42 @@
 # Installing Everyome
 
-Two ways in:
+Three ways in:
 
+- **[One-line install](#one-line-install)**: the easiest. One command does everything.
 - **[Quick install](#quick-install)** if you already use Python and the command line.
-- **[Step by step](#step-by-step-for-people-new-to-the-command-line)** if you have never used a terminal. No
-  experience needed; it takes about 15 minutes, most of it waiting for downloads.
+- **[Step by step](#step-by-step-for-people-new-to-the-command-line)** if you have never used a terminal and want to
+  see each step. No experience needed; it takes about 15 minutes, most of it waiting for downloads.
 
 Everyome runs on **macOS** and **Linux**. Windows is not tested yet (see [Windows](#windows)).
+
+---
+
+## One-line install
+
+1. Open a terminal: on a Mac press **⌘ Command + Space**, type `Terminal` and press Return; on Linux press
+   **Ctrl + Alt + T**.
+2. Copy this line, paste it into the terminal and press Return:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Everyome/everyome/main/install.sh | bash
+   ```
+
+3. Wait until it says **Everyome … is installed** (about 10 minutes, mostly downloads; a lot of text is normal).
+4. Close the terminal window, open a new one, and type these two lines to start Everyome:
+
+   ```bash
+   conda activate everyome
+   everyome
+   ```
+
+What it does, all inside your home folder and without administrator rights: if you have no conda, it downloads
+Miniforge, checks the download against its published checksum, and installs it into `~/miniforge3`; it makes an
+environment called `everyome` with Python 3.12 from conda-forge; and it installs Everyome with every analysis. If you
+already have conda, it uses yours. Running it again repairs or updates an installation. You can
+[read the script](https://github.com/Everyome/everyome/blob/main/install.sh) before running it.
+
+If it stops with a message, the [table below](#if-something-goes-wrong) covers the usual causes, or follow the
+step-by-step guide instead.
 
 ---
 

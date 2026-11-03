@@ -5,8 +5,8 @@ PyPI token. Nothing in this repository uploads on its own.
 
 ## 1. Prepare
 
-1. Set the version in `everyome/__init__.py` (the only place it lives) and in
-   `CITATION.cff`. Use `0.1.0a1`-style numbers for pre-releases.
+1. Set the version in `everyome/__init__.py` (the only place it lives), in
+   `CITATION.cff` and in `install.sh` (`VERSION=`; a test checks it matches). Use `0.1.0a1`-style numbers for pre-releases.
 2. Run the tests: `pytest` (with `pip install -e ".[dev]"`). Pushes are tested on Linux only; before a
    release, also run the macOS jobs: on GitHub, Actions, CI, *Run workflow* (or `gh workflow run CI -f macos=true`),
    and wait for all four jobs to pass. Pushing a release tag (`v…`) runs them too.
@@ -80,6 +80,8 @@ them, so `--extra-index-url` is not enough.
 
 ## 4. Afterwards
 
+- The tag also runs the one-line installer on new Linux and macOS machines (the *Installer* workflow); check it
+  passes, since that is what new users run.
 - Tag the release in git: `git tag -a v<version> -m "Everyome <version>" && git push origin refs/tags/v<version>`.
   The tag push runs CI on Linux and macOS.
 - A version number can never be uploaded twice, even after deleting it from
