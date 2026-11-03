@@ -30,7 +30,7 @@ PyPI token. Nothing in this repository uploads on its own.
    ```
 
    Upload both packages (`dist/*` holds both). The first upload of
-   `everyome-pipelines` also needs an account-wide token, as below.
+   a new package needs an account-wide token, as below.
 5. Optional but worth it: install the wheel into a fresh environment and run
    the tests against it (this catches files left out of the package). Install it
    the way users will, by exact version and without `--pre`, so dependencies come
@@ -58,20 +58,29 @@ them, so `--extra-index-url` is not enough.
 ## 3. Upload to PyPI
 
 1. Have a PyPI account with two-factor authentication on.
-2. Create an API token at https://pypi.org/manage/account/token/ (for the first
-   upload it must be "Entire account", because the project does not exist yet).
-3. Upload; paste the token when twine asks (in the terminal, never in chat):
+2. Have one API token per package, each scoped to its project
+   (https://pypi.org/manage/account/token/), in `~/.pypirc` as two sections,
+   `[pypi-everyome]` and `[pypi-pipelines]`, both with
+   `repository = https://upload.pypi.org/legacy/` and `username = __token__`, and
+   both listed under `index-servers`. Keep the file private (`chmod 600`); never
+   paste a token in chat or put one in the repository.
+   A brand-new package needs an "Entire account" token for its first upload (the
+   project does not exist yet to scope a token to); swap it for a project token
+   straight after.
+3. Upload each package with its own token:
 
    ```bash
-   twine upload dist/*
+   twine upload --repository pypi-everyome dist/everyome-<version>*
+   twine upload --repository pypi-pipelines dist/everyome_pipelines-<version>*
    ```
 
-4. Check https://pypi.org/project/everyome/, then replace the account-wide token
-   with one scoped to the `everyome` project, or set up Trusted Publishing from
-   GitHub Actions so no token is stored at all.
+4. Check https://pypi.org/project/everyome/ and
+   https://pypi.org/project/everyome-pipelines/. (Trusted Publishing from GitHub
+   Actions would remove the stored tokens altogether.)
 
 ## 4. Afterwards
 
-- Tag the release in git: `git tag v0.1.0a1 && git push --tags`.
+- Tag the release in git: `git tag -a v<version> -m "Everyome <version>" && git push origin refs/tags/v<version>`.
+  The tag push runs CI on Linux and macOS.
 - A version number can never be uploaded twice, even after deleting it from
   PyPI; fix mistakes with a new version (for example `0.1.0a2`).
