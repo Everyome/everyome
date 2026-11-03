@@ -81,15 +81,15 @@ administrator rights needed. It tells you how to start Everyome when it finishes
 opening a terminal, installing conda, and starting Everyome. If you already use Python:
 
 ```bash
-pip install "everyome==0.1.0a2"          # the app and the tutorial
-pip install "everyome[all]==0.1.0a2"     # every analysis, with the pipelines it runs on clusters
+pip install "everyome==0.1.0a3"          # the app and the tutorial
+pip install "everyome[all]==0.1.0a3"     # every analysis, with the pipelines it runs on clusters
 everyome                                 # opens http://127.0.0.1:8777
 ```
 
 Analyses that run a Nextflow pipeline on your cluster (bulk and single-cell
 RNA-seq, genome assembly, protein structure prediction) use the pipelines
 package, `everyome-pipelines`, at the same version as Everyome; `everyome[all]`
-includes it, or add it with `pip install "everyome[pipelines]==0.1.0a2"`. Everyome
+includes it, or add it with `pip install "everyome[pipelines]==0.1.0a3"`. Everyome
 ships the pipelines, so your cluster never downloads code from GitHub; see
 [`docs/PIPELINES.md`](https://github.com/Everyome/everyome/blob/main/docs/PIPELINES.md), including for clusters without internet.
 
