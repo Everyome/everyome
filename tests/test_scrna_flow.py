@@ -15,7 +15,7 @@ pytest.importorskip("leidenalg")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
-from rerun_helpers import rerun, rerun_until_session_replayed  # noqa: E402
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run  # noqa: E402
 
 MID = "singlecell.scrna"
 DAY = {"ctrl_1": "day1", "treated_1": "day1", "ctrl_2": "day2", "treated_2": "day2"}
@@ -78,7 +78,7 @@ def test_scrna_end_to_end(client, tmp_path):
     assert (rd / "samplesheet.csv").read_text().startswith("sample,fastq_1,fastq_2,expected_cells\nctrl_1,")
 
     ok(c.post("/api/run/submit", json={}))
-    wait(lambda: ok(c.get("/api/run/status"))["done"])
+    wait_for_run(c)
     assert ok(c.get("/api/run/progress"))["failed"] == 0
     rep = ok(c.get("/api/run/report"))
     assert [m["kind"] for m in rep["matrices"]] == ["cellbender_filter", "raw"] and rep["multiqc"]

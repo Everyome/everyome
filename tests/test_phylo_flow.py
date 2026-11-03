@@ -11,7 +11,7 @@ from everyome.core import containers, server
 from everyome.core.manifest import ManifestError, load
 from everyome.modules.phylo.tree import engine as eng_mod
 from everyome.modules.phylo.tree import newick as nw
-from rerun_helpers import rerun, rerun_until_session_replayed
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run
 
 MID = "phylo.tree"
 OUT = ["Homo_sapiens", "Drosophila_melanogaster"]
@@ -139,7 +139,7 @@ def test_tree_building_end_to_end(client, tmp_path):
     assert "EVERYOME_CONTAINERS" not in scripts[0]["script"]          # the demo cluster runs stand-ins, not containers
 
     ok(c.post("/api/run/submit", json={}))
-    wait(lambda: ok(c.get("/api/run/status"))["done"])
+    wait_for_run(c)
     rep = ok(c.get("/api/run/report"))
     assert rep["sequences"] == 24 and rep["kept"] < rep["columns"] and rep["model"] == "K2P+G4" and rep["tree"]
 

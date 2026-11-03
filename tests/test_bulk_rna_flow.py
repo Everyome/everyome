@@ -12,7 +12,7 @@ pytest.importorskip("pydeseq2")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
-from rerun_helpers import rerun, rerun_until_session_replayed  # noqa: E402
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run  # noqa: E402
 
 MID = "rna.bulk_de"
 
@@ -72,7 +72,7 @@ def test_bulk_rna_end_to_end(client, tmp_path):
     assert len(scripts) == 1 and "demo_pipeline" in scripts[0]["script"]
 
     ok(c.post("/api/run/submit", json={}))
-    wait(lambda: ok(c.get("/api/run/status"))["done"])
+    wait_for_run(c)
     prog = ok(c.get("/api/run/progress"))
     assert prog["started"] and prog["completed"] > 10 and prog["failed"] == 0
     rep = ok(c.get("/api/run/report"))

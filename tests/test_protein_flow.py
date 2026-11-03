@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from everyome.core import pipelines, runs, server
 from everyome.modules.protein.structure import helpers
 from everyome.modules.protein.structure import structure as st
-from rerun_helpers import rerun, rerun_until_session_replayed
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run
 
 MID = "protein.structure"
 
@@ -105,7 +105,7 @@ def test_structure_prediction_end_to_end(client, tmp_path):
     assert nfp["mode"] == "alphafold2,esmfold" and nfp["use_gpu"] is True
 
     ok(c.post("/api/run/submit", json={}))
-    wait(lambda: ok(c.get("/api/run/status"))["done"])
+    wait_for_run(c)
     rep = ok(c.get("/api/run/report"))
     assert len(rep["structures"]) == 6 and any(p.startswith("alphafold2/split_msa_prediction/top_ranked_structures/") for p in rep["structures"])
     ok(c.post("/api/session/start"))

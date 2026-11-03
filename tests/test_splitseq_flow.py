@@ -13,7 +13,7 @@ pytest.importorskip("harmonypy")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from everyome.core import server  # noqa: E402
-from rerun_helpers import rerun, rerun_until_session_replayed  # noqa: E402
+from rerun_helpers import rerun, rerun_until_session_replayed, wait_for_run  # noqa: E402
 
 MID = "singlecell.splitseq"
 
@@ -77,7 +77,7 @@ def test_splitseq_end_to_end(client, tmp_path):
     assert len(scripts) == 8 and "--mem=64G" in scripts[5]["script"] and "EVERYOME_CPUS=8" in scripts[0]["script"]
 
     ok(c.post("/api/run/submit", json={}))
-    wait(lambda: ok(c.get("/api/run/status"))["done"])
+    wait_for_run(c)
     env = (tmp_path / "demo_cluster/projects/split/runs" / run["id"] / "config/reads.env").read_text()
     assert "SUBLIBS=(sublib_1 sublib_2)" in env and "RUNS=(run_1 run_2)" in env and "THREADS=8" in env
     rep = ok(c.get("/api/run/report"))
