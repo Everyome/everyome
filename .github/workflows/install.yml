@@ -20,6 +20,10 @@ jobs:
   install:
     name: ${{ matrix.os }}, ${{ matrix.conda }}
     runs-on: ${{ matrix.os }}
+    # Intent: "shell: bash" makes GitHub add pipefail, so a failed install piped into tee fails its own step.
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:

@@ -5,6 +5,11 @@ PyPI token. Nothing in this repository uploads on its own.
 
 ## 1. Prepare
 
+Prepare on a branch (`git switch -c release-<version>`) and merge it into `main` only after the upload. The
+one-line installer that users run is `install.sh` on `main`, and it installs the version it names: on `main`
+before that version is on PyPI, it fails for everyone. Push the branch to run CI (the *Installer* workflow can
+only pass after the upload; cancel it on the branch).
+
 1. Set the version in `everyome/__init__.py` (the only place it lives), in
    `CITATION.cff` and in `install.sh` (`VERSION=`; a test checks it matches). Use `0.1.0a1`-style numbers for pre-releases.
 2. Run the tests: `pytest` (with `pip install -e ".[dev]"`). Pushes are tested on Linux only; before a
@@ -80,6 +85,9 @@ them, so `--extra-index-url` is not enough.
 
 ## 4. Afterwards
 
+- Merge the release branch into `main` (`git merge --ff-only release-<version>`) and push: the README and the
+  one-liner now name the new version. PyPI's index can take a few minutes to list a new upload; if an install
+  says the version doesn't exist, wait and retry.
 - The tag also runs the one-line installer on new Linux and macOS machines (the *Installer* workflow); check it
   passes, since that is what new users run.
 - Tag the release in git: `git tag -a v<version> -m "Everyome <version>" && git push origin refs/tags/v<version>`.

@@ -107,6 +107,6 @@ EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 - **Data governance:** no PII/PHI in code or logs; never store passwords or keys.
 - **Design:** House Style 1: Creation (the Entacmaea theme) in light mode is the default for new users; House Style 2: Creator is Gothic Cream, the SPLiTscape style. The logo is the Growth rings mark (`docs/brand/`; the app draws it in the active theme's colours with `ringsMark()` in `app.js`); every theme passes WCAG AA in light and dark. The app always opens on the home page.
 - **Licence:** GPL-3.0-or-later (chosen 2026-11-03 on Stowers' advice; replaces MIT, which still covers 0.1.0a1 on PyPI). Copyright Helen R Horkan, who may also license her own code to others separately; outside contributions are GPL only. Third-party files keep their licences, listed in `THIRD_PARTY_NOTICES.md`.
-- **Version:** one place, `everyome/__init__.py` (and `CITATION.cff`, `install.sh`, `pipelines/pyproject.toml`, the `pipelines` extra in `pyproject.toml`). On PyPI: 0.1.0a2 (2026-11-03); 0.1.0a3 prepared (Browse dialog fix).
+- **Version:** one place, `everyome/__init__.py` (and `CITATION.cff`, `install.sh`, `pipelines/pyproject.toml`, the `pipelines` extra in `pyproject.toml`). On PyPI: 0.1.0a3 (2026-11-03, Browse dialog fix).
 - Comments state intent; keep UI text plain-language and written for biologists.
 - Literature references include a DOI or URL.
