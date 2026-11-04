@@ -46,7 +46,7 @@ step-by-step guide instead.
 ```bash
 conda create -n everyome python=3.12
 conda activate everyome
-pip install "everyome[all]==0.1.0a5"
+pip install "everyome[all]==0.1.0a6"
 everyome
 ```
 
@@ -154,7 +154,7 @@ The prompt now starts with `(everyome)`. That tells you Everyome's environment i
 ### 4. Install Everyome (once)
 
 ```bash
-pip install "everyome[all]==0.1.0a5"
+pip install "everyome[all]==0.1.0a6"
 ```
 
 This downloads Everyome and everything it needs, and takes a few minutes. It prints a lot; yellow warnings are
