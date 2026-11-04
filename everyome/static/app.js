@@ -138,9 +138,11 @@ function modal(title, bodyHtml, buttons) {
     m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><div class="label">${esc(title)}</div></header>
       <div class="body">${bodyHtml}</div><footer>${buttons.map((b, i) => `<button class="btn${b.primary ? " primary" : ""}" data-v="${i}">${esc(b.text)}</button>`).join("")}</footer></div>`;
     document.body.appendChild(m);
-    const close = v => { m.remove(); resolve(v); };
+    // Intent: Escape closes the dialog wherever focus is (it may still be on the page behind it).
+    const onEscape = e => { if (e.key === "Escape") close(null); };
+    const close = v => { document.removeEventListener("keydown", onEscape); m.remove(); resolve(v); };
     m.addEventListener("click", e => { const b = e.target.closest("[data-v]"); if (b) close(buttons[+b.dataset.v].value); });
-    m.addEventListener("keydown", e => { if (e.key === "Escape") close(null); });
+    document.addEventListener("keydown", onEscape);
     setTimeout(() => ($("[data-v].primary", m) || $("[data-v]", m)).focus(), 30);
   });
 }
@@ -153,7 +155,8 @@ function browse(start, mode = "dir", title = "Choose a folder") {
       <footer><span class="muted small" id="bsel" style="margin-right:auto"></span><button class="btn" id="bcancel">Cancel</button><button class="btn primary" id="bok">${mode === "dir" ? "Use this folder" : "Use this file"}</button></footer></div>`;
     document.body.appendChild(m);
     let cur = start || "/", chosen = null;
-    const close = v => { m.remove(); resolve(v); };
+    const onEscape = e => { if (e.key === "Escape") close(null); };
+    const close = v => { document.removeEventListener("keydown", onEscape); m.remove(); resolve(v); };
     async function load(p) {
       try {
         const r = await api("/api/ls?path=" + encodeURIComponent(p)); cur = r.path; chosen = null;
@@ -172,7 +175,7 @@ function browse(start, mode = "dir", title = "Choose a folder") {
     $("#bup", m).onclick = () => load(cur.replace(/\/[^/]+\/?$/, "") || "/");
     $("#bcancel", m).onclick = () => close(null);
     $("#bok", m).onclick = () => { if (mode === "dir") close(cur); else if (chosen) close(chosen); else toast("Select a file first."); };
-    m.addEventListener("keydown", e => { if (e.key === "Escape") close(null); });
+    document.addEventListener("keydown", onEscape);  // Intent: as in modal(), Escape works wherever focus is.
     load(cur); setTimeout(() => $("#bpath", m).focus(), 50);
   });
 }
@@ -888,17 +891,21 @@ VIEWS.manual = async (el, mid) => {
     (mid ? `<div class="row" style="margin-top:18px"><button class="btn" data-go="modules">← Back to analyses</button></div>` : "");
 };
 
-// A module's playground: its own scripts (listed in the manifest, loaded once, in order) run a toy analysis in the browser.
-const PLAYGROUND_LOADED = {};
+// A module's playground: its own scripts (listed in the manifest, loaded in order) run a toy analysis in the browser.
+// Intent: each distinct script loads once per page, by content fingerprint; the single-cell modules share theirs, and
+// loading them again re-declared their top-level names (a page error) when both playgrounds were opened.
+const LOADED_SCRIPTS = new Set();
 async function loadScript(src) {
   await new Promise((ok, bad) => { const s = document.createElement("script"); s.src = src; s.onload = ok;
     s.onerror = () => bad(new Error("The playground could not be loaded.")); document.head.appendChild(s); });
 }
 VIEWS.playground = async (el, mid) => {
   const m = ST.modules.find(x => x.id === mid) || curModule(), pg = m.playground;
-  if (!PLAYGROUND_LOADED[m.id]) {
-    for (let i = 0; i < pg.n_scripts; i++) await loadScript(`/api/modules/${encodeURIComponent(m.id)}/playground/${i}`);
-    PLAYGROUND_LOADED[m.id] = true;
+  for (let i = 0; i < pg.n_scripts; i++) {
+    const key = pg.script_keys?.[i] ?? `${m.id}/${i}`;
+    if (LOADED_SCRIPTS.has(key)) continue;
+    await loadScript(`/api/modules/${encodeURIComponent(m.id)}/playground/${i}`);
+    LOADED_SCRIPTS.add(key);
   }
   const P = window[pg.object];
   el.innerHTML = head("?", "Learn · " + m.name, "Playground", esc(pg.lede || "")) +

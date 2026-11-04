@@ -26,3 +26,15 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - run: pytest -q
+  # Intent: the app's screens in a real browser (tests/test_browser.py): pages open without JavaScript errors, dialogs
+  # open once and close. Linux only; the screens are the same on every system.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[browser]"
+      - run: python -m playwright install --with-deps chromium
+      - run: pytest -q tests/test_browser.py

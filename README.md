@@ -118,6 +118,9 @@ before anyone is offered it. Authors can write and try modules now
 git clone https://github.com/Everyome/everyome && cd everyome
 pip install -e ".[dev]"
 pytest
+# the screens in a real browser, too:
+pip install -e ".[browser]" && python -m playwright install chromium
+pytest tests/test_browser.py
 ```
 
 ## Acknowledgements

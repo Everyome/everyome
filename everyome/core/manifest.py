@@ -9,6 +9,7 @@ See docs/PLAN.md section 4. Bump SPEC when a change would break existing modules
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -115,7 +116,11 @@ class Manifest:
                 "pipeline": {k: self.nextflow.get(k) for k in ("pipeline", "revision", "profile")} if self.nextflow else None,
                 "containers": self.containers,
                 "playground": ({**{k: v for k, v in self.learn["playground"].items() if k != "scripts"},
-                                "n_scripts": len(self.learn["playground"]["scripts"])} if self.learn.get("playground") else None)}
+                                "n_scripts": len(self.learn["playground"]["scripts"]),
+                                # Intent: a fingerprint per script, so a file two modules share loads once in the page.
+                                "script_keys": [hashlib.sha256((self.dir / s).read_bytes()).hexdigest()[:16]
+                                                for s in self.learn["playground"]["scripts"]]}
+                               if self.learn.get("playground") else None)}
 
 
 def _field(d: dict, where: str) -> Field:

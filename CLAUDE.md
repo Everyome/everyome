@@ -84,11 +84,13 @@ Stages see `$EVERYOME_CPUS`, and `$EVERYOME_DEMO=1` on the demo cluster.
 ## Running
 
 Python 3.10 or newer (3.9 is end-of-life and no longer on GitHub's Ubuntu runners);
-CI tests 3.10 and 3.12 on Linux and macOS.
+CI tests 3.10 and 3.12 on Linux and macOS, plus a Linux job that runs the browser tests (any change to the
+screens should keep `tests/test_browser.py` passing: no page errors, dialogs open once and close).
 
 ```bash
 pip install -e ".[dev]" && everyome     # http://127.0.0.1:8777
 pytest          # the SPLiT-seq end-to-end test is skipped without the singlecell extra
+pytest tests/test_browser.py   # the screens in headless Chromium: .[browser] + python -m playwright install chromium
 EVERYOME_DEMO_PAUSE=0.3 everyome   # faster pretend stages on the demo cluster
 ```
 

@@ -43,6 +43,8 @@ all = ["everyome[singlecell,rna,molbio,pipelines]"]
 # Intent: everything for developing and testing from a checkout. It leaves out the pipelines package, which the
 # tests don't need and which can't be installed before its version is on PyPI.
 dev = ["everyome[test,singlecell,rna,molbio]"]
+# Intent: dev plus a real browser for tests/test_browser.py (then: python -m playwright install chromium).
+browser = ["everyome[dev]", "playwright"]
 
 [project.urls]
 Homepage = "https://github.com/Everyome/everyome"
