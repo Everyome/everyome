@@ -32,6 +32,7 @@ current when decisions change.
 | `everyome/modules/dna/` | DNA suite: `genome_assembly/` (nf-core/genomeassembler 2.0.1) and `bacterial_assembly/` (nf-core/bacass 2.6.1) share `explorer.py` (finds assemblies, stats, BUSCO, genes; choose and export), `shared/assembly_ui.js`, guides and playground; `demo_genome.py` makes toy genomes with known repeats |
 | `everyome/core/pipelines.py`, `everyome/pipelines.lock.json`, `pipelines/` | Shipped Nextflow pipelines: pinned bundles (code + plugins, SHA-256), built into the separate `everyome-pipelines` package; installed on the cluster when Run is pressed and run offline (`docs/PIPELINES.md`) |
 | `everyome/core/server.py` | Local FastAPI app; `/api/s/*` is proxied to the session with its token |
+| `everyome/core/shortcut.py` | `everyome --shortcut`: the desktop icon (Everyome.app on macOS, .desktop on Linux) and its background launcher; Quit in the app (`/api/quit`) stops it |
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
 | `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |

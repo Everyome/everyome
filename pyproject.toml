@@ -38,7 +38,7 @@ rna = ["numpy", "pandas<4", "matplotlib", "pydeseq2"]
 # Intent: what the molecular biology tools need (they run on this computer).
 molbio = ["primer3-py", "biopython"]
 # Intent: the nf-core pipelines Everyome installs on clusters; always the same version as Everyome (docs/RELEASING.md).
-pipelines = ["everyome-pipelines==0.1.0a4"]
+pipelines = ["everyome-pipelines==0.1.0a5"]
 all = ["everyome[singlecell,rna,molbio,pipelines]"]
 # Intent: everything for developing and testing from a checkout. It leaves out the pipelines package, which the
 # tests don't need and which can't be installed before its version is on PyPI.
