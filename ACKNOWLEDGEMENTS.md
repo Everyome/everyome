@@ -1,23 +1,35 @@
 # Acknowledgements
 
-Everyome stands on a great deal of other people's work. This page thanks them, and lists the references to cite
-for the parts of Everyome you use. Each analysis also writes its own methods section, with the references for
-exactly the tools it ran.
+Everyome stands on a great deal of other people's work. This page says what is whose, thanks the people behind it,
+and lists the references to cite for the parts of Everyome you use. Each analysis also writes its own methods
+section, with the references for exactly the tools it ran.
+
+## What Everyome brings together
+
+Everyome is a way in to analyses, not a replacement for the tools behind them. It gives one place to set up, run
+and read two kinds of work:
+
+- **Helen R Horkan's own analyses**, starting with SPLiTscape (SPLiT-seq reads to annotated cell types).
+- **Pipelines and tools written by other people**, such as the nf-core pipelines and the programs listed below.
+  Everyome runs them as their authors released them, pinned to a version and under their own licences; it sets
+  them up, submits them and helps you read the results. The credit for them belongs to their authors, so please
+  cite them as well as Everyome.
 
 ## People
 
-- **Helen R Horkan PhD** (Stowers Institute for Medical Research) created Everyome and SPLiTscape: the idea, the
-  scientific design, the analyses, the house styles and the logo.
+- **Helen R Horkan PhD** (Stowers Institute for Medical Research) created and wrote Everyome and SPLiTscape: the
+  idea, the scientific design, the analysis scripts, the app, the house styles and the logo.
 
 ## Institution
 
 - **Stowers Institute for Medical Research**, Helen R Horkan's institution.
 
-## AI assistance
+## Tools used to build it
 
-Much of Everyome's code, documentation, demo data, playgrounds and tests, and the logo's design files, were written
-with **Claude**, Anthropic's AI assistant, through Claude Code and Claude Cowork, working under Helen R Horkan's
-direction. Decisions about the science, the design and what Everyome should do were hers.
+Helen used **Claude**, Anthropic's AI assistant (through Claude Code and Claude Cowork), as a coding assistant
+while building Everyome: to help draft and check code, documentation, tests and the logo's design files. She
+reviewed and tested what it produced, and the decisions about the science, the design and what Everyome does are
+hers.
 
 - Anthropic (2026). Claude (Claude Opus models). https://www.anthropic.com/claude
 - Anthropic (2026). Claude Code. https://claude.com/claude-code

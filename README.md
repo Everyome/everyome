@@ -125,13 +125,16 @@ pytest tests/test_browser.py
 
 ## Acknowledgements
 
-Everyome was created by Helen R Horkan PhD (Stowers Institute for Medical
-Research). Much of its code and documentation was written with Claude
-(Anthropic; https://www.anthropic.com/claude), an AI assistant, through Claude
-Code (https://claude.com/claude-code), under her direction. It is built on
-nf-core, Nextflow, BioContainers and many open-source scientific tools and
-libraries; [`ACKNOWLEDGEMENTS.md`](https://github.com/Everyome/everyome/blob/main/ACKNOWLEDGEMENTS.md) thanks each of them and
-gives the references to cite.
+Everyome was created and written by Helen R Horkan PhD (Stowers Institute for
+Medical Research). It brings together her own analyses, starting with
+SPLiTscape, and pipelines and tools written by other people (nf-core, Nextflow,
+BioContainers and many open-source scientific tools), which it runs as their
+authors released them, under their own licences. Please cite those tools as
+well as Everyome; each run's methods section lists exactly which it used.
+Helen used Claude (Anthropic; https://www.anthropic.com/claude) as a coding
+assistant while building it.
+[`ACKNOWLEDGEMENTS.md`](https://github.com/Everyome/everyome/blob/main/ACKNOWLEDGEMENTS.md)
+says what is whose, thanks each project and gives the references to cite.
 
 ## Licence
 
