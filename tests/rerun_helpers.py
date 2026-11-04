@@ -41,7 +41,11 @@ def wait_for_run(client, timeout=600, every=0.5):
         st = r.json()
         states = {k: v.get("state") for k, v in st["stages"].items()}
         stopped = {k: s for k, s in states.items() if s in STOPPED}
-        assert not stopped, f"stage(s) stopped: {stopped}; all stages: {states}"
+        if stopped:
+            # Intent: say why, not only which: the end of each stopped stage's own log (as the app shows it).
+            logs = "".join(f"\n--- end of stage {k}'s log ---\n{client.get('/api/run/log', params={'stage': k}).json().get('log', '')}"
+                           for k in stopped)
+            raise AssertionError(f"stage(s) stopped: {stopped}; all stages: {states}{logs}")
         if st["done"]:
             return st
         time.sleep(every)

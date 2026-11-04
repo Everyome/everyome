@@ -14,7 +14,10 @@ class Client:
     def __init__(self, *statuses):
         self.statuses = list(statuses)
 
-    def get(self, url):
+    def get(self, url, params=None):
+        if url == "/api/run/log":  # Intent: each stage's log, as the app returns it.
+            st = {"log": f"the end of {params['stage']}'s log"}
+            return type("R", (), {"status_code": 200, "text": "", "json": lambda self: st})()
         st = self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
         return type("R", (), {"status_code": 200, "text": "", "json": lambda self: st})()
 
@@ -31,7 +34,7 @@ def test_returns_when_every_stage_completed():
 def test_stops_at_once_on_a_failed_stage_and_names_it():
     # Intent: this used to wait out the whole timeout and say only "timed out".
     c = Client(status(qc="COMPLETED", trim="FAILED", bam="CANCELLED"))
-    with pytest.raises(AssertionError, match=r"stopped: \{'trim': 'FAILED', 'bam': 'CANCELLED'\}"):
+    with pytest.raises(AssertionError, match=r"(?s)stopped: \{'trim': 'FAILED', 'bam': 'CANCELLED'\}.*the end of trim's log"):
         wait_for_run(c, timeout=600, every=0)
 
 
