@@ -14,6 +14,7 @@ import os
 import re
 import shlex
 import sys
+import threading
 from pathlib import Path
 
 import httpx
@@ -102,6 +103,28 @@ def _load_settings():
 def health():
     # Intent: lets tests and the launcher check the server is up.
     return {"name": "Everyome", "version": __version__, "ok": True}
+
+
+# Intent: set by `everyome` (__main__.py) to stop the server; stays None under a test client, so a test can't stop pytest.
+QUIT = None
+
+
+@app.post("/api/quit")
+def quit_app(request: Request):
+    """Stop Everyome from its own page: started from the icon, it has no terminal to press Ctrl+C in."""
+    # Intent: another website can't send a custom header to this app without CORS permission, which it never grants,
+    # so only Everyome's own page can stop it.
+    if request.headers.get("x-everyome") != "quit":
+        raise HTTPException(403, "Quit is only accepted from Everyome's own page.")
+    if QUIT is None:
+        raise HTTPException(409, "This copy of Everyome can't be stopped from the page.")
+    if S.backend:
+        try:
+            S.backend.close()  # Intent: close SSH tunnels; jobs on the cluster keep running.
+        except Exception:
+            pass
+    threading.Timer(0.3, QUIT).start()  # Intent: answer the page first, then stop.
+    return {"ok": True}
 
 
 # ------------------------------------------------------------------ connection

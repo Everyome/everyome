@@ -28,8 +28,8 @@ const COL = { gold: "#C2A24A", golddk: "#8F7529", goldlt: "#DFC684", ox: "#6E1B2
   muted: "#5A5260", rule: "#D6CBB6", card: "#FBF7EF", parch: "#E7DECC", ok: "#5E6B2E" };
 let PALETTE = ["#C2A24A", "#6E1B2B", "#32203A", "#8F7529", "#A83B50", "#5A5260", "#DFC684", "#0E8F8A", "#B9AEC0"];
 
-async function api(path, { method = "GET", body } = {}) {
-  const opt = { method, headers: {} };
+async function api(path, { method = "GET", body, headers = {} } = {}) {
+  const opt = { method, headers: { ...headers } };
   if (body !== undefined) { opt.body = JSON.stringify(body); opt.headers["content-type"] = "application/json"; }
   const r = await fetch(path, opt);
   const txt = await r.text();
@@ -993,6 +993,20 @@ async function initThemes() {
   darkQuery.addEventListener("change", () => { if (THEME.mode === "system") applyTheme(); });
   applyTheme(false);
 }
+
+// ------------------------------------------------------------------ quit
+// Intent: started from the icon there is no terminal to press Ctrl+C in, so the app can stop itself.
+$("#quit").onclick = async () => {
+  const ok = await modal("Quit Everyome",
+    `<p>This stops Everyome on this computer. Your projects are saved, and jobs already submitted to a cluster keep running.
+      A live session stops itself after an hour with no activity.</p><p>To start Everyome again, open its icon.</p>`,
+    [{ text: "Cancel", value: false }, { text: "Quit Everyome", value: true, primary: true }]);
+  if (!ok) return;
+  try { await api("/api/quit", { method: "POST", headers: { "x-everyome": "quit" } }); }
+  catch (e) { toast(e.message); return; }
+  document.body.innerHTML = `<main class="stopped"><h1>Everyome has stopped</h1>
+    <p>You can close this tab. To start Everyome again, open its icon.</p></main>`;
+};
 
 // ------------------------------------------------------------------ start
 (async () => {

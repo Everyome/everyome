@@ -19,9 +19,8 @@ sync_api = pytest.importorskip("playwright.sync_api")
 SETTINGS = "Inputs and settings"
 
 
-@pytest.fixture(scope="module")
-def app(tmp_path_factory):
-    home = tmp_path_factory.mktemp("home")
+def _start_app(home):
+    """The real app on a free port with its own home folder, as `everyome` starts it."""
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]
     env = dict(os.environ, HOME=str(home))
@@ -35,12 +34,22 @@ def app(tmp_path_factory):
             time.sleep(0.5)
     else:
         p.kill(); raise AssertionError("the app did not start:\n" + p.stdout.read())
-    yield url
+    return p, url
+
+
+def _stop_app(p):
     p.terminate()
     try:
         p.wait(10)
     except subprocess.TimeoutExpired:  # Intent: a demo job or session may still be winding down; don't hang the suite.
         p.kill(); p.wait(10)
+
+
+@pytest.fixture(scope="module")
+def app(tmp_path_factory):
+    p, url = _start_app(tmp_path_factory.mktemp("home"))
+    yield url
+    _stop_app(p)
 
 
 @pytest.fixture(scope="module")
@@ -158,3 +167,30 @@ def test_submit_dialog_cancel_submits_nothing(page):
     assert dialogs(page) == 0
     assert page.request.get("/api/state").json()["run"]["jobs"] == {}
     assert page.errors == []
+
+
+def test_quit_asks_first_and_cancel_keeps_it_running(page):
+    page.locator("#quit").click()
+    page.wait_for_selector(".modal")
+    page.locator(".modal button", has_text="Cancel").click()
+    assert dialogs(page) == 0
+    assert page.request.get("/api/health").ok
+    assert page.errors == []
+
+
+def test_quit_stops_the_app(browser, tmp_path):
+    """Started from the icon there is no terminal; Quit in the app is how people stop it."""
+    p, url = _start_app(tmp_path)
+    try:
+        ctx = browser.new_context(base_url=url)
+        pg = ctx.new_page()
+        pg.goto("/")
+        pg.wait_for_selector("#page h1")
+        pg.locator("#quit").click()
+        pg.locator(".modal button", has_text="Quit Everyome").click()
+        pg.wait_for_selector("text=Everyome has stopped")
+        assert p.wait(15) == 0
+        ctx.close()
+    finally:
+        if p.poll() is None:
+            _stop_app(p)

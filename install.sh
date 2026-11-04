@@ -7,11 +7,13 @@
 #   1. Uses your conda if you have one; otherwise installs Miniforge into ~/miniforge3 (checksum-verified).
 #   2. Makes (or reuses) a conda environment called "everyome" with Python 3.12, from conda-forge.
 #   3. Installs Everyome and all its analyses into that environment.
+#   4. Adds an Everyome icon: in Applications on macOS; in the app menu and on the desktop on Linux.
 # Run it again at any time to repair or update an installation. Read it before you run it; it is short.
 #
 # Optional settings (put them before "bash", e.g. "... | EVERYOME_ENV=myenv bash"):
 #   EVERYOME_ENV        environment name (default: everyome)
 #   EVERYOME_CONDA_DIR  where to install Miniforge if you have no conda (default: ~/miniforge3)
+#   EVERYOME_NO_ICON=1  don't add the icon (for example on a cluster login node)
 #
 # Everyome: https://github.com/Everyome/everyome (GPL-3.0-or-later). Created by Helen R Horkan PhD.
 
@@ -117,7 +119,14 @@ main() {
         || fail "pip could not install Everyome. The text above says why."
     "$prefix/bin/everyome" --help >/dev/null || fail "Everyome installed but does not start."
 
-    # 5. Let new terminals find conda (only if we installed Miniforge: an existing conda is left as you set it).
+    # 5. The icon, so people can start Everyome without a terminal. Never stops the install.
+    local icon=0
+    if [ "${EVERYOME_NO_ICON:-0}" != 1 ] && "$prefix/bin/everyome" --help | grep -q -- --shortcut; then
+        say "Adding the Everyome icon"
+        if "$prefix/bin/everyome" --shortcut; then icon=1; else echo "Could not add the icon; start Everyome as below instead."; fi
+    fi
+
+    # 6. Let new terminals find conda (only if we installed Miniforge: an existing conda is left as you set it).
     if [ "$fresh" = 1 ]; then
         local shell_name; shell_name="$(basename "${SHELL:-bash}")"
         case "$shell_name" in bash|zsh|fish|tcsh|xonsh) ;; *) shell_name="bash" ;; esac
@@ -125,6 +134,18 @@ main() {
     fi
 
     say "Everyome $VERSION is installed."
+    if [ "$icon" = 1 ]; then
+        cat <<EOF
+To start it, open the Everyome icon (on a Mac: in Launchpad, or Applications in Finder).
+Your browser opens Everyome. Choose Demo cluster to try every analysis with example data.
+Stop it with Quit at the top right of Everyome. You can close this terminal now.
+
+From a terminal, you can also start it with: $prefix/bin/everyome
+
+Please cite Everyome if you use it: https://github.com/Everyome/everyome
+EOF
+        return
+    fi
     cat <<EOF
 To start it, open a NEW terminal window and type:
 

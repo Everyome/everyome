@@ -22,17 +22,17 @@ Everyome runs on **macOS** and **Linux**. Windows is not tested yet (see [Window
    ```
 
 3. Wait until it says **Everyome … is installed** (about 10 minutes, mostly downloads; a lot of text is normal).
-4. Close the terminal window, open a new one, and type these two lines to start Everyome:
+4. Close the terminal. From now on, start Everyome from its **icon**, with no terminal needed:
+   - **Mac:** open **Launchpad** (or **Applications** in Finder, or press ⌘ Space and type `Everyome`).
+   - **Linux:** your applications menu, or the icon on your desktop.
 
-   ```bash
-   conda activate everyome
-   everyome
-   ```
+   Everyome opens in your browser. To stop it, click **Quit** at the top right.
 
 What it does, all inside your home folder and without administrator rights: if you have no conda, it downloads
 Miniforge, checks the download against its published checksum, and installs it into `~/miniforge3`; it makes an
-environment called `everyome` with Python 3.12 from conda-forge; and it installs Everyome with every analysis. If you
-already have conda, it uses yours. Running it again repairs or updates an installation. You can
+environment called `everyome` with Python 3.12 from conda-forge; it installs Everyome with every analysis; and it adds
+the Everyome icon. If you already have conda, it uses yours. To skip the icon (for example on a cluster login node),
+run it as `curl -fsSL … | EVERYOME_NO_ICON=1 bash`. Running it again repairs or updates an installation. You can
 [read the script](https://github.com/Everyome/everyome/blob/main/install.sh) before running it.
 
 If it stops with a message, the [table below](#if-something-goes-wrong) covers the usual causes, or follow the
@@ -56,6 +56,15 @@ Everyome is in early releases: that installs this early Everyome but stable rele
 `pip install --pre`).
 
 To use your own cluster, see [On your cluster](#on-your-cluster).
+
+### The Everyome icon
+
+The one-line installer adds an icon that starts Everyome without a terminal. After any other install, add it with
+`everyome --shortcut` (and take it away with `everyome --remove-shortcut`). On a Mac it is **Everyome** in the
+Applications folder in your home folder; on Linux it is in the applications menu and on the desktop. Opening it
+starts Everyome in the background and opens it in your browser; opening it again while Everyome is running just
+opens the browser. Stop Everyome with **Quit** at the top right. Its messages go to `~/.everyome/logs/app.log`, which
+is the place to look if the icon seems to do nothing.
 
 ---
 
@@ -158,19 +167,22 @@ everyome
 Your web browser opens Everyome. (If it doesn't, open your browser and go to http://127.0.0.1:8777.) Everything
 runs on your own computer; nothing is sent anywhere.
 
-**Leave the terminal window open while you use Everyome.** To stop it, click on the terminal window and press
-**Ctrl + C**.
+**Leave the terminal window open while you use Everyome.** To stop it, click **Quit** at the top right of
+Everyome, or click on the terminal window and press **Ctrl + C**.
 
 To try it out, click **Connect**, choose **Demo cluster**, and follow the pages. The demo has example data for every
 analysis and a pretend job scheduler, so you can try everything before using real data.
 
 ### Next time
 
-You only do steps 2 to 4 once. After that, to start Everyome:
+You only do steps 2 to 4 once. To start Everyome without a terminal from now on, add its icon once:
 
-1. Open a terminal.
-2. `conda activate everyome`
-3. `everyome`
+```bash
+everyome --shortcut
+```
+
+Then open **Everyome** from Launchpad or Applications (Mac), or your applications menu or desktop (Linux). Or, from a
+terminal: `conda activate everyome`, then `everyome`.
 
 ### Updating to a new version
 

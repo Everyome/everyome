@@ -66,9 +66,25 @@ jobs:
           prefix="$(HOME="$home" "$conda" run -n everyome python -c 'import sys; print(sys.prefix)')"
           exe="$prefix/bin/everyome"
           HOME="$home" "$exe" --no-browser --port 8777 > "$RUNNER_TEMP/app.log" 2>&1 &
-          for i in $(seq 60); do curl -fs http://127.0.0.1:8777/ > /dev/null && break; sleep 2; done
+          for _ in $(seq 60); do curl -fs http://127.0.0.1:8777/ > /dev/null && break; sleep 2; done
           curl -fs http://127.0.0.1:8777/ | grep -qi everyome || { cat "$RUNNER_TEMP/app.log"; exit 1; }
           "$(dirname "$exe")/python" -c "import scanpy, pydeseq2, primer3, everyome_pipelines, everyome; print('Everyome', everyome.__version__)"
+      - name: The icon was added
+        run: |
+          home="$RUNNER_TEMP/home"
+          if ! grep -q "Adding the Everyome icon" "$RUNNER_TEMP/install.log"; then
+            # Intent: only a version from before the icon may skip it (the installer checks for --shortcut).
+            if "$(dirname "$(find "$home" -path '*envs/everyome/bin/everyome' | head -1)")/everyome" --help | grep -q -- --shortcut; then
+              echo "this version has the icon but the installer did not add it"; exit 1
+            fi
+            echo "the installed version predates the icon"; exit 0
+          fi
+          if [ "$RUNNER_OS" = macOS ]; then
+            test -x "$home/Applications/Everyome.app/Contents/MacOS/Everyome"
+          else
+            grep -q "Exec=" "$home/.local/share/applications/everyome.desktop"
+          fi
+          grep -q "open the Everyome icon" "$RUNNER_TEMP/install.log"
       - name: Running it again reuses the installation
         if: matrix.conda == 'no conda yet'
         run: |
