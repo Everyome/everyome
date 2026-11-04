@@ -1,13 +1,14 @@
 # Intent: run the one-line installer (install.sh) on brand-new machines, as a new user would, and check Everyome
-# starts. It installs the released version from PyPI, so it runs when the installer changes, on release tags (after
-# the upload), and on demand; macOS joins on tags and on demand, like the main CI.
+# starts. It installs the released version from PyPI, so it runs when the installer changes, at the end of a release
+# (called by release.yml once PyPI lists the upload), and on demand; macOS joins on release tags and on demand.
 name: Installer
 on:
-  # Intent: "branches" is needed next to "tags", or GitHub runs this for tag pushes only. (Tag pushes ignore "paths".)
+  # Intent: branches only. With no "branches" filter GitHub would also run this on tag pushes (which ignore "paths").
   push:
     branches: ["**"]
     paths: ["install.sh", ".github/workflows/install.yml"]
-    tags: ["v*"]
+  # Intent: not on the tag push itself: the tag now starts the upload (release.yml), so the version isn't on PyPI yet.
+  workflow_call:
   pull_request:
     paths: ["install.sh", ".github/workflows/install.yml"]
   workflow_dispatch:

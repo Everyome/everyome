@@ -1,0 +1,120 @@
+# Intent: publish a release to PyPI when a maintainer pushes a version tag (v…), with no token stored anywhere.
+# PyPI's Trusted Publishing checks that the upload comes from this workflow, in this repository, in the "pypi"
+# environment; that environment asks a maintainer to approve before anything is uploaded (see docs/RELEASING.md).
+# Order: check the versions agree → build both packages → install them fresh and run the tests → (approval) →
+# upload everyome-pipelines, then everyome → wait for PyPI to list them → run the one-line installer on new machines.
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: The tag and every version line agree
+        id: version
+        run: |
+          python - <<'EOF'
+          import os, re, tomllib
+          tag = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          found = {
+              "everyome/__init__.py": re.search(r'__version__ = "([^"]+)"', open("everyome/__init__.py").read())[1],
+              "pipelines/pyproject.toml": tomllib.load(open("pipelines/pyproject.toml", "rb"))["project"]["version"],
+              "pyproject.toml (pipelines extra)": re.search(r'"everyome-pipelines==([^"]+)"', open("pyproject.toml").read())[1],
+              "CITATION.cff": re.search(r"^version: (\S+)", open("CITATION.cff").read(), re.M)[1],
+              "install.sh": re.search(r'local VERSION="([^"]+)"', open("install.sh").read())[1],
+          }
+          wrong = {k: v for k, v in found.items() if v != tag}
+          if wrong:
+              raise SystemExit(f"tag v{tag} but: {wrong}")
+          open(os.environ["GITHUB_OUTPUT"], "a").write(f"version={tag}\n")
+          EOF
+      - run: pip install build twine
+      - name: Build everyome
+        run: python -m build --outdir dist/everyome
+      - name: Build everyome-pipelines (stops if anything fetched differs from the lock)
+        run: |
+          pip install -e .
+          python -m everyome.core.pipelines build --into pipelines/everyome_pipelines/bundles
+          python -m build pipelines --outdir dist/pipelines
+      - run: twine check --strict dist/everyome/* dist/pipelines/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  # Intent: install the built packages the way users will, in a fresh environment, and run the tests against them.
+  # This catches files left out of a package; the full test matrix runs separately in CI on the same tag.
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - name: Install from the built files only (dependencies from PyPI)
+        run: |
+          python -m venv /tmp/fresh
+          /tmp/fresh/bin/pip install --find-links dist/everyome --find-links dist/pipelines \
+            "everyome[dev]==${{ needs.build.outputs.version }}" "everyome-pipelines==${{ needs.build.outputs.version }}"
+      - name: Run the tests against the installed package, not the checkout
+        run: |
+          cp -r tests /tmp/tests-only
+          cd /tmp/tests-only && /tmp/fresh/bin/python -m pytest -q
+
+  publish:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/everyome/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write  # Intent: lets PyPI confirm this workflow is the trusted publisher; nothing else is granted.
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      # Intent: pipelines first, because everyome[all] pins everyome-pipelines at the same version.
+      - name: Upload everyome-pipelines
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
+        with:
+          packages-dir: dist/pipelines/
+      - name: Upload everyome
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
+        with:
+          packages-dir: dist/everyome/
+
+  # Intent: PyPI's index can take a few minutes to list a new upload; the installer check would fail before then.
+  wait-for-pypi:
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: |
+          v=${{ needs.build.outputs.version }}
+          for _ in $(seq 60); do
+            if pip download --no-deps --no-cache-dir -q -d /tmp/check "everyome==$v" "everyome-pipelines==$v"; then exit 0; fi
+            sleep 20
+          done
+          echo "PyPI still doesn't list $v after 20 minutes"; exit 1
+
+  installer:
+    needs: wait-for-pypi
+    uses: ./.github/workflows/install.yml
