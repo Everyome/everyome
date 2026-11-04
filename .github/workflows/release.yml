@@ -99,7 +99,9 @@ jobs:
         with:
           packages-dir: dist/everyome/
 
-  # Intent: PyPI's index can take a few minutes to list a new upload; the installer check would fail before then.
+  # Intent: PyPI's index can take a few minutes to list a new upload, and its mirrors catch up at different times (at
+  # 0.1.0a5 one answer said yes while the installer machines still saw 0.1.0a4). So wait for five answers in a row,
+  # a minute apart, before running the installer check.
   wait-for-pypi:
     needs: [build, publish]
     runs-on: ubuntu-latest
@@ -109,11 +111,17 @@ jobs:
           python-version: "3.12"
       - run: |
           v=${{ needs.build.outputs.version }}
-          for _ in $(seq 60); do
-            if pip download --no-deps --no-cache-dir -q -d /tmp/check "everyome==$v" "everyome-pipelines==$v"; then exit 0; fi
-            sleep 20
+          seen=0
+          for _ in $(seq 40); do
+            rm -rf /tmp/check
+            if pip download --no-deps --no-cache-dir -q -d /tmp/check "everyome==$v" "everyome-pipelines==$v"; then
+              seen=$((seen + 1)); [ "$seen" -ge 5 ] && exit 0
+            else
+              seen=0
+            fi
+            sleep 60
           done
-          echo "PyPI still doesn't list $v after 20 minutes"; exit 1
+          echo "PyPI still doesn't reliably list $v after 40 minutes"; exit 1
 
   installer:
     needs: wait-for-pypi
