@@ -114,3 +114,49 @@ def test_quit_refused_under_a_test_client():
     from fastapi.testclient import TestClient
     from everyome.core.server import app
     assert TestClient(app).post("/api/quit", headers={"x-everyome": "quit"}).status_code == 409
+
+
+class FakeDock:
+    """Stands in for `defaults` and `killall`, so the tests never touch the real Dock."""
+
+    def __init__(self, tiles):
+        self.prefs = {"persistent-apps": tiles, "tilesize": 48}
+        self.restarts = 0
+
+    def __call__(self, cmd, input=None, capture_output=True):
+        if cmd[:2] == ["defaults", "export"]:
+            return subprocess.CompletedProcess(cmd, 0, plistlib.dumps(self.prefs), b"")
+        if cmd[:2] == ["defaults", "import"]:
+            self.prefs = plistlib.loads(input)
+            return subprocess.CompletedProcess(cmd, 0, b"", b"")
+        if cmd == ["killall", "Dock"]:
+            self.restarts += 1
+            for t in self.prefs["persistent-apps"]:  # Intent: like the real Dock, give each tile an ID once restarted.
+                t.setdefault("GUID", 1000 + self.restarts)
+        return subprocess.CompletedProcess(cmd, 0, b"", b"")
+
+
+def test_dock_tile_added_once_and_removed(tmp_path, monkeypatch):
+    monkeypatch.setattr(shortcut, "_real_home", lambda home: True)
+    monkeypatch.setattr(shortcut.time, "sleep", lambda s: None)
+    finder = {"tile-type": "file-tile", "tile-data": {"bundle-identifier": "com.apple.Safari",
+                                                      "file-data": {"_CFURLString": "file:///Applications/Safari.app/"}}}
+    fake = FakeDock([finder])
+    lines = shortcut.create(home=tmp_path, system="Darwin", python="/env/bin/python", run=fake)
+    assert "Added Everyome to your Dock." in lines and fake.restarts == 1
+    tiles = fake.prefs["persistent-apps"]
+    assert tiles[0]["tile-data"] == finder["tile-data"] and tiles[1]["tile-data"]["bundle-identifier"] == shortcut.BUNDLE_ID
+    assert tiles[1]["tile-data"]["file-data"]["_CFURLString"] == (tmp_path / "Applications/Everyome.app").as_uri() + "/"
+    assert fake.prefs["tilesize"] == 48  # Intent: the rest of the Dock settings are kept.
+    assert (tmp_path / ".everyome/dock-before-everyome.plist").exists()
+    # Intent: running the installer again doesn't add a second tile or restart the Dock.
+    shortcut.create(home=tmp_path, system="Darwin", python="/env/bin/python", run=fake)
+    assert len(fake.prefs["persistent-apps"]) == 2 and fake.restarts == 1
+    assert "Removed Everyome from your Dock." in shortcut.remove(home=tmp_path, system="Darwin", run=fake)
+    assert [t["tile-data"] for t in fake.prefs["persistent-apps"]] == [finder["tile-data"]]
+
+
+def test_dock_left_alone_for_another_home(tmp_path):
+    fake = FakeDock([])
+    shortcut.create(home=tmp_path, system="Darwin", python="/env/bin/python", run=fake)
+    assert fake.prefs["persistent-apps"] == [] and fake.restarts == 0

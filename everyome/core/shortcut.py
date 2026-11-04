@@ -1,7 +1,7 @@
 """An Everyome icon, for people who would rather not use a terminal: `everyome --shortcut` adds it, `--remove-shortcut`
 takes it away. The one-line installer adds it for you.
 
-macOS: Everyome.app in ~/Applications (so it is in Launchpad and Spotlight). Linux: an entry in the app menu and, if
+macOS: Everyome.app in ~/Applications (found by Spotlight), and a tile in the Dock. Linux: an entry in the app menu and, if
 there is a Desktop folder, an icon there. Both run the same small launcher, which starts Everyome in the background
 (or, if it is already running, just opens it in the browser) and keeps its messages in ~/.everyome/logs/app.log.
 Everything is made on this computer, so macOS doesn't treat it as a download from an unknown developer.
@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from importlib.resources import files
 from pathlib import Path
 
@@ -71,6 +72,68 @@ def _mac_app(home: Path) -> Path:
     return home / "Applications" / "Everyome.app"
 
 
+def _real_home(home: Path) -> bool:
+    # Intent: the Dock belongs to the account, whatever $HOME says; only touch it for the account's own home folder,
+    # never for a test or a scratch install with HOME pointed elsewhere.
+    try:
+        import pwd
+    except ImportError:  # Intent: Windows has no pwd module, and no Dock.
+        return False
+    real = Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
+    return home.resolve() == real and Path(os.environ.get("HOME", real)).resolve() == real
+
+
+def _dock_tile(t: dict) -> bool:
+    data = t.get("tile-data", {})
+    return data.get("bundle-identifier") == BUNDLE_ID or data.get("file-data", {}).get("_CFURLString", "").rstrip("/").endswith("/Everyome.app")
+
+
+def dock(app: Path, add: bool, home: Path, run=subprocess.run) -> str | None:
+    """Add Everyome's tile to the Dock (or take it away). Returns what happened, or None if the Dock wasn't changed."""
+    r = run(["defaults", "export", "com.apple.dock", "-"], capture_output=True)
+    if r.returncode:
+        return None
+    try:
+        prefs = plistlib.loads(r.stdout)
+    except (plistlib.InvalidFileException, ValueError):
+        return None
+    tiles = prefs.get("persistent-apps", [])
+    url = app.as_uri() + "/"
+    if add and any(t.get("tile-data", {}).get("file-data", {}).get("_CFURLString") == url for t in tiles):
+        return "Everyome is already in your Dock."
+    kept = [t for t in tiles if not _dock_tile(t)]
+    if not add and len(kept) == len(tiles):
+        return None
+    if add:
+        kept.append({"tile-type": "file-tile", "tile-data": {
+            "bundle-identifier": BUNDLE_ID, "file-label": "Everyome",
+            "file-data": {"_CFURLString": url, "_CFURLStringType": 15}}})
+    # Intent: keep a copy of the Dock settings as they were, in case anything goes wrong.
+    backup = home / ".everyome" / "dock-before-everyome.plist"
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    backup.write_bytes(r.stdout)
+    prefs["persistent-apps"] = kept
+    if run(["defaults", "import", "com.apple.dock", "-"], input=plistlib.dumps(prefs), capture_output=True).returncode:
+        return None
+    run(["killall", "Dock"], capture_output=True)  # Intent: the Dock re-reads its settings when it restarts.
+    # Intent: wait until the restarted Dock has taken the change in. After an add it rewrites the new tile (adding its
+    # own GUID) and saves; a change made before that save is lost, as seen when adding and removing within seconds.
+    for _ in range(30):
+        time.sleep(0.5)
+        if run(["pgrep", "-x", "Dock"], capture_output=True).returncode:
+            continue
+        if not add:
+            time.sleep(2)
+            break
+        now = run(["defaults", "export", "com.apple.dock", "-"], capture_output=True)
+        try:
+            if any(_dock_tile(t) and "GUID" in t for t in plistlib.loads(now.stdout).get("persistent-apps", [])):
+                break
+        except (plistlib.InvalidFileException, ValueError):
+            pass
+    return "Added Everyome to your Dock." if add else "Removed Everyome from your Dock."
+
+
 def _linux_paths(home: Path, env) -> dict[str, Path]:
     data = Path(env.get("XDG_DATA_HOME") or home / ".local" / "share")
     desktop = None
@@ -85,7 +148,8 @@ def _linux_paths(home: Path, env) -> dict[str, Path]:
             "menu": data / "applications" / "everyome.desktop", "desktop": desktop / "everyome.desktop"}
 
 
-def create(home: Path | None = None, system: str | None = None, python: str | None = None, env=None) -> list[str]:
+def create(home: Path | None = None, system: str | None = None, python: str | None = None, env=None,
+           run=subprocess.run) -> list[str]:
     """Add the icon. Returns plain-language lines saying what was made."""
     home, system, python, env = home or Path.home(), system or platform.system(), python or sys.executable, env or os.environ
     if system == "Darwin":
@@ -107,12 +171,16 @@ def create(home: Path | None = None, system: str | None = None, python: str | No
         if _icns(app / "Contents" / "Resources" / "Everyome.icns"):
             info["CFBundleIconFile"] = "Everyome"
         (app / "Contents" / "Info.plist").write_bytes(plistlib.dumps(info))
-        # Intent: tell Finder, Launchpad and Spotlight about the new app (and its icon) straight away.
+        # Intent: tell Finder and Spotlight about the new app (and its icon) straight away.
         lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
         if Path(lsregister).exists():
             subprocess.run([lsregister, "-f", str(app)], capture_output=True)
-        return [f"Added Everyome to your Applications folder ({app}).",
-                "Open it from Launchpad, Spotlight or Finder; it opens Everyome in your browser."]
+        lines = [f"Added Everyome to the Applications folder in your home folder ({app})."]
+        in_dock = dock(app, True, home, run) if _real_home(home) else None
+        if in_dock:
+            lines.append(in_dock)
+        return lines + [("Click it in the Dock, or press ⌘ Space and type Everyome" if in_dock else
+                         "Open it by pressing ⌘ Space and typing Everyome") + "; it opens Everyome in your browser."]
     if system == "Linux":
         p = _linux_paths(home, env)
         made = []
@@ -141,11 +209,14 @@ def create(home: Path | None = None, system: str | None = None, python: str | No
     return [f"An Everyome icon isn't available on {system} yet; start it with the `everyome` command."]
 
 
-def remove(home: Path | None = None, system: str | None = None, env=None) -> list[str]:
+def remove(home: Path | None = None, system: str | None = None, env=None, run=subprocess.run) -> list[str]:
     """Take away what create() added (only files Everyome made)."""
     home, system, env = home or Path.home(), system or platform.system(), env or os.environ
+    out = []
     if system == "Darwin":
         targets = [_mac_app(home)]
+        if _real_home(home) and (msg := dock(_mac_app(home), False, home, run)):
+            out.append(msg)
     elif system == "Linux":
         targets = list(_linux_paths(home, env).values())
     else:
@@ -155,4 +226,5 @@ def remove(home: Path | None = None, system: str | None = None, env=None) -> lis
         if t.exists() and (t.name == "everyome.png" or _ours(t)):
             shutil.rmtree(t) if t.is_dir() else t.unlink()
             gone.append(str(t))
-    return [f"Removed {g}" for g in gone] or ["There was no Everyome icon to remove."]
+    out += [f"Removed {g}" for g in gone]
+    return out or ["There was no Everyome icon to remove."]

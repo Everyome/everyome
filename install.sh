@@ -136,7 +136,7 @@ main() {
     say "Everyome $VERSION is installed."
     if [ "$icon" = 1 ]; then
         cat <<EOF
-To start it, open the Everyome icon (on a Mac: in Launchpad, or Applications in Finder).
+To start it, open the Everyome icon (on a Mac: in the Dock, or press Command-Space and type Everyome).
 Your browser opens Everyome. Choose Demo cluster to try every analysis with example data.
 Stop it with Quit at the top right of Everyome. You can close this terminal now.
 

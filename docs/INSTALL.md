@@ -23,7 +23,8 @@ Everyome runs on **macOS** and **Linux**. Windows is not tested yet (see [Window
 
 3. Wait until it says **Everyome … is installed** (about 10 minutes, mostly downloads; a lot of text is normal).
 4. Close the terminal. From now on, start Everyome from its **icon**, with no terminal needed:
-   - **Mac:** open **Launchpad** (or **Applications** in Finder, or press ⌘ Space and type `Everyome`).
+   - **Mac:** click **Everyome** in the Dock (the bar at the bottom of the screen), or press ⌘ Space and type
+     `Everyome`.
    - **Linux:** your applications menu, or the icon on your desktop.
 
    Everyome opens in your browser. To stop it, click **Quit** at the top right.
@@ -60,8 +61,9 @@ To use your own cluster, see [On your cluster](#on-your-cluster).
 ### The Everyome icon
 
 The one-line installer adds an icon that starts Everyome without a terminal. After any other install, add it with
-`everyome --shortcut` (and take it away with `everyome --remove-shortcut`). On a Mac it is **Everyome** in the
-Applications folder in your home folder; on Linux it is in the applications menu and on the desktop. Opening it
+`everyome --shortcut` (and take it away with `everyome --remove-shortcut`). On a Mac it is **Everyome** in the Dock,
+and in the Applications folder inside your home folder (not the main one, which needs an administrator password);
+on Linux it is in the applications menu and on the desktop. Opening it
 starts Everyome in the background and opens it in your browser; opening it again while Everyome is running just
 opens the browser. Stop Everyome with **Quit** at the top right. Its messages go to `~/.everyome/logs/app.log`, which
 is the place to look if the icon seems to do nothing.
@@ -181,7 +183,7 @@ You only do steps 2 to 4 once. To start Everyome without a terminal from now on,
 everyome --shortcut
 ```
 
-Then open **Everyome** from Launchpad or Applications (Mac), or your applications menu or desktop (Linux). Or, from a
+Then open **Everyome** from the Dock (Mac), or your applications menu or desktop (Linux). Or, from a
 terminal: `conda activate everyome`, then `everyome`.
 
 ### Updating to a new version

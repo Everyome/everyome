@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/Everyome/everyome/main/install.sh |
 
 It installs conda (Miniforge) if you don't have it, makes an `everyome` environment
 and installs Everyome with every analysis, all inside your home folder; no
-administrator rights needed. It also adds an **Everyome icon** (in Applications on
+administrator rights needed. It also adds an **Everyome icon** (in the Dock on
 a Mac; the app menu and desktop on Linux), so after that one line you never need
 the terminal: open the icon, and stop Everyome with **Quit** in the app.
 [Read the script](https://github.com/Everyome/everyome/blob/main/install.sh) first if you like; it is short.
