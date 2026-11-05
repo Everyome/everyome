@@ -27,7 +27,7 @@ suites:
     tools:
       - {id: rna.bulk_de, name: Differential expression (bulk RNA-seq), module: rna.bulk_de}
       - {id: rna.riboseq, name: Translation (Ribo-seq)}
-      - {id: rna.abundance, name: RNA abundance}
+      - {id: rna.abundance, name: RNA abundance, module: rna.abundance}
   - id: singlecell
     name: Single cell
     blurb: Cell types and states, one cell at a time.

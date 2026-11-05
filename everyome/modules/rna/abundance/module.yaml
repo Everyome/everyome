@@ -1,0 +1,87 @@
+# RNA abundance: reads the gene tables nf-core/rnaseq wrote (TPM and counts), then a live session shows how much each
+# gene is expressed in each sample, how the samples relate, and which genes share a pattern. No two-group test.
+spec: 1
+id: rna.abundance
+name: RNA abundance
+suite: rna
+version: 0.1.0
+summary: >
+  Explores how much each gene is expressed across your samples, from an
+  nf-core/rnaseq run: check the samples (principal components and correlation),
+  look up any gene's expression in every sample, see the most expressed genes,
+  and group the most variable genes by their pattern across samples. To test
+  two conditions against each other, use Differential expression instead.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Patel H. et al. nf-core/rnaseq. Zenodo."
+    url: https://doi.org/10.5281/zenodo.1400710
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Patro R. et al. (2017). Salmon provides fast and bias-aware quantification of transcript expression. Nature Methods 14:417–419."
+    url: https://doi.org/10.1038/nmeth.4197
+  - text: "Love M.I., Huber W., Anders S. (2014). Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biology 15:550."
+    url: https://doi.org/10.1186/s13059-014-0550-8
+  - text: "Wagner G.P., Kin K., Lynch V.J. (2012). Measurement of mRNA abundance using RNA-seq data: RPKM measure is inconsistent among samples. Theory in Biosciences 131:281–285."
+    url: https://doi.org/10.1007/s12064-012-0162-3
+kind: [interactive]
+requires: [pandas, numpy]
+methods: everyome.modules.rna.abundance.methods:methods
+
+inputs:
+  - id: results_dir
+    label: nf-core/rnaseq results folder
+    type: folder
+    required: true
+    help: "The pipeline's 'results' folder (it has a folder such as star_salmon or salmon inside). A Differential expression run's results folder works too."
+    demo: results
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: >
+      One row per sample: its name as in the pipeline's tables, and a group (tissue, stage, treatment…) that colours
+      the charts. Leave out a sample by deleting its row.
+    columns:
+      - {id: sample, label: Sample}
+      - {id: group, label: Group, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: results_dir, label: Read samples from the results}
+
+batch:
+  resources: {session: {cpus: 1, mem: 8G, time: "04:00:00"}}
+
+helpers:
+  scan: everyome.modules.rna.abundance.helpers:scan
+
+interactive:
+  engine: everyome.modules.rna.abundance.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: samples, title: Check samples}
+    - {id: genes, title: Look up genes}
+    - {id: patterns, title: Find patterns}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/abundance_playground.js]
+    object: AbundancePlayground
+    lede: >
+      Why TPM and raw counts disagree, and how a few very highly expressed genes
+      change every other gene's TPM, on a handful of made-up genes.
+    intro:
+      - "Six genes of different lengths and expression. Change one gene's expression or length and watch its reads, its TPM and every other gene's TPM."
+    caveats:
+      - "Real TPM comes from transcript-level estimates (Salmon or RSEM) with effective lengths that account for fragment size; here each gene has one fixed length."
+  guides:
+    samples: docs/guides/samples.md
+    pca: docs/guides/pca.md
+    correlation: docs/guides/correlation.md
+    tpm: docs/guides/tpm.md
+    top_genes: docs/guides/top_genes.md
+    patterns: docs/guides/patterns.md
+    clusters: docs/guides/clusters.md
+
+demo:
+  build: everyome.modules.rna.abundance.demo_data:build

@@ -72,6 +72,8 @@ hers.
 
 - Love M.I., Huber W., Anders S. (2014). DESeq2. *Genome Biology* 15:550. https://doi.org/10.1186/s13059-014-0550-8
 - Muzellec B. et al. (2023). PyDESeq2. *Bioinformatics* 39:btad547. https://doi.org/10.1093/bioinformatics/btad547
+- Patro R. et al. (2017). Salmon. *Nature Methods* 14:417–419. https://doi.org/10.1038/nmeth.4197
+- Wagner G.P., Kin K., Lynch V.J. (2012). Measurement of mRNA abundance using RNA-seq data (TPM). *Theory in Biosciences* 131:281–285. https://doi.org/10.1007/s12064-012-0162-3
 
 ### Single cell and spatial
 

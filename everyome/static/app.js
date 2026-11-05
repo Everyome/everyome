@@ -182,12 +182,12 @@ function browse(start, mode = "dir", title = "Choose a folder") {
 const fmtSize = b => b > 1e9 ? (b / 1e9).toFixed(1) + " GB" : b > 1e6 ? (b / 1e6).toFixed(1) + " MB" : b > 1e3 ? (b / 1e3).toFixed(0) + " KB" : b + " B";
 
 // ------------------------------------------------------------------ shared viewers (any module may use these)
-function barChart(items, { w = 520, h = 180, color = COL.golddk, label = v => fmt(v), title = "" } = {}) {
+function barChart(items, { w = 520, h = 180, color = COL.golddk, colors = null, label = v => fmt(v), title = "" } = {}) {
   // Intent: make room for the longest label (about 7 px per character), up to half the chart.
   const max = Math.max(...items.map(d => d[1]), 1), left = Math.min(w / 2, Math.max(120, 14 + 7 * Math.max(...items.map(d => String(d[0]).length)))), bh = Math.min(26, (h - 10) / items.length - 6);
   return `<svg class="chart" viewBox="0 0 ${w} ${items.length * (bh + 6) + 12}" role="img" aria-label="${esc(title)}">${items.map(([k, v], i) => {
     const y = i * (bh + 6) + 4, ww = (w - left - 90) * v / max;
-    return `<text x="${left - 8}" y="${y + bh / 2 + 4}" text-anchor="end" class="ax">${esc(k)}</text><rect x="${left}" y="${y}" width="${ww}" height="${bh}" fill="${color}"/>
+    return `<text x="${left - 8}" y="${y + bh / 2 + 4}" text-anchor="end" class="ax">${esc(k)}</text><rect x="${left}" y="${y}" width="${ww}" height="${bh}" fill="${colors?.[i] ?? color}"/>
       <text x="${left + ww + 6}" y="${y + bh / 2 + 4}" class="ax">${label(v)}</text>`; }).join("")}</svg>`;
 }
 // Histogram on a linear scale, with optional shaded keep-range [lo, hi].

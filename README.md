@@ -59,6 +59,8 @@ Modules so far:
   Illumina, long or hybrid reads and finds genes (Prokka or Bakta).
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
+- **RNA abundance**, RNA: from an nf-core/rnaseq results folder, how much each
+  gene is expressed in each sample, sample checks, and groups of co-expressed genes.
 - **Primer design**, molecular biology: Primer3 primers on a plasmid map, with
   checks for your own primers. Runs on your computer; no cluster needed.
 - **Sequence summary**, getting started: a small worked example of how every

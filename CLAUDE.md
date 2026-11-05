@@ -36,6 +36,7 @@ current when decisions change.
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
 | `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |
+| `everyome/modules/rna/abundance/` | RNA abundance: reads an nf-core/rnaseq results folder (TPM and counts); live session for sample checks, gene look-up and k-means expression patterns; no cluster stages |
 | `everyome/modules/rna/bulk_de/` | Bulk RNA-seq: nf-core/rnaseq 3.27.0 (pinned; schemas in `pipeline/`) for reads to counts, then a PyDESeq2 live session; `demo_pipeline.py` stands in for Nextflow on the demo cluster |
 | `everyome/modules/singlecell/cells.py`, `shared/`, `writeup.py` | Shared single-cell live session (filter incl. mitochondrial share, Harmony, Leiden, markers, naming, composition, export), its views (`shared/cells_ui.js`), guides, playground and methods text; used by SPLiT-seq and 10x |
 | `everyome/modules/singlecell/scrna/` | Single-cell RNA-seq (10x and similar): nf-core/scrnaseq 4.2.0 (pinned; `batch.defaults` sets protocol 10XV3), then load a combined matrix and the shared steps; `demo_pipeline.py` stands in for Nextflow |

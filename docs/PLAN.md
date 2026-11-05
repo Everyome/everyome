@@ -326,6 +326,16 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### RNA suite: RNA abundance (2026-11-04)
+
+Expression across samples without a two-group test (Helen, 2026-11-04). Starts from an nf-core/rnaseq results folder
+(any route: star_salmon, salmon, star_rsem, kallisto), so it works after the Differential expression module or a run
+made elsewhere. Live session only (`kind: [interactive]`, 1 CPU, 8 GB): samples compared on log2 of
+median-of-ratios-normalised counts (falls back to log2 TPM + 1 without a count table); PCA and correlation; any
+gene's TPM; most expressed genes; the most variable genes as z-scores, clustered with k-means (k-means++, fixed
+seed, clusters numbered by the sample where they peak) so reruns are identical. nf-core/differentialabundance
+(contrasts, R reports) was considered and left out: it needs Nextflow 25.10.4 and duplicates the DE module.
+
 ### Protein suite: structure prediction (2026-11-01)
 
 With this, every suite has at least one tool (Helen's release gate).
