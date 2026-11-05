@@ -87,7 +87,7 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
     # Intent: pass only what differs from the pipeline's own defaults, so the pipeline decides the rest.
     base = lambda f: nf.get("upstream", {}).get(f.id, f.default)
     params = {f.id: v[f.id] for f in m.params if f.pipeline and v.get(f.id) not in (None, "") and v.get(f.id) != base(f)}
-    params.update({sheet["param"]: f"{d}/{fname}", "outdir": f"{d}/results"})
+    params.update({**nf.get("fixed", {}), sheet["param"]: f"{d}/{fname}", "outdir": f"{d}/results"})
     res, user = run["resources"], run["user"]
     prefix = slurm.job_name(user, m.id, "", run.get("job_prefix", slurm.JOB_PREFIX))
     gpu = nf.get("gpu") or {}

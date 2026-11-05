@@ -12,6 +12,7 @@ material from others, each under its own licence, with the licence text next to 
 | nf-core/genomeassembler 2.0.1 parameter and samplesheet schemas | `everyome/modules/dna/genome_assembly/pipeline/` | MIT; `LICENSE-nf-core-genomeassembler` in the same folder |
 | nf-core/bacass 2.6.1 parameter and samplesheet schemas | `everyome/modules/dna/bacterial_assembly/pipeline/` | MIT; `LICENSE-nf-core-bacass` in the same folder |
 | nf-core/proteinfold 2.0.0 parameter and samplesheet schemas | `everyome/modules/protein/structure/pipeline/` | MIT; `LICENSE-nf-core-proteinfold` in the same folder |
+| nf-core/sarek 3.11.0 parameter and samplesheet schemas | `everyome/modules/dna/variants/pipeline/` | MIT; `LICENSE-nf-core-sarek` in the same folder |
 
 Everyome runs, but does not include, other tools (for example nf-core/rnaseq,
 Nextflow, STAR, Salmon, cutadapt, Scanpy, Harmony, PyDESeq2). Each analysis

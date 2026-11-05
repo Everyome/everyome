@@ -74,6 +74,9 @@ Modules so far:
   Illumina, long or hybrid reads and finds genes (Prokka or Bakta).
 - **Genome annotation (Helixer)**, DNA: gene models from the genome sequence alone,
   on a GPU; proteins and BUSCO completeness; ready for Function annotation.
+- **Variant and mutation calling**, DNA: nf-core/sarek maps reads to your own
+  genome and calls germline variants with two callers; filter the calls, see
+  where callers agree, and find variants that separate two groups of samples.
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **RNA abundance**, RNA: from an nf-core/rnaseq results folder, how much each

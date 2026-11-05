@@ -78,3 +78,33 @@ def test_untouched_yes_no_settings_are_not_changes():
     assert json.loads(runs.pipeline_files(run, M)["nf_params.json"]).keys() == {"input", "outdir"}
     vals, _ = check_values(M, {"samples": SAMPLES, "skip_trimming": False, "arm": False})
     assert [f.id for f in M.params if vals.get(f.id) != f.default] == []
+
+
+def test_fixed_parameters_are_always_passed_and_not_offered(tmp_path):
+    import shutil
+
+    import pytest
+
+    from everyome.core.manifest import ManifestError, load
+    d = tmp_path / "m"
+    shutil.copytree(M.dir, d)
+    y = (d / "module.yaml").read_text().replace("  profile: apptainer\n", "  profile: apptainer\n  fixed: {genome: null, igenomes_ignore: true}\n", 1)
+    (d / "module.yaml").write_text(y)
+    m = load(d / "module.yaml")
+    assert not {"genome", "igenomes_ignore"} & {f.id for f in m.params}
+    vals, errors = check_values(m, {"samples": SAMPLES})
+    assert not errors, errors
+    run = {"id": "r1", "dir": "/proj/runs/r1", "user": "hh2891", "values": vals, "resources": {"cpus": 2}, "demo": False, "pipelines_dir": "/p"}
+    p = json.loads(runs.pipeline_files(run, m)["nf_params.json"])
+    assert p["genome"] is None and p["igenomes_ignore"] is True
+    (d / "module.yaml").write_text(y.replace("igenomes_ignore: true", "no_such_param: 1"))
+    with pytest.raises(ManifestError, match="batch.fixed names unknown pipeline parameters: no_such_param"):
+        load(d / "module.yaml")
+
+
+def test_required_setting_with_a_default_falls_back_to_it():
+    sarek = modules.discover()[0]["dna.variants"]
+    step = next(f for f in sarek.params if f.id == "step")
+    assert step.required and step.default == "mapping"
+    vals, errors = check_values(sarek, {"samples": [{"patient": "a", "sample": "a", "lane": "L1", "fastq_1": "/d/a_R1.fastq.gz"}]})
+    assert vals["step"] == "mapping" and "step" not in errors

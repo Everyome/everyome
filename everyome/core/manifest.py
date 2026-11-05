@@ -260,7 +260,10 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
     srcs = [c if isinstance(c, str) else c.get("from") or c.get("if_filled") for c in sheet.get("columns", []) if isinstance(c, str) or "value" not in c]
     if not table or not srcs or not set(srcs) <= cols or not sheet.get("param"):
         raise ManifestError(f"{path}: batch.samplesheet needs 'from' (a table input), its 'columns' and the pipeline 'param'")
-    skip = set(batch.get("skip", [])) | {sheet["param"], "outdir"}
+    # Intent: 'fixed' parameters are always passed with the module's value and are not offered as settings (for
+    # example, turning off a pipeline's built-in human reference so the user's own genome is used).
+    fixed = batch.get("fixed") or {}
+    skip = set(batch.get("skip", [])) | {sheet["param"], "outdir"} | set(fixed)
     taken = {f.id for f in m.fields}
     demo, over, upstream = batch.get("demo_values", {}), batch.get("defaults", {}), {}
     for f in nfschema.fields(schema, skip):
@@ -274,6 +277,8 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
             f.default = over[f.id]
             f.help = (f.help + " " if f.help else "") + f"Everyome starts from {over[f.id]!r}; the pipeline's own default is {upstream[f.id]!r}."
         m.params.append(f)
+    if set(fixed) - {f.id for f in nfschema.fields(schema, set())}:
+        raise ManifestError(f"{path}: batch.fixed names unknown pipeline parameters: {', '.join(sorted(set(fixed) - {f.id for f in nfschema.fields(schema, set())}))}")
     if set(over) - {f.id for f in m.params}:
         raise ManifestError(f"{path}: batch.defaults names unknown pipeline parameters: {', '.join(sorted(set(over) - {f.id for f in m.params}))}")
     m.report = batch.get("report", m.report)
@@ -283,6 +288,7 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
         raise ManifestError(f"{path}: batch.gpu needs param (a pipeline setting), profile and label, and partition if given must be a setting")
     m.nextflow = {k: batch.get(k) for k in ("pipeline", "revision", "schema", "samplesheet", "profile", "demo", "gpu")}
     m.nextflow["upstream"] = upstream
+    m.nextflow["fixed"] = dict(fixed)
     m.nextflow["profile"] = m.nextflow.get("profile") or "apptainer"
     m.stages = [Stage("01", "pipeline", f"Run {batch['pipeline']} {batch['revision']}", run="")]
 
@@ -292,7 +298,8 @@ def coerce(f: Field, v) -> tuple[object, str]:
     if f.type == "table":
         return _coerce_table(f, v)
     if v is None or v == "":
-        return (None, "required") if f.required else (f.default, "")
+        # Intent: a required setting with a default (such as a pipeline's starting step) falls back to it.
+        return (None, "required") if f.required and f.default in (None, "") else (f.default, "")
     if f.type in ("int", "float") and isinstance(v, bool):
         return None, f"should be a {'whole number' if f.type == 'int' else 'number'}"
     try:

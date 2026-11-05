@@ -47,6 +47,7 @@ hers.
   - nf-core/genomeassembler: https://doi.org/10.5281/zenodo.14986998
   - nf-core/bacass: https://doi.org/10.5281/zenodo.2669428
   - nf-core/proteinfold: https://doi.org/10.5281/zenodo.7629996
+  - nf-core/sarek: https://doi.org/10.5281/zenodo.3476425
 - **Apptainer / Singularity**: Kurtzer G.M., Sochat V., Bauer M.W. (2017). Singularity: scientific containers for
   mobility of compute. *PLoS ONE* 12:e0177459. https://doi.org/10.1371/journal.pone.0177459
 - **BioContainers**: da Veiga Leprevost F. et al. (2017). BioContainers: an open-source and community-driven
@@ -70,6 +71,14 @@ hers.
 - Wick R.R. et al. (2017). Unicycler. *PLoS Computational Biology* 13:e1005595. https://doi.org/10.1371/journal.pcbi.1005595
 - Seemann T. (2014). Prokka. *Bioinformatics* 30:2068–2069. https://doi.org/10.1093/bioinformatics/btu153
 - Schwengers O. et al. (2021). Bakta. *Microbial Genomics* 7:000685. https://doi.org/10.1099/mgen.0.000685
+- Garcia M. et al. (2020). Sarek. *F1000Research* 9:63. https://doi.org/10.12688/f1000research.16665.2
+- Hanssen F. et al. (2024). Sarek 3. *NAR Genomics and Bioinformatics* 6:lqae031. https://doi.org/10.1093/nargab/lqae031
+- Li H. (2013). BWA-MEM. *arXiv*:1303.3997. https://arxiv.org/abs/1303.3997
+- McKenna A. et al. (2010). The Genome Analysis Toolkit (GATK). *Genome Research* 20:1297–1303. https://doi.org/10.1101/gr.107524.110
+- Poplin R. et al. (2018). DeepVariant. *Nature Biotechnology* 36:983–987. https://doi.org/10.1038/nbt.4235
+- Garrison E., Marth G. (2012). FreeBayes. *arXiv*:1207.3907. https://arxiv.org/abs/1207.3907
+- Danecek P. et al. (2021). SAMtools and BCFtools. *GigaScience* 10:giab008. https://doi.org/10.1093/gigascience/giab008
+- Pedersen B.S., Quinlan A.R. (2018). Mosdepth. *Bioinformatics* 34:867–868. https://doi.org/10.1093/bioinformatics/btx699
 
 ### RNA
 

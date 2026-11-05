@@ -326,6 +326,16 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### DNA suite: variant calling (2026-11-04)
+
+nf-core/sarek 3.11.0, germline only, with the user's own FASTA: `batch.fixed` (new) always sends `genome: null` and
+`igenomes_ignore: true`, and hides them from the form. Default callers HaplotypeCaller and DeepVariant; base
+recalibration and the HaplotypeCaller neural-network filter start skipped (they need known sites). A required pipeline
+setting with a default (sarek's `step`) now falls back to it. Session: calls per caller and sample, caller agreement,
+QUAL/depth distributions, filters (callers that must agree, QUAL, depth, GQ, type, region), any variant's calls with
+read counts, variants separating two groups with their position along each chromosome, export (filtered VCF, CSV).
+Not in this version: somatic calling, structural variants, effect annotation (VEP/snpEff need per-species caches).
+
 ### DNA suite: genome annotation (2026-11-04)
 
 Helixer 0.3.7 (GPL-3.0; models CC BY) from sequence alone, in the image Helixer's docs point to, pinned by digest; no

@@ -12,6 +12,7 @@ and CI files left out, and keep their own licences:
 | nf-core-genomeassembler-2.0.1.tar.gz | https://github.com/nf-core/genomeassembler/tree/2.0.1 | MIT (LICENSE inside the bundle), © the nf-core/genomeassembler team |
 | nf-core-proteinfold-2.0.0.tar.gz | https://github.com/nf-core/proteinfold/tree/2.0.0 | MIT (LICENSE inside the bundle), © the nf-core/proteinfold team |
 | nf-core-bacass-2.6.1.tar.gz | https://github.com/nf-core/bacass/tree/2.6.1 | MIT (LICENSE inside the bundle), © the nf-core/bacass team |
+| nf-core-sarek-3.11.0.tar.gz | https://github.com/nf-core/sarek/tree/3.11.0 | MIT (LICENSE inside the bundle), © the nf-core/sarek team |
 | nf-schema-*.zip | https://github.com/nextflow-io/nf-schema | Apache License 2.0 |
 
 The software containers the pipelines use are not included; each tool keeps its own licence.

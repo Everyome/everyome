@@ -1,0 +1,126 @@
+# Variant calling: nf-core/sarek maps reads to the user's own genome and calls germline variants with one or more
+# callers, then a live session filters the calls, compares callers and samples, and exports a clean VCF.
+spec: 1
+id: dna.variants
+name: Variant and mutation calling
+suite: dna
+version: 0.1.0
+summary: >
+  Finds SNPs and small insertions and deletions in DNA reads (whole genome,
+  exome or targeted) against your own reference genome, with nf-core/sarek and
+  two callers by default (GATK HaplotypeCaller and DeepVariant). Then filter the
+  calls by quality, depth and how many callers agree, look at any variant's
+  genotype in every sample, find variants that separate two groups (for example
+  a mutant line from its wild type), and export a filtered VCF.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Garcia M. et al. (2020). Sarek: a portable workflow for whole-genome sequencing analysis of germline and somatic variants. F1000Research 9:63."
+    url: https://doi.org/10.12688/f1000research.16665.2
+  - text: "Hanssen F. et al. (2024). Scalable and efficient DNA sequencing analysis on different compute infrastructures aiding variant discovery. NAR Genomics and Bioinformatics 6:lqae031."
+    url: https://doi.org/10.1093/nargab/lqae031
+  - text: "nf-core/sarek. Zenodo."
+    url: https://doi.org/10.5281/zenodo.3476425
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Li H. (2013). Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM. arXiv:1303.3997."
+    url: https://arxiv.org/abs/1303.3997
+  - text: "McKenna A. et al. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. Genome Research 20:1297–1303."
+    url: https://doi.org/10.1101/gr.107524.110
+  - text: "Poplin R. et al. (2018). A universal SNP and small-indel variant caller using deep neural networks. Nature Biotechnology 36:983–987."
+    url: https://doi.org/10.1038/nbt.4235
+  - text: "Garrison E., Marth G. (2012). Haplotype-based variant detection from short-read sequencing. arXiv:1207.3907."
+    url: https://arxiv.org/abs/1207.3907
+  - text: "Danecek P. et al. (2021). Twelve years of SAMtools and BCFtools. GigaScience 10:giab008."
+    url: https://doi.org/10.1093/gigascience/giab008
+  - text: "Pedersen B.S., Quinlan A.R. (2018). Mosdepth: quick coverage calculation for genomes and exomes. Bioinformatics 34:867–868."
+    url: https://doi.org/10.1093/bioinformatics/btx699
+kind: [batch, interactive]
+requires: [numpy, pandas]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.dna.variants.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the samples table. Files named like <sample>_R1.fastq.gz and _R2.fastq.gz (lane numbers such as _L001 are kept)."
+    demo: fastq
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: >
+      One row per sample and sequencing lane (a sample sequenced on two lanes has two rows with the same sample name).
+      Individual is the animal or line the DNA came from; it is usually the same as the sample. Group is only for the
+      live session, where it lets you find variants that separate two groups, for example mutant and wild type.
+    columns:
+      - {id: patient, label: Individual, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: sample, label: Sample, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: lane, label: Lane, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fastq_1, label: Read 1 FASTQ, wide: true}
+      - {id: fastq_2, label: Read 2 FASTQ (empty if single-end), optional: true, wide: true}
+      - {id: group, label: Group, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: reads_dir, label: Find samples in the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/sarek
+  revision: "3.11.0"
+  schema: pipeline/nextflow_schema.json
+  samplesheet: {from: samples, columns: [patient, sample, lane, fastq_1, fastq_2], param: input}
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, hook_url, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix]
+  # Intent: always use the user's own genome (FASTA setting), never sarek's built-in human reference.
+  fixed: {genome: null, igenomes_ignore: true}
+  # Intent: germline calling with two callers that agree on most true variants; base recalibration and GATK's
+  # neural-network filter need known variant sites that most species don't have, so they start off.
+  defaults: {tools: "haplotypecaller,deepvariant", skip_tools: "baserecalibrator,haplotypecaller_filter"}
+  demo: everyome.modules.dna.variants.demo_pipeline
+  demo_values: {fasta: genome/genome.fa}
+  report: everyome.modules.dna.variants.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "120:00:00", session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.dna.variants.helpers:scan
+
+interactive:
+  engine: everyome.modules.dna.variants.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: overview, title: Check samples and callers}
+    - {id: filter, title: Filter variants}
+    - {id: groups, title: Compare groups}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/genotype_playground.js]
+    object: GenotypePlayground
+    lede: >
+      How a caller turns reads into a genotype, and why depth matters: watch the
+      likelihood of each genotype, and the confidence (GQ), as you change the reads.
+    intro:
+      - "One position in a diploid genome. Choose how many reads cover it, how many show the other allele, and how often the sequencer makes a mistake; the panels show how likely each genotype is and which one a caller would report."
+    caveats:
+      - "The model is the simple binomial one most callers start from (each read is an independent draw from the two chromosomes, with a fixed error rate). Real callers also model mapping quality, base quality per read, local realignment and, for DeepVariant, many more features of the reads."
+      - "Prior probabilities of each genotype are left equal here; real callers use a small prior for a variant at any site, which makes them slightly more cautious."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    callers: docs/guides/callers.md
+    titv: docs/guides/titv.md
+    quality: docs/guides/quality.md
+    filters: docs/guides/filters.md
+    genotypes: docs/guides/genotypes.md
+    groups: docs/guides/groups.md
+
+demo:
+  build: everyome.modules.dna.variants.demo_data:build

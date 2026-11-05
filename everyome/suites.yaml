@@ -15,7 +15,7 @@ suites:
     name: DNA
     blurb: Genomes, variants and how DNA is packed and folded.
     tools:
-      - {id: dna.variants, name: Variant and mutation calling}
+      - {id: dna.variants, name: Variant and mutation calling, module: dna.variants}
       - {id: dna.atac, name: Chromatin accessibility (ATAC-seq)}
       - {id: dna.hic, name: 3D genome architecture (Hi-C)}
       - {id: dna.assembly, name: Genome assembly (PacBio, Nanopore, Illumina), module: dna.assembly}
