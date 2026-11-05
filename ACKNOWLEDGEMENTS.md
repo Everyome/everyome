@@ -49,6 +49,7 @@ hers.
   - nf-core/proteinfold: https://doi.org/10.5281/zenodo.7629996
   - nf-core/sarek: https://doi.org/10.5281/zenodo.3476425
   - nf-core/hic: https://doi.org/10.5281/zenodo.2669512
+  - nf-core/riboseq: https://doi.org/10.5281/zenodo.10966364
 - **Apptainer / Singularity**: Kurtzer G.M., Sochat V., Bauer M.W. (2017). Singularity: scientific containers for
   mobility of compute. *PLoS ONE* 12:e0177459. https://doi.org/10.1371/journal.pone.0177459
 - **BioContainers**: da Veiga Leprevost F. et al. (2017). BioContainers: an open-source and community-driven
@@ -78,7 +79,6 @@ hers.
 - McKenna A. et al. (2010). The Genome Analysis Toolkit (GATK). *Genome Research* 20:1297–1303. https://doi.org/10.1101/gr.107524.110
 - Poplin R. et al. (2018). DeepVariant. *Nature Biotechnology* 36:983–987. https://doi.org/10.1038/nbt.4235
 - Garrison E., Marth G. (2012). FreeBayes. *arXiv*:1207.3907. https://arxiv.org/abs/1207.3907
-- Danecek P. et al. (2021). SAMtools and BCFtools. *GigaScience* 10:giab008. https://doi.org/10.1093/gigascience/giab008
 - Pedersen B.S., Quinlan A.R. (2018). Mosdepth. *Bioinformatics* 34:867–868. https://doi.org/10.1093/bioinformatics/btx699
 - Servant N. et al. (2015). HiC-Pro. *Genome Biology* 16:259. https://doi.org/10.1186/s13059-015-0831-x
 - Langmead B., Salzberg S.L. (2012). Bowtie 2. *Nature Methods* 9:357–359. https://doi.org/10.1038/nmeth.1923
@@ -93,6 +93,12 @@ hers.
 
 - Love M.I., Huber W., Anders S. (2014). DESeq2. *Genome Biology* 15:550. https://doi.org/10.1186/s13059-014-0550-8
 - Muzellec B. et al. (2023). PyDESeq2. *Bioinformatics* 39:btad547. https://doi.org/10.1093/bioinformatics/btad547
+- Lauria F. et al. (2018). riboWaltz. *PLoS Computational Biology* 14:e1006169. https://doi.org/10.1371/journal.pcbi.1006169
+- Dunn J.G., Weissman J.S. (2016). Plastid. *BMC Genomics* 17:958. https://doi.org/10.1186/s12864-016-3278-x
+- Zhang P. et al. (2017). Ribo-TISH. *Nature Communications* 8:1749. https://doi.org/10.1038/s41467-017-01981-8
+- Xiao Z. et al. (2018). RiboCode. *Nucleic Acids Research* 46:e61. https://doi.org/10.1093/nar/gky179
+- Oertlin C. et al. (2019). anota2seq. *Nucleic Acids Research* 47:e70. https://doi.org/10.1093/nar/gkz223
+- Smyth G.K. (2004). Moderated t-statistics (limma). *Statistical Applications in Genetics and Molecular Biology* 3:3. https://doi.org/10.2202/1544-6115.1027
 - Patro R. et al. (2017). Salmon. *Nature Methods* 14:417–419. https://doi.org/10.1038/nmeth.4197
 - Wagner G.P., Kin K., Lynch V.J. (2012). Measurement of mRNA abundance using RNA-seq data (TPM). *Theory in Biosciences* 131:281–285. https://doi.org/10.1007/s12064-012-0162-3
 

@@ -336,6 +336,15 @@ QUAL/depth distributions, filters (callers that must agree, QUAL, depth, GQ, typ
 read counts, variants separating two groups with their position along each chromosome, export (filtered VCF, CSV).
 Not in this version: somatic calling, structural variants, effect annotation (VEP/snpEff need per-species caches).
 
+### RNA suite: translation (Ribo-seq) (2026-11-04)
+
+nf-core/riboseq 2.0.0. The samplesheet carries type, pair and condition; anota2seq runs only with a contrasts file, so
+`batch.derived` (new) writes one from the samples table (each condition against the first) unless the user gives
+their own. Session: frame and P-site offset per read length, metagene around start and stop codons, ORFs by class
+(uORFs and others), translational efficiency (size-factor-normalised paired log2 TE, moderated t-test, BH) with
+anota2seq's calls alongside, one gene's view, export. The default rRNA databases are SILVA-derived (licence for
+commercial users).
+
 ### DNA suite: 3D genome architecture (2026-11-04)
 
 nf-core/hic 2.1.0 (Bowtie 2 and HiC-Pro, cooler, cooltools, HiCExplorer), with the user's FASTA (`batch.fixed`). The

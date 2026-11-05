@@ -88,6 +88,15 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
     base = lambda f: nf.get("upstream", {}).get(f.id, f.default)
     params = {f.id: v[f.id] for f in m.params if f.pipeline and v.get(f.id) not in (None, "") and v.get(f.id) != base(f)}
     params.update({**nf.get("fixed", {}), sheet["param"]: f"{d}/{fname}", "outdir": f"{d}/results"})
+    derived = {}
+    for x in nf.get("derived", []):
+        if v.get(x["param"]) not in (None, ""):
+            continue
+        mod, _, fn = x["helper"].partition(":")
+        text = getattr(importlib.import_module(mod), fn)(v)
+        if text:
+            derived[x["name"]] = text
+            params[x["param"]] = f"{d}/{x['name']}"
     res, user = run["resources"], run["user"]
     prefix = slurm.job_name(user, m.id, "", run.get("job_prefix", slurm.JOB_PREFIX))
     gpu = nf.get("gpu") or {}
@@ -107,7 +116,7 @@ def pipeline_files(run: dict, m: Manifest) -> dict[str, str]:
         "    // Job names carry the job-name prefix and the username, so everyone can see whose job it is",
         f"    jobName = {{ '{prefix}' + task.process.tokenize(':')[-1] }}",
         "}", ""])
-    return {fname: csv, "nf_params.json": json.dumps(params, indent=1), "nextflow.config": config}
+    return {fname: csv, **derived, "nf_params.json": json.dumps(params, indent=1), "nextflow.config": config}
 
 
 def nextflow_command(run: dict, m: Manifest, python: str) -> str:

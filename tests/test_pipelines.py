@@ -62,7 +62,7 @@ def test_shipped_lock_pins_every_pipeline_module():
     found, _ = modules.available()
     used = {pipelines.key(m.nextflow["pipeline"], str(m.nextflow["revision"])) for m in found.values() if m.nextflow}
     assert used == {"nf-core/rnaseq@3.27.0", "nf-core/scrnaseq@4.2.0", "nf-core/genomeassembler@2.0.1", "nf-core/bacass@2.6.1", "nf-core/proteinfold@2.0.0",
-                    "nf-core/sarek@3.11.0", "nf-core/hic@2.1.0"} and used <= set(lock)
+                    "nf-core/sarek@3.11.0", "nf-core/hic@2.1.0", "nf-core/riboseq@2.0.0"} and used <= set(lock)
     for k in used:
         e = lock[k]
         assert len(e["sha256"]) == 64 and e["plugins"] and all(len(p["sha256"]) == 64 for p in e["plugins"]) and e["containers"]

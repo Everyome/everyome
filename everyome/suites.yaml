@@ -26,7 +26,7 @@ suites:
     blurb: Which genes are expressed, how much, and how they change.
     tools:
       - {id: rna.bulk_de, name: Differential expression (bulk RNA-seq), module: rna.bulk_de}
-      - {id: rna.riboseq, name: Translation (Ribo-seq)}
+      - {id: rna.riboseq, name: Translation (Ribo-seq), module: rna.riboseq}
       - {id: rna.abundance, name: RNA abundance, module: rna.abundance}
   - id: singlecell
     name: Single cell

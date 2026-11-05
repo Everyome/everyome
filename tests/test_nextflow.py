@@ -108,3 +108,16 @@ def test_required_setting_with_a_default_falls_back_to_it():
     assert step.required and step.default == "mapping"
     vals, errors = check_values(sarek, {"samples": [{"patient": "a", "sample": "a", "lane": "L1", "fastq_1": "/d/a_R1.fastq.gz"}]})
     assert vals["step"] == "mapping" and "step" not in errors
+
+
+def test_derived_files_are_written_unless_the_user_gives_one():
+    ribo = modules.discover()[0]["rna.riboseq"]
+    rows = [{"sample": f"{c}_{t}", "fastq_1": f"/d/{c}_{t}_R1.fastq.gz", "strandedness": "auto", "type": t, "pair": c, "condition": c.split("_")[0]}
+            for c in ("ctl_1", "trt_1") for t in ("riboseq", "rnaseq")]
+    for given, expect in (("", "/proj/runs/r1/contrasts.csv"), ("/mine/contrasts.csv", "/mine/contrasts.csv")):
+        vals, errors = check_values(ribo, {"samples": rows, "contrasts": given})
+        assert not errors, errors
+        run = {"id": "r1", "dir": "/proj/runs/r1", "user": "hh2891", "values": vals, "resources": {}, "demo": False, "pipelines_dir": "/p"}
+        files = runs.pipeline_files(run, ribo)
+        assert json.loads(files["nf_params.json"])["contrasts"] == expect
+        assert ("contrasts.csv" in files) == (not given)

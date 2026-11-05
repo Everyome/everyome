@@ -87,6 +87,9 @@ Modules so far:
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **RNA abundance**, RNA: from an nf-core/rnaseq results folder, how much each
   gene is expressed in each sample, sample checks, and groups of co-expressed genes.
+- **Translation (Ribo-seq)**, RNA: nf-core/riboseq; check 3-nucleotide
+  periodicity, see translated ORFs (including upstream ORFs) and compare
+  translational efficiency between conditions with matched RNA-seq.
 - **Primer design**, molecular biology: Primer3 primers on a plasmid map, with
   checks for your own primers. Runs on your computer; no cluster needed.
 - **Sequence summary**, getting started: a small worked example of how every

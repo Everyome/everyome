@@ -14,6 +14,7 @@ and CI files left out, and keep their own licences:
 | nf-core-bacass-2.6.1.tar.gz | https://github.com/nf-core/bacass/tree/2.6.1 | MIT (LICENSE inside the bundle), © the nf-core/bacass team |
 | nf-core-sarek-3.11.0.tar.gz | https://github.com/nf-core/sarek/tree/3.11.0 | MIT (LICENSE inside the bundle), © the nf-core/sarek team |
 | nf-core-hic-2.1.0.tar.gz | https://github.com/nf-core/hic/tree/2.1.0 | MIT (LICENSE inside the bundle), © the nf-core/hic team |
+| nf-core-riboseq-2.0.0.tar.gz | https://github.com/nf-core/riboseq/tree/2.0.0 | MIT (LICENSE inside the bundle), © the nf-core/riboseq team |
 | nf-schema-*.zip | https://github.com/nextflow-io/nf-schema | Apache License 2.0 |
 
 The software containers the pipelines use are not included; each tool keeps its own licence.

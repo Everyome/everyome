@@ -289,6 +289,13 @@ def _nextflow(m: Manifest, batch: dict, path: Path) -> None:
     m.nextflow = {k: batch.get(k) for k in ("pipeline", "revision", "schema", "samplesheet", "profile", "demo", "gpu")}
     m.nextflow["upstream"] = upstream
     m.nextflow["fixed"] = dict(fixed)
+    # Intent: 'derived' files are written from the run's values for a pipeline file parameter the user left empty
+    # (for example a contrasts file made from the samples table); a file the user gives wins.
+    derived = batch.get("derived") or []
+    if not all(isinstance(x, dict) and ":" in str(x.get("helper", "")) and x.get("name") and x.get("param") in {f.id for f in m.params}
+               for x in derived):
+        raise ManifestError(f"{path}: each batch.derived entry needs param (a pipeline setting), name (a file name) and helper (package.module:function)")
+    m.nextflow["derived"] = list(derived)
     m.nextflow["profile"] = m.nextflow.get("profile") or "apptainer"
     m.stages = [Stage("01", "pipeline", f"Run {batch['pipeline']} {batch['revision']}", run="")]
 

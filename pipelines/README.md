@@ -2,7 +2,7 @@
 
 The Nextflow pipelines that Everyome modules use (nf-core/rnaseq 3.27.0,
 nf-core/scrnaseq 4.2.0, nf-core/genomeassembler 2.0.1, nf-core/bacass 2.6.1, nf-core/proteinfold 2.0.0,
-nf-core/sarek 3.11.0 and nf-core/hic 2.1.0), with the Nextflow plugins they need, pinned to exact
+nf-core/sarek 3.11.0, nf-core/hic 2.1.0 and nf-core/riboseq 2.0.0), with the Nextflow plugins they need, pinned to exact
 releases and checked by SHA-256. Install it next to Everyome:
 
 ```bash

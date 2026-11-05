@@ -1,0 +1,133 @@
+# Translation (Ribo-seq): nf-core/riboseq aligns ribosome footprints and matched RNA-seq, finds P-sites and translated
+# ORFs and counts in-frame P-sites per gene; a live session checks periodicity, explores ORFs and compares
+# translational efficiency (Ribo-seq against RNA-seq) between conditions.
+spec: 1
+id: rna.riboseq
+name: Translation (Ribo-seq)
+suite: rna
+version: 0.1.0
+summary: >
+  Measures translation from ribosome profiling (Ribo-seq) with matched RNA-seq,
+  using nf-core/riboseq: check that footprints show the 3-nucleotide rhythm of
+  translating ribosomes, look at the open reading frames being translated
+  (including upstream ORFs and other small ORFs), and find genes whose
+  translational efficiency changes between conditions, separately from changes
+  in their mRNA.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Manning J. et al. nf-core/riboseq. Zenodo."
+    url: https://doi.org/10.5281/zenodo.10966364
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Dobin A. et al. (2013). STAR: ultrafast universal RNA-seq aligner. Bioinformatics 29:15–21."
+    url: https://doi.org/10.1093/bioinformatics/bts635
+  - text: "Patro R. et al. (2017). Salmon provides fast and bias-aware quantification of transcript expression. Nature Methods 14:417–419."
+    url: https://doi.org/10.1038/nmeth.4197
+  - text: "Lauria F. et al. (2018). riboWaltz: optimization of ribosome P-site positioning in ribosome profiling data. PLoS Computational Biology 14:e1006169."
+    url: https://doi.org/10.1371/journal.pcbi.1006169
+  - text: "Dunn J.G., Weissman J.S. (2016). Plastid: nucleotide-resolution analysis of next-generation sequencing and genomics data. BMC Genomics 17:958."
+    url: https://doi.org/10.1186/s12864-016-3278-x
+  - text: "Zhang P. et al. (2017). Genome-wide identification and differential analysis of translational initiation. Nature Communications 8:1749."
+    url: https://doi.org/10.1038/s41467-017-01981-8
+  - text: "Xiao Z. et al. (2018). De novo annotation and characterization of the translatome with ribosome profiling data. Nucleic Acids Research 46:e61."
+    url: https://doi.org/10.1093/nar/gky179
+  - text: "Oertlin C. et al. (2019). Generally applicable transcriptome-wide analysis of translation using anota2seq. Nucleic Acids Research 47:e70."
+    url: https://doi.org/10.1093/nar/gkz223
+  - text: "Smyth G.K. (2004). Linear models and empirical Bayes methods for assessing differential expression in microarray experiments. Statistical Applications in Genetics and Molecular Biology 3:3."
+    url: https://doi.org/10.2202/1544-6115.1027
+kind: [batch, interactive]
+requires: [pandas, numpy, scipy]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.rna.riboseq.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the samples table. Files named like <sample>_R1.fastq.gz (and _R2.fastq.gz), with ribo or rna in the name."
+    demo: fastq
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: >
+      One row per library. Type says what it is: riboseq (ribosome footprints), rnaseq (the matched RNA-seq) or tiseq
+      (translation initiation, for example harringtonine or lactimidomycin). Pair links each Ribo-seq library to the
+      RNA-seq library made from the same biological sample; translational efficiency compares the two. Condition is
+      what conditions are compared on.
+    columns:
+      - {id: sample, label: Sample, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fastq_1, label: Read 1 FASTQ, wide: true}
+      - {id: fastq_2, label: Read 2 FASTQ (empty if single-end), optional: true, wide: true}
+      - {id: strandedness, label: Strandedness, pattern: "forward|reverse|unstranded|auto", pattern_help: "should be forward, reverse, unstranded or auto"}
+      - {id: type, label: Type, pattern: "riboseq|rnaseq|tiseq", pattern_help: "should be riboseq, rnaseq or tiseq"}
+      - {id: pair, label: Pair, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: reads_dir, label: Find samples in the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/riboseq
+  revision: "2.0.0"
+  schema: pipeline/nextflow_schema.json
+  # Intent: pair and condition go to the pipeline too, so a contrasts file can name them (variable condition, pair pair).
+  samplesheet:
+    from: samples
+    param: input
+    columns: [sample, fastq_1, fastq_2, strandedness, type, {name: pair, from: pair, drop_if_empty: true}, condition]
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, max_multiqc_email_size, help, help_full, show_hidden, version, monochrome_logs,
+         validate_params, pipelines_testdata_base_path, test_data_base, trace_report_suffix]
+  demo: everyome.modules.rna.riboseq.demo_pipeline
+  demo_values: {fasta: genome/genome.fa, gtf: genome/genes.gtf}
+  # Intent: anota2seq's contrasts file is written from the samples table unless the user gives their own.
+  derived: [{param: contrasts, name: contrasts.csv, helper: everyome.modules.rna.riboseq.helpers:contrasts}]
+  report: everyome.modules.rna.riboseq.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "96:00:00", session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.rna.riboseq.helpers:scan
+
+interactive:
+  engine: everyome.modules.rna.riboseq.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: qc, title: Check periodicity}
+    - {id: orfs, title: Look at ORFs}
+    - {id: te, title: Compare translation}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/riboseq_playground.js]
+    object: RiboseqPlayground
+    lede: >
+      Why ribosome footprints show a 3-nucleotide rhythm, how the P-site offset
+      recovers it, and why translational efficiency needs matched RNA-seq.
+    intro:
+      - "Simulated footprints from ribosomes moving codon by codon along a coding sequence. Choose how precisely the footprints are trimmed and which P-site offset is used, and watch the reading frame appear or vanish."
+      - "The second panel shows one gene in two conditions: more footprints can mean more translation, or just more mRNA."
+    caveats:
+      - "Footprint ends here vary by a simple random trim; in real data the variation depends on the nuclease, the read length and the organism."
+      - "Translational efficiency here is footprints divided by mRNA for one gene with no noise; the session's test uses replicates and their variability."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    frames: docs/guides/frames.md
+    offsets: docs/guides/offsets.md
+    metagene: docs/guides/metagene.md
+    orfs: docs/guides/orfs.md
+    orf_classes: docs/guides/orf_classes.md
+    te_scatter: docs/guides/te_scatter.md
+    te_table: docs/guides/te_table.md
+    te_gene: docs/guides/te_gene.md
+
+demo:
+  build: everyome.modules.rna.riboseq.demo_data:build
