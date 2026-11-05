@@ -420,6 +420,38 @@ async function followTask(box) {
 
 // What a module's ui.js receives.
 const MODULE_VIEWS = {};
+// ------------------------------------------------------------------ shared pieces for module views
+// Intent: every module's ui.js used to define these itself; new modules take them from Everyome.helpers.
+const lede = t => `<p class="lede">${t}</p>`;
+// Scatter plot in SVG with axes; points = [{x, y, c, t, r, g}] (colour, tooltip, radius, clickable group).
+function scatter(points, { w = 560, h = 360, xlab = "", ylab = "", r = 2.2, lines = [], label = "" } = {}) {
+  const c = COL, L = 48, B = 36, T = 10, R = 12;
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const x0 = Math.min(...xs, ...lines.filter(l => l.x != null).map(l => l.x)), x1 = Math.max(...xs, ...lines.filter(l => l.x != null).map(l => l.x));
+  const y0 = Math.min(0, ...ys), y1 = Math.max(...ys, ...lines.filter(l => l.y != null).map(l => l.y));
+  const pad = v => v === 0 ? 1 : Math.abs(v) * 0.05;
+  const X = v => L + (v - (x0 - pad(x1 - x0))) / ((x1 - x0) + 2 * pad(x1 - x0) || 1) * (w - L - R);
+  const Y = v => h - B - (v - y0) / ((y1 - y0) * 1.05 || 1) * (h - B - T);
+  const ticks = (a, b) => { const st = Math.pow(10, Math.floor(Math.log10((b - a) / 4 || 1))), k = Math.ceil((b - a) / st / 5) * st || 1; const out = []; for (let v = Math.ceil(a / k) * k; v <= b; v += k) out.push(+v.toFixed(6)); return out; };
+  let s = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label || ylab + " against " + xlab)}">`;
+  ticks(x0, x1).forEach(v => s += `<text x="${X(v)}" y="${h - B + 15}" text-anchor="middle" class="ax">${v}</text>`);
+  ticks(y0, y1).forEach(v => s += `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" class="ax">${v}</text>`);
+  s += `<line x1="${L}" x2="${w - R}" y1="${h - B}" y2="${h - B}" stroke="${c.muted}"/><line x1="${L}" x2="${L}" y1="${T}" y2="${h - B}" stroke="${c.muted}"/>`;
+  lines.forEach(l => s += l.x != null ? `<line x1="${X(l.x)}" x2="${X(l.x)}" y1="${T}" y2="${h - B}" stroke="${c.ox}" stroke-dasharray="4 3"/>`
+    : `<line x1="${L}" x2="${w - R}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${c.ox}" stroke-dasharray="4 3"/>`);
+  points.forEach(p => s += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.r || r}" fill="${p.c}" ${p.g ? `data-g="${esc(p.g)}" style="cursor:pointer"` : ""}>${p.t ? `<title>${esc(p.t)}</title>` : ""}</circle>`);
+  return s + `<text x="${(w + L) / 2}" y="${h - 4}" text-anchor="middle" class="ax">${esc(xlab)}</text><text x="12" y="${h / 2}" transform="rotate(-90 12 ${h / 2})" text-anchor="middle" class="ax">${esc(ylab)}</text></svg>`;
+}
+const legend = items => `<div class="legend">${items.map(([t, col]) => `<span><i style="background:${col}"></i>${esc(t)}</span>`).join("")}</div>`;
+// The session's result files with download buttons, drawn into el (an export step's file list).
+async function filesTable(el) {
+  const f = await window.Everyome.call("files");
+  el.innerHTML = f.length ? `<table style="margin-top:14px"><thead><tr><th>File</th><th class="num">Size</th><th></th></tr></thead><tbody>${f.map(x =>
+    `<tr><td class="mono small">${esc(x.name)}</td><td class="num small">${fmtSize(x.size)}</td><td class="num"><a class="btn small" href="${window.Everyome.downloadUrl(x.name)}" download>Download</a></td></tr>`).join("")}</tbody></table>` : "";
+}
+// A button that opens one of the run's files (for example the pipeline's own HTML report) in a new tab.
+const fileButton = (path, text) => path ? `<a class="btn small" href="/api/run/file?path=${encodeURIComponent(path)}" target="_blank" rel="noopener">${esc(text)}</a>` : "";
+
 window.Everyome = {
   makePlayground: (...a) => makePlayground(...a),
   registerViews(moduleId, views) { MODULE_VIEWS[moduleId] = views; },
@@ -431,7 +463,7 @@ window.Everyome = {
     const r = await fetch("/api/run/upload", { method: "POST", body: f }), d = await r.json(); if (!r.ok) throw new Error(d.detail || "Upload failed."); return d; },
   downloadUrl: name => "/api/s/download?name=" + encodeURIComponent(name),
   helpers: { $, $$, esc, fmt, fmtSize, sleep, toast, guarded, followTask, barChart, histChart, logHist, logLine, stacked, dotplot, legendFor, themed, seqMap, guide, md,
-    EmbeddingPlot, hexRgb: h => hexRgb(h), COL: () => COL, PALETTE: () => PALETTE, every, go },
+    EmbeddingPlot, hexRgb: h => hexRgb(h), COL: () => COL, PALETTE: () => PALETTE, every, go, lede, scatter, legend, filesTable, fileButton },
 };
 // "How to read this" guides: short Markdown notes a module places next to its charts and tables.
 const GUIDES = {};

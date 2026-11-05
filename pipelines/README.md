@@ -5,7 +5,7 @@ nf-core/scrnaseq 4.2.0, nf-core/genomeassembler 2.0.1, nf-core/bacass 2.6.1 and 
 releases and checked by SHA-256. Install it next to Everyome:
 
 ```bash
-pip install "everyome[all]==0.1.0a3" "everyome-pipelines==0.1.0a3"
+pip install "everyome[all]==<version>"   # the pipelines package comes with it, at the same version
 ```
 
 When you press Run, Everyome copies the pipeline to your cluster once, checks

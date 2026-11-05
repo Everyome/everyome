@@ -146,6 +146,11 @@ docs. The core reads the manifest to build forms, the sidebar, job scripts and
 the run record. The spec is versioned from day one (`spec: 1`) so community
 modules don't break when the core changes.
 
+> This sketch is the first design (2026-10-30). The format as built differs in places: `batch.schema` and a
+> `samplesheet` block instead of `params_schema`, guides as a name-to-file map, `methods:` as a Python function,
+> `licence: same as Everyome`. To start a new module, copy a working `module.yaml` of the same kind
+> (for example `everyome/modules/dna/genome_assembly/module.yaml` or `everyome/modules/phylo/tree/module.yaml`).
+
 ```yaml
 spec: 1
 id: rna.bulk_de

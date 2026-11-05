@@ -1,6 +1,8 @@
 """Draft methods section for a genome assembly run, written from its record. The user edits it before use."""
 from __future__ import annotations
 
+from everyome.core.writeup import nextflow_cite
+
 from ..writeup import assembly_paragraphs
 
 STRATEGY = {"single": "a single read type", "hybrid": "Nanopore and HiFi reads together (hifiasm in ultra-long mode)",
@@ -13,8 +15,7 @@ def methods(rec: dict) -> str:
     val = lambda k, d=None: (s.get(k) or {}).get("value") or d
     rows = next((x["value"] for x in rec["inputs"] if x["id"] == "assemblies"), []) or []
     pipe, sw = rec.get("pipeline") or {}, rec["software"]
-    nf = (sw.get("tools") or {}).get("nextflow")
-    nf_v = f" (Nextflow {nf.split()[-1]}; Di Tommaso et al., 2017)" if nf else " (Di Tommaso et al., 2017)"
+    nf_v = nextflow_cite(rec)
     P = [f"Genomes were assembled with {pipe.get('pipeline', 'nf-core/genomeassembler')} version {pipe.get('revision', '')} (Ewels et al., 2020){nf_v}, "
          f"run through Everyome (version {rec['everyome']}). {len(rows)} assembl{'y was' if len(rows) == 1 else 'ies were'} made:"]
     for r in rows:

@@ -5,6 +5,8 @@ decisions in order (shared with other single-cell modules). The user edits it.
 """
 from __future__ import annotations
 
+from everyome.core.writeup import nextflow_cite
+
 from ..writeup import _last, _v, session_paragraphs
 
 ALIGNERS = {"simpleaf": "simpleaf (alevin-fry; He et al., 2022)", "star": "STARsolo", "kallisto": "kallisto | bustools",
@@ -18,8 +20,7 @@ def methods(rec: dict) -> str:
     val = lambda k, d=None: (s.get(k) or {}).get("value") or d
     samples = next((x["value"] for x in rec["inputs"] if x["id"] == "samples"), []) or []
     sw, hist = rec["software"], (rec.get("session") or {}).get("history", [])
-    nf = (sw.get("tools") or {}).get("nextflow")
-    nf_v = f" (Nextflow {nf.split()[-1]}; Di Tommaso et al., 2017)" if nf else " (Di Tommaso et al., 2017)"
+    nf_v = nextflow_cite(rec)
     pipe = rec.get("pipeline") or {}
     names = sorted({r["sample"] for r in samples})
     conds = sorted({r.get("condition") for r in samples if r.get("condition")})

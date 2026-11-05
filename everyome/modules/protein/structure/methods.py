@@ -1,13 +1,13 @@
 """Draft methods section for a structure prediction run, written from its record. The user edits it before use."""
 from __future__ import annotations
 
+from everyome.core.writeup import last as _last
+
 METHOD = {"alphafold2": "AlphaFold2 (Jumper et al., 2021)", "alphafold3": "AlphaFold 3 (Abramson et al., 2024)",
           "colabfold": "ColabFold (Mirdita et al., 2022)", "esmfold": "ESMFold (Lin et al., 2023)", "boltz": "Boltz",
           "rosettafold_all_atom": "RoseTTAFold All-Atom", "helixfold3": "HelixFold3", "rosettafold2na": "RoseTTAFold2NA"}
 
 
-def _last(hist, action):
-    return next((h for h in reversed(hist) if h["action"] == action), None)
 
 
 def methods(rec: dict) -> str:

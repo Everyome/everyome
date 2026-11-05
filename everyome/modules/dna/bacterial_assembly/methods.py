@@ -1,6 +1,8 @@
 """Draft methods section for a bacterial assembly run, written from its record. The user edits it before use."""
 from __future__ import annotations
 
+from everyome.core.writeup import nextflow_cite
+
 from ..writeup import assembly_paragraphs
 
 ASM = {"unicycler": "Unicycler (Wick et al., 2017)", "flye": "Flye (Kolmogorov et al., 2019)", "megahit": "MEGAHIT", "canu": "Canu",
@@ -14,8 +16,7 @@ def methods(rec: dict) -> str:
     val = lambda k, d=None: (s.get(k) or {}).get("value") if (s.get(k) or {}).get("value") not in (None, "") else d
     rows = next((x["value"] for x in rec["inputs"] if x["id"] == "isolates"), []) or []
     pipe, sw = rec.get("pipeline") or {}, rec["software"]
-    nf = (sw.get("tools") or {}).get("nextflow")
-    nf_v = f" (Nextflow {nf.split()[-1]}; Di Tommaso et al., 2017)" if nf else " (Di Tommaso et al., 2017)"
+    nf_v = nextflow_cite(rec)
     asms = [a.strip() for a in str(val("assembler", "unicycler")).split(",") if a.strip()]
     kind = val("assembly_type", "hybrid")
     P = [f"Genomes of {len(rows)} isolate{'s' if len(rows) != 1 else ''} ({', '.join(r['sample'] for r in rows)}) were assembled from {KIND.get(kind, kind)} "

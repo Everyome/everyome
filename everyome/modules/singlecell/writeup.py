@@ -7,25 +7,11 @@ Kept free of heavy imports, because records are written in the app.
 from __future__ import annotations
 
 
+from everyome.core.writeup import join_and as _and, last, version as _v
+
+
 def _last(history, prefix):
-    hits = [h for h in history if h["action"].startswith(prefix)]
-    return hits[-1] if hits else None
-
-
-def _v(sw, name, cite=""):
-    """ (version X; Author, year), or just the citation, or nothing."""
-    v = sw.get("python", {}).get(name) or sw.get("tools", {}).get(name)
-    if v:
-        # Intent: tools often print their own name first ("samtools 1.21"); keep only the version.
-        v = v.split()[-1] if v.lower().startswith(name.lower()) else v
-    parts = [f"version {v}" if v else "", cite]
-    inside = "; ".join(p for p in parts if p)
-    return f" ({inside})" if inside else ""
-
-
-def _and(items):
-    items = list(items)
-    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+    return last(history, prefix, prefix=True)
 
 
 def session_paragraphs(hist: list, sw: dict) -> list[str]:

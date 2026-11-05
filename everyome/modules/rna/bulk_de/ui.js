@@ -3,33 +3,12 @@
 "use strict";
 (() => {
   const E = window.Everyome, H = E.helpers;
-  const { $, $$, esc, fmt, fmtSize, toast, guarded, followTask, barChart, guide } = H;
+  const { $, $$, esc, fmt, fmtSize, toast, guarded, followTask, barChart, guide, scatter, legend, lede } = H;
   const COL = () => H.COL(), PAL = () => H.PALETTE();
   const S = { an: null, padj: 0.05, lfc: 0 };
   const refresh = async () => (S.an = await E.status());
-  const lede = t => `<p class="lede">${t}</p>`;
   const condColour = (conds, c) => PAL()[conds.indexOf(c) % PAL().length];
 
-  // Scatter plot in SVG with axes; points = [{x, y, c, t}] (colour, tooltip).
-  function scatter(points, { w = 560, h = 360, xlab = "", ylab = "", r = 2.2, lines = [], label = "" } = {}) {
-    const c = COL(), L = 48, B = 36, T = 10, R = 12;
-    const xs = points.map(p => p.x), ys = points.map(p => p.y);
-    const x0 = Math.min(...xs, ...lines.filter(l => l.x != null).map(l => l.x)), x1 = Math.max(...xs, ...lines.filter(l => l.x != null).map(l => l.x));
-    const y0 = Math.min(0, ...ys), y1 = Math.max(...ys, ...lines.filter(l => l.y != null).map(l => l.y));
-    const pad = v => v === 0 ? 1 : Math.abs(v) * 0.05;
-    const X = v => L + (v - (x0 - pad(x1 - x0))) / ((x1 - x0) + 2 * pad(x1 - x0) || 1) * (w - L - R);
-    const Y = v => h - B - (v - y0) / ((y1 - y0) * 1.05 || 1) * (h - B - T);
-    const ticks = (a, b) => { const st = Math.pow(10, Math.floor(Math.log10((b - a) / 4 || 1))), k = Math.ceil((b - a) / st / 5) * st || 1; const out = []; for (let v = Math.ceil(a / k) * k; v <= b; v += k) out.push(+v.toFixed(6)); return out; };
-    let s = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label || ylab + " against " + xlab)}">`;
-    ticks(x0, x1).forEach(v => s += `<text x="${X(v)}" y="${h - B + 15}" text-anchor="middle" class="ax">${v}</text>`);
-    ticks(y0, y1).forEach(v => s += `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" class="ax">${v}</text>`);
-    s += `<line x1="${L}" x2="${w - R}" y1="${h - B}" y2="${h - B}" stroke="${c.muted}"/><line x1="${L}" x2="${L}" y1="${T}" y2="${h - B}" stroke="${c.muted}"/>`;
-    lines.forEach(l => s += l.x != null ? `<line x1="${X(l.x)}" x2="${X(l.x)}" y1="${T}" y2="${h - B}" stroke="${c.ox}" stroke-dasharray="4 3"/>`
-      : `<line x1="${L}" x2="${w - R}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${c.ox}" stroke-dasharray="4 3"/>`);
-    points.forEach(p => s += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.r || r}" fill="${p.c}" ${p.g ? `data-g="${esc(p.g)}" style="cursor:pointer"` : ""}>${p.t ? `<title>${esc(p.t)}</title>` : ""}</circle>`);
-    return s + `<text x="${(w + L) / 2}" y="${h - 4}" text-anchor="middle" class="ax">${esc(xlab)}</text><text x="12" y="${h / 2}" transform="rotate(-90 12 ${h / 2})" text-anchor="middle" class="ax">${esc(ylab)}</text></svg>`;
-  }
-  const legend = items => `<div class="legend">${items.map(([t, col]) => `<span><i style="background:${col}"></i>${esc(t)}</span>`).join("")}</div>`;
 
   // ---------------------------------------------------------------- pipeline report (Run page)
   async function report(el, q) {

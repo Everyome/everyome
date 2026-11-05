@@ -1,18 +1,14 @@
 """Draft methods section for a bulk RNA-seq run, written from its record."""
 from __future__ import annotations
 
-
-def _last(history, action):
-    hits = [h for h in history if h["action"] == action]
-    return hits[-1] if hits else None
+from everyome.core.writeup import last as _last, nextflow_cite
 
 
 def methods(rec: dict) -> str:
     s = {x["id"]: x for x in rec["settings"]}
     samples = next((x["value"] for x in rec["inputs"] if x["id"] == "samples"), []) or []
     sw, hist = rec["software"], (rec.get("session") or {}).get("history", [])
-    nf = (sw.get("tools") or {}).get("nextflow")
-    nf_v = f" (Nextflow {nf.split()[-1]}; Di Tommaso et al., 2017)" if nf else " (Di Tommaso et al., 2017)"
+    nf_v = nextflow_cite(rec)
     aligner = (s.get("aligner") or {}).get("value") or "star_salmon"
     genome = (s.get("genome") or {}).get("value") or str((s.get("fasta") or {}).get("value") or "").split("/")[-1] or "the reference genome"
     changed = [x for x in rec["settings"] if x["changed"] and x["id"] not in ("aligner", "genome", "fasta", "gtf", "gff")]

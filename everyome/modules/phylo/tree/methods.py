@@ -1,6 +1,8 @@
 """Draft methods section for an alignment and tree building run, written from its record. The user edits it before use."""
 from __future__ import annotations
 
+from everyome.core.writeup import last as _last
+
 STRATEGY = {"auto": "the strategy MAFFT chose automatically (--auto)", "linsi": "the L-INS-i strategy", "ginsi": "the G-INS-i strategy",
             "einsi": "the E-INS-i strategy", "fftns2": "the FFT-NS-2 strategy"}
 
@@ -10,8 +12,6 @@ def _version(rec: dict, name: str) -> str:
     return " " + c["image"].split(":")[1].split("--")[0] if c else ""
 
 
-def _last(hist, action):
-    return next((h for h in reversed(hist) if h["action"] == action), None)
 
 
 def methods(rec: dict) -> str:
