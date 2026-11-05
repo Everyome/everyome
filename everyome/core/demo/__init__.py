@@ -13,12 +13,14 @@ import shlex
 import shutil
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
 
-_LOCKS: dict[str, threading.Lock] = {}
+_BUILD = threading.Lock()
+_QUEUE = ThreadPoolExecutor(max_workers=1, thread_name_prefix="everyome-demo-build")
 
 
 def example_data(data: Path, modules: dict, build: bool = True) -> None:
@@ -35,13 +37,20 @@ def ensure(data: Path, m) -> None:
     """Build a module's generated example data once (it is too large to ship), the first time it is needed."""
     if not m.demo.get("build") or (data / m.id / ".demo_ready").exists():
         return
-    # Intent: connecting to the demo stays quick; each module builds its data when someone first uses it, once.
-    with _LOCKS.setdefault(m.id, threading.Lock()):
+    # Intent: connecting to the demo stays quick; each module builds its data when someone first uses it, once. One build
+    # runs at a time, so opening many analyses in a row doesn't start many heavy builds at once.
+    with _BUILD:
         if (data / m.id / ".demo_ready").exists():
             return
         mod, _, fn = m.demo["build"].partition(":")
         getattr(importlib.import_module(mod), fn)(data / m.id)
         (data / m.id / ".demo_ready").write_text("1")
+
+
+def prefetch(data: Path, m) -> None:
+    """Start building a module's example data in the background (the inputs page asks, so Browse can show it soon)."""
+    if m.demo.get("build") and not (data / m.id / ".demo_ready").exists():
+        _QUEUE.submit(ensure, data, m)
 
 
 def setup(root: Path, modules: dict) -> Path:

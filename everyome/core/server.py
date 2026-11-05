@@ -292,8 +292,9 @@ def _demo_data(m):
 
 @app.get("/api/modules/{mid}/example")
 def module_example(mid: str):
-    """Build this module's demo data now (the inputs page asks, so Browse shows it); quick once built."""
-    _demo_data(_module(mid))
+    """Start building this module's demo data in the background (the inputs page asks, so Browse can show it soon)."""
+    if S.demo:
+        demo.prefetch(S.demo_root / "data", _module(mid))
     return {"ok": True}
 
 

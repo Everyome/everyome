@@ -32,7 +32,9 @@ dependencies = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24,<1", "python-mul
 test = ["pytest"]
 # Intent: what the SPLiT-seq module needs on the cluster (and on this computer for the demo).
 # pandas stays below 4.0 until anndata stops using the pandas options 4.0 removes.
-singlecell = ["numpy", "pandas<4", "scipy", "scanpy>=1.9", "anndata>=0.9", "harmonypy", "leidenalg", "igraph", "openpyxl", "seaborn", "matplotlib", "pyarrow"]
+# pynndescent 0.7 returns sparse arrays, which the last scanpy for Python 3.10 (1.11.x) can't read in its neighbour graph.
+singlecell = ["numpy", "pandas<4", "scipy", "scanpy>=1.9", "anndata>=0.9", "harmonypy", "leidenalg", "igraph", "openpyxl", "seaborn", "matplotlib", "pyarrow",
+              "pynndescent<0.7; python_version < '3.11'"]
 # Intent: what the bulk RNA module's live session needs.
 rna = ["numpy", "pandas<4", "scipy", "matplotlib", "pydeseq2"]
 # Intent: single-cell ATAC and multiome sessions (SnapATAC2 reads fragments; muon joins RNA and ATAC).
