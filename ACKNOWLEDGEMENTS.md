@@ -89,6 +89,9 @@ hers.
 
 ### Single cell and spatial
 
+- Kleshchevnikov V. et al. (2022). Cell2location. *Nature Biotechnology* 40:661–671. https://doi.org/10.1038/s41587-021-01139-4
+- Gayoso A. et al. (2022). scvi-tools. *Nature Biotechnology* 40:163–166. https://doi.org/10.1038/s41587-021-01206-w
+- Bingham E. et al. (2019). Pyro. *Journal of Machine Learning Research* 20:1–6. https://jmlr.org/papers/v20/18-403.html
 - Bredikhin D., Kats I., Stegle O. (2022). MUON. *Genome Biology* 23:42. https://doi.org/10.1186/s13059-021-02577-8
 - Hao Y. et al. (2021). Integrated analysis of multimodal single-cell data (weighted nearest neighbours). *Cell* 184:3573–3587. https://doi.org/10.1016/j.cell.2021.04.048
 - Cusanovich D.A. et al. (2015). TF-IDF and LSI for single-cell ATAC. *Science* 348:910–914. https://doi.org/10.1126/science.aab1601

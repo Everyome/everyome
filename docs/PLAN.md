@@ -361,6 +361,16 @@ place of Cβ, noted in the methods) and a plain reading (pDockQ ≥ 0.5 or ipTM 
 unlikely). Structure views are shared through `E.proteinViews`. Not in this version: bait-versus-library screens,
 complexes with nucleic acids or ligands.
 
+### Spatial suite: cell types in spots (2026-11-04)
+
+cell2location 0.1.5 (Apache-2.0) in two staged GPU steps: the reference regression model, then mapping all sections
+together (each a batch). No maintained container image exists (the authors' quay.io images are 2020–21 alphas; no
+BioContainers build), so it runs in Everyome's own Python from the `deconvolution` extra, which IT installs on the
+cluster once and which `all` leaves out (PyTorch is several GB). A Seqera Containers image is the option if a pinned
+image is wanted later. Session: training curves, cells per spot, totals per type and section, each type or the main
+type on the tissue (shared spatial drawing), signature genes, correlation between types across spots, export.
+Demo: the Visium demo's skin sections, whose regions are each one cell type, so every spot's make-up is known.
+
 ### Spatial suite: high-resolution spatial (2026-11-04)
 
 Visium HD (Space Ranger `binned_outputs/square_NNNum`, read with the Visium reader), Stereo-seq (GEM summed into

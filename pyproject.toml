@@ -37,14 +37,19 @@ singlecell = ["numpy", "pandas<4", "scipy", "scanpy>=1.9", "anndata>=0.9", "harm
 rna = ["numpy", "pandas<4", "matplotlib", "pydeseq2"]
 # Intent: single-cell ATAC and multiome sessions (SnapATAC2 reads fragments; muon joins RNA and ATAC).
 atac = ["everyome[singlecell]", "snapatac2>=2.9", "muon>=0.1.9"]  # oldest that still support Python 3.10
+# Intent: Hi-C sessions read .cool/.mcool contact maps directly with h5py.
+hic = ["numpy", "h5py"]
+# Intent: cell2location for cell types in spots. It runs on the cluster's GPU nodes and brings PyTorch, scvi-tools and
+# Pyro (several GB), so IT installs it there once; it is left out of 'all', which laptops install.
+deconvolution = ["everyome[singlecell]", "cell2location==0.1.5"]
 # Intent: what the molecular biology tools need (they run on this computer).
 molbio = ["primer3-py", "biopython"]
 # Intent: the nf-core pipelines Everyome installs on clusters; always the same version as Everyome (docs/RELEASING.md).
 pipelines = ["everyome-pipelines==0.1.0a6"]
-all = ["everyome[singlecell,atac,rna,molbio,pipelines]"]
+all = ["everyome[singlecell,atac,hic,rna,molbio,pipelines]"]
 # Intent: everything for developing and testing from a checkout. It leaves out the pipelines package, which the
 # tests don't need and which can't be installed before its version is on PyPI.
-dev = ["everyome[test,singlecell,atac,rna,molbio]"]
+dev = ["everyome[test,singlecell,atac,hic,rna,molbio]"]
 # Intent: dev plus a real browser for tests/test_browser.py (then: python -m playwright install chromium).
 browser = ["everyome[dev]", "playwright"]
 

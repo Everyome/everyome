@@ -56,6 +56,9 @@ Modules so far:
 - **High-resolution spatial (Visium HD, Stereo-seq, Curio)**, spatial: bins at
   2, 8 or 16 µm, cell types on the tissue image, spatially variable genes and
   neighbourhoods.
+- **Cell types in spots (cell2location)**, spatial: maps a labelled single-cell
+  reference onto Visium sections on the cluster's GPUs; each cell type on the
+  tissue, the main type per spot, and which types live together.
 - **Structure prediction**, protein: nf-core/proteinfold (AlphaFold2, ESMFold,
   ColabFold, AlphaFold 3, Boltz and more) on the cluster's GPUs; see each
   structure coloured by confidence with its predicted aligned error and domains,

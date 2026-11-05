@@ -43,6 +43,7 @@ suites:
       - {id: spatial.spots, name: Spatial transcriptomics (10x Visium), module: spatial.visium}
       - {id: spatial.probes, name: Imaging spatial (Xenium, MERSCOPE, CosMx), module: spatial.imaging}
       - {id: spatial.singlecell, name: High-resolution spatial (Visium HD, Stereo-seq, Curio), module: spatial.hires}
+      - {id: spatial.deconvolution, name: Cell types in spots (cell2location), module: spatial.deconvolution}
   - id: protein
     name: Protein
     blurb: Structure, interactions and function.
@@ -72,7 +73,7 @@ data_types:
   - {id: riboseq, label: "Ribo-seq", tools: [rna.riboseq]}
   - {id: sc_rna, label: "Single-cell RNA-seq (10x, SPLiT-seq and others)", tools: [singlecell.splitseq, singlecell.scrna]}
   - {id: sc_atac, label: "Single-cell ATAC-seq or multiome", tools: [singlecell.scatac, singlecell.multiome]}
-  - {id: spatial, label: "Spatial transcriptomics", tools: [spatial.spots, spatial.probes, spatial.singlecell]}
+  - {id: spatial, label: "Spatial transcriptomics", tools: [spatial.spots, spatial.probes, spatial.singlecell, spatial.deconvolution]}
   - {id: protein_seq, label: "Protein sequences or structures", tools: [protein.structure, protein.interactions, protein.function]}
   - {id: constructs, label: "Plasmids, constructs or primers", tools: [molbio.primers, molbio.plasmids, molbio.digests]}
   - {id: sequences, label: "A set of DNA or protein sequences (FASTA)", tools: [phylo.tree, tutorial.sequence_summary, protein.function]}
@@ -80,11 +81,11 @@ data_types:
 
 aims:
   - {id: compare, label: "Compare conditions, treatments or time points", tools: [rna.bulk_de, singlecell.scrna, singlecell.splitseq, rna.riboseq]}
-  - {id: cell_types, label: "Find and name cell types", tools: [singlecell.splitseq, singlecell.scrna, singlecell.multiome, spatial.singlecell]}
+  - {id: cell_types, label: "Find and name cell types", tools: [singlecell.splitseq, singlecell.scrna, singlecell.multiome, spatial.singlecell, spatial.deconvolution]}
   - {id: variants, label: "Find mutations or variants", tools: [dna.variants]}
   - {id: genome, label: "Build or annotate a genome", tools: [dna.assembly, dna.bacterial, dna.annotation]}
   - {id: chromatin, label: "See which DNA is open, bound or folded", tools: [dna.atac, dna.hic, singlecell.scatac, singlecell.multiome]}
-  - {id: where, label: "See where genes are expressed in a tissue", tools: [spatial.spots, spatial.probes, spatial.singlecell]}
+  - {id: where, label: "See where genes are expressed in a tissue", tools: [spatial.spots, spatial.probes, spatial.singlecell, spatial.deconvolution]}
   - {id: translation, label: "Measure translation", tools: [rna.riboseq]}
   - {id: protein, label: "Predict protein structure, partners or function", tools: [protein.structure, protein.interactions, protein.function]}
   - {id: design, label: "Design primers, plasmids or cloning", tools: [molbio.primers, molbio.plasmids, molbio.digests]}

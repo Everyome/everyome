@@ -1,0 +1,115 @@
+# Cell types in spots: cell2location learns each cell type's expression from a labelled single-cell reference, then
+# estimates how many cells of each type are in every Visium spot (both on a GPU); a live session shows them on the tissue.
+spec: 1
+id: spatial.deconvolution
+name: Cell types in spots (cell2location)
+suite: spatial
+version: 0.1.0
+summary: >
+  Estimates which cell types make up each 10x Visium spot, and how many cells of
+  each, from a single-cell RNA-seq reference with cell types already named. See
+  each cell type on the tissue, the main type in every spot, which cell types
+  live together, and export the tables. Uses cell2location on the cluster's GPUs.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Kleshchevnikov V. et al. (2022). Cell2location maps fine-grained cell types in spatial transcriptomics. Nature Biotechnology 40:661–671."
+    url: https://doi.org/10.1038/s41587-021-01139-4
+  - text: "Gayoso A. et al. (2022). A Python library for probabilistic analysis of single-cell omics data. Nature Biotechnology 40:163–166."
+    url: https://doi.org/10.1038/s41587-021-01206-w
+  - text: "Bingham E. et al. (2019). Pyro: deep universal probabilistic programming. Journal of Machine Learning Research 20:1–6."
+    url: https://jmlr.org/papers/v20/18-403.html
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+kind: [batch, interactive]
+requires: [scanpy, anndata, pandas, numpy, scipy, PIL]
+methods: everyome.modules.spatial.deconvolution.methods:methods
+
+inputs:
+  - id: data_dir
+    label: Folder with Space Ranger results
+    type: folder
+    help: "Used only to fill in the table below: each section's Space Ranger output folder ('outs') inside it is found."
+    demo: "visium"
+  - id: samples
+    label: Sections
+    type: table
+    required: true
+    help: "One row per Visium section: its name and Space Ranger's 'outs' folder for it. Sections are mapped together, each with its own sensitivity."
+    columns:
+      - {id: sample, label: Section, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: outs, label: Space Ranger 'outs' folder, wide: true}
+    fill: {helper: scan, from: data_dir, label: Find sections in the folder}
+  - id: reference
+    label: Single-cell reference (.h5ad)
+    type: file
+    required: true
+    help: >
+      Single-cell or single-nucleus RNA-seq from the same tissue, with raw counts and each cell's type in a column of
+      its table (for example an export from Single-cell RNA-seq or SPLiT-seq). Cell types missing from it cannot be found
+      in the spots.
+    demo: reference.h5ad
+
+params:
+  - {id: labels_key, label: Cell type column, type: text, default: "cell_type", group: Reference,
+     help: "The column of the reference's cell table that names each cell's type."}
+  - {id: batch_key, label: Batch column, type: text, default: "", group: Reference,
+     help: "A column naming each cell's sample or batch, if the reference pools several; leave empty if not."}
+  - {id: cells_per_spot, label: Expected cells per spot, type: int, default: 30, min: 1, max: 200, group: Mapping,
+     help: "About how many cells sit under one spot, from the H&E image (count nuclei in a few spots). cell2location's authors suggest 30 for many tissues; a sparse tissue may have 5–10."}
+  - {id: detection_alpha, label: Detection alpha, type: float, default: 20, min: 1, max: 200, group: Mapping,
+     help: "How much sensitivity may vary between spots and sections. The authors suggest 20 for most data and 200 when sensitivity is very even."}
+  - {id: reference_epochs, label: Reference training rounds, type: int, default: 250, min: 50, max: 2000, group: Training, advanced: true}
+  - {id: mapping_epochs, label: Mapping training rounds, type: int, default: 30000, min: 1000, max: 100000, group: Training, advanced: true,
+     help: "The authors suggest 30,000. Check on the training curve that it has flattened."}
+  - {id: gpu_partition, label: GPU partition, type: text, default: "", group: Cluster,
+     help: "The Slurm partition with GPUs (ask IT). Leave empty to use the run's partition."}
+
+batch:
+  engine: staged
+  resources: {cpus: 4, mem: 32G, time: "12:00:00", session: {cpus: 1, mem: 8G, time: "04:00:00"}}
+  report: everyome.modules.spatial.deconvolution.helpers:report
+  stages:
+    - {id: "01", name: reference, title: "Learn each cell type's expression (cell2location, on a GPU)",
+       run: "{python} -m everyome.modules.spatial.deconvolution.stage reference", resources: {gpus: 1, partition_from: gpu_partition, time: "06:00:00"}}
+    - {id: "02", name: map, title: "Map cell types to spots (cell2location, on a GPU)",
+       run: "{python} -m everyome.modules.spatial.deconvolution.stage map", resources: {gpus: 1, partition_from: gpu_partition, mem: 64G, time: "24:00:00"}}
+
+helpers:
+  scan: everyome.modules.spatial.deconvolution.helpers:scan
+
+interactive:
+  engine: everyome.modules.spatial.deconvolution.engine:Engine
+  ui: [../shared/spatial_ui.js, ui.js]
+  steps:
+    - {id: overview, title: Check the mapping}
+    - {id: tissue, title: Cell types on the tissue}
+    - {id: together, title: Which cell types live together}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/mixture_playground.js]
+    object: MixturePlayground
+    lede: >
+      A spot holds several cells, so its expression is a mixture. Mix three cell
+      types, add counting noise, and see how well their shares can be worked out again.
+    intro:
+      - "Each cell type has its own expression across twelve genes. Choose how much of each is in the spot and how many molecules the spot captures; the spot's profile is the mixture, and the estimate is worked back out from it with the cell types' profiles."
+    caveats:
+      - "The estimate here is a non-negative least-squares fit to the cell types' profiles. cell2location fits a Bayesian model that also learns each spot's and section's sensitivity, and shares information between neighbouring cell-type patterns, so it copes better with noise and with cell types missing from the reference."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    training: docs/guides/training.md
+    abundance: docs/guides/abundance.md
+    tissue: docs/guides/tissue.md
+    # Named by the shared spatial views this module loads for drawing the tissue.
+    spatial_genes: ../visium/docs/guides/spatial_genes.md
+    neighbourhood: ../shared/guides/neighbourhood.md
+    dominant: docs/guides/dominant.md
+    signature: docs/guides/signature.md
+    together: docs/guides/together.md
+
+demo:
+  build: everyome.modules.spatial.deconvolution.demo_data:build
