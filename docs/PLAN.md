@@ -326,6 +326,13 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Spatial suite: high-resolution spatial (2026-11-04)
+
+Visium HD (Space Ranger `binned_outputs/square_NNNum`, read with the Visium reader), Stereo-seq (GEM summed into
+square bins; DNB pitch 0.5 µm) and Curio Seeker (its .h5ad). Bin size chosen at load (2, 8, 16 µm; recorded and
+replayed). Visium engine subclass: tissue over the image, thinned to 40,000 bins for drawing. pyarrow added to the
+singlecell extra (Visium HD positions are parquet). Not in this version: bin-to-cell segmentation.
+
 ### Spatial suite: imaging spatial (2026-11-04)
 
 Xenium, MERSCOPE and CosMx straight from instrument output, read with small pandas/scanpy readers (no spatialdata

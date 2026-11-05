@@ -36,6 +36,7 @@ current when decisions change.
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
 | `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |
+| `everyome/modules/spatial/hires/` | High-resolution spatial: Visium HD bins (via the Visium reader), Stereo-seq GEM summed into bins, Curio .h5ad; Visium engine subclass with a bin-size choice and thinned drawing over the image |
 | `everyome/modules/spatial/imaging/` | Imaging spatial (Xenium, MERSCOPE, CosMx readers in `readers.py`); Visium engine subclass without an image, thinned drawing; shared spatial views in `spatial/shared/spatial_ui.js` (tissue, spatial genes, neighbourhood enrichment, also used by Visium) |
 | `everyome/modules/singlecell/multiome/` | Multiome: reads Cell Ranger ARC outs (genes + peaks); CellsEngine on the RNA with clustering on RNA, ATAC (TF-IDF/LSI) or both (muon WNN); `words.modes` adds the choice to the shared cluster view |
 | `everyome/modules/singlecell/scatac/` | Single-cell ATAC: staged chromap (pinned container) reads → fragments, then a SnapATAC2 session (tiles for clustering, gene activity for the shared CellsEngine markers/naming/export) |

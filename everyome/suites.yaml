@@ -42,7 +42,7 @@ suites:
     tools:
       - {id: spatial.spots, name: Spatial transcriptomics (10x Visium), module: spatial.visium}
       - {id: spatial.probes, name: Imaging spatial (Xenium, MERSCOPE, CosMx), module: spatial.imaging}
-      - {id: spatial.singlecell, name: Single-cell spatial}
+      - {id: spatial.singlecell, name: High-resolution spatial (Visium HD, Stereo-seq, Curio), module: spatial.hires}
   - id: protein
     name: Protein
     blurb: Structure, interactions and function.

@@ -1,0 +1,109 @@
+# High-resolution sequencing-based spatial (10x Visium HD, STOmics Stereo-seq, Curio Seeker): reads each section at the
+# chosen bin size, then a live session filters bins, clusters and names them, shows them on the tissue, finds spatially
+# variable genes and which types sit next to which.
+spec: 1
+id: spatial.hires
+name: High-resolution spatial (Visium HD, Stereo-seq, Curio)
+suite: spatial
+version: 0.1.0
+summary: >
+  Explores near-single-cell spatial transcriptomics from sequencing-based
+  platforms (10x Visium HD, Stereo-seq, Curio Seeker), from each platform's
+  output: choose a bin size, filter bins, cluster and name cell types or regions,
+  see them in place on the tissue, find genes that follow the tissue's layout,
+  and see which types sit next to which.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Oliveira M.F. et al. (2025). High-definition spatial transcriptomic profiling of immune cell populations in colorectal cancer (Visium HD). Nature Genetics 57:1512–1523."
+    url: https://doi.org/10.1038/s41588-025-02193-3
+  - text: "Chen A. et al. (2022). Spatiotemporal transcriptomic atlas of mouse organogenesis using DNA nanoball-patterned arrays (Stereo-seq). Cell 185:1777–1792."
+    url: https://doi.org/10.1016/j.cell.2022.04.003
+  - text: "Rodriques S.G. et al. (2019). Slide-seq: a scalable technology for measuring genome-wide expression at high spatial resolution. Science 363:1463–1467."
+    url: https://doi.org/10.1126/science.aaw1219
+  - text: "Palla G. et al. (2022). Squidpy: a scalable framework for spatial omics analysis. Nature Methods 19:171–178."
+    url: https://doi.org/10.1038/s41592-021-01358-2
+  - text: "Moran P.A.P. (1950). Notes on continuous stochastic phenomena. Biometrika 37:17–23."
+    url: https://doi.org/10.1093/biomet/37.1-2.17
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+kind: [interactive]
+requires: [scanpy, anndata, harmonypy, leidenalg, igraph, pandas, numpy, scipy, matplotlib, openpyxl, PIL, pyarrow]
+methods: everyome.modules.spatial.hires.methods:methods
+
+inputs:
+  - id: data_dir
+    label: Folder with the platform's output
+    type: folder
+    help: "Used only to fill in the table below: each section's output is found, and which platform made it."
+    demo: "."
+  - id: samples
+    label: Sections
+    type: table
+    required: true
+    help: >
+      One row per section: its name, its output folder (Space Ranger's 'outs' for Visium HD, or the folder with the
+      Stereo-seq GEM file or Curio's .h5ad), the platform (filled in for you), its condition and, if sections were run
+      on different days, its batch.
+    columns:
+      - {id: sample, label: Section, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: outs, label: Output folder, wide: true}
+      - {id: platform, label: Platform, pattern: "visium_hd|stereo|curio", pattern_help: "should be visium_hd, stereo or curio"}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: batch, label: Batch, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: data_dir, label: Find sections in the folder}
+
+params:
+  - {id: bin_um, label: Bin size (µm), type: choice, choices: ["2", "8", "16"], default: "8",
+     help: "Visium HD gives 2, 8 and 16 µm bins; Stereo-seq is summed into bins of this size; Curio beads (10 µm) are used as they are. 8 µm is about one cell."}
+  - id: mito_genes
+    label: Mitochondrial genes
+    type: text
+    default: "^(MT-|mt-)"
+    help: "Gene names that count as mitochondrial (a regular expression). MT- for human, mt- for mouse; leave empty if your genome has none named this way."
+
+batch:
+  resources: {session: {cpus: 4, mem: 64G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.spatial.hires.helpers:scan
+
+interactive:
+  engine: everyome.modules.spatial.hires.engine:Engine
+  ui: [../../singlecell/shared/cells_ui.js, ../shared/spatial_ui.js, ui.js]
+  steps:
+    - {id: load, title: Read the sections}
+    - {id: qc, title: Filter bins}
+    - {id: cluster, title: Integrate and cluster}
+    - {id: tissue, title: See it on the tissue}
+    - {id: markers, title: Explore markers}
+    - {id: annotate, title: Name clusters}
+    - {id: neighbourhood, title: Which types are neighbours}
+    - {id: compare, title: Compare and export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    load: docs/guides/load.md
+    cells_per_sample: docs/guides/bins_per_section.md
+    filter_cells: docs/guides/filter_bins.md
+    mito: ../../singlecell/shared/guides/mito.md
+    clusters: ../../singlecell/shared/guides/clusters.md
+    tissue: docs/guides/tissue.md
+    spatial_genes: ../visium/docs/guides/spatial_genes.md
+    neighbourhood: ../shared/guides/neighbourhood.md
+    markers: ../../singlecell/scrna/docs/guides/markers.md
+    dotplot: ../../singlecell/shared/guides/dotplot.md
+    composition: ../../singlecell/shared/guides/composition.md
+  playground:
+    scripts: [docs/playground/bins_playground.js]
+    object: BinsPlayground
+    lede: >
+      How the bin size trades RNA per bin against mixing cells together, on a strip of tissue with two cell types.
+    intro:
+      - "A strip of cells of two types. Choose the bin size and the cells' size and see how many bins hold one type, how many mix both, and how much RNA each bin has."
+    caveats:
+      - "Cells here are squares in a row; real cells vary in size and shape, and RNA can drift a few micrometres before capture."
+
+demo:
+  build: everyome.modules.spatial.hires.demo_data:build

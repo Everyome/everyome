@@ -53,6 +53,9 @@ Modules so far:
 - **Imaging spatial (Xenium, MERSCOPE, CosMx)**, spatial: from the instrument's
   output, cell types in place on the tissue, spatially variable genes and which
   cell types are neighbours.
+- **High-resolution spatial (Visium HD, Stereo-seq, Curio)**, spatial: bins at
+  2, 8 or 16 µm, cell types on the tissue image, spatially variable genes and
+  neighbourhoods.
 - **Structure prediction**, protein: nf-core/proteinfold (AlphaFold2, ESMFold,
   ColabFold, AlphaFold 3, Boltz and more) on the cluster's GPUs; see each
   structure coloured by confidence with its predicted aligned error and domains,

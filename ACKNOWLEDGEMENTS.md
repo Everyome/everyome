@@ -108,6 +108,9 @@ hers.
 - Janesick A. et al. (2023). Xenium. *Nature Communications* 14:8353. https://doi.org/10.1038/s41467-023-43458-x
 - Chen K.H. et al. (2015). MERFISH. *Science* 348:aaa6090. https://doi.org/10.1126/science.aaa6090
 - He S. et al. (2022). CosMx spatial molecular imaging. *Nature Biotechnology* 40:1794–1806. https://doi.org/10.1038/s41587-022-01483-z
+- Oliveira M.F. et al. (2025). Visium HD. *Nature Genetics* 57:1512–1523. https://doi.org/10.1038/s41588-025-02193-3
+- Chen A. et al. (2022). Stereo-seq. *Cell* 185:1777–1792. https://doi.org/10.1016/j.cell.2022.04.003
+- Rodriques S.G. et al. (2019). Slide-seq. *Science* 363:1463–1467. https://doi.org/10.1126/science.aaw1219
 - Moran P.A.P. (1950). Moran's I. *Biometrika* 37:17–23. https://doi.org/10.1093/biomet/37.1-2.17
 
 ### Protein
