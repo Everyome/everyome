@@ -1,0 +1,130 @@
+# Chromatin accessibility: nf-core/atacseq aligns ATAC-seq reads, calls open-chromatin peaks (MACS2) in each library and
+# counts reads in one consensus set of peaks; a live session checks the libraries, compares groups (DESeq2) and shows
+# the peaks at any place in the genome.
+spec: 1
+id: dna.atac
+name: Chromatin accessibility (ATAC-seq)
+suite: dna
+version: 0.1.0
+summary: >
+  Finds the open chromatin in your samples from ATAC-seq reads: nf-core/atacseq
+  trims and aligns the reads, removes duplicates and mitochondrial reads, and
+  calls peaks in each library. Then check the libraries (fraction of reads in
+  peaks, principal components), see where the peaks lie relative to genes,
+  compare two groups to find regions that open or close (DESeq2), look at any
+  region of the genome, and export the tables. Works for any genome with a FASTA
+  and a GTF; set the effective genome size for non-model species.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Patel H. et al. nf-core/atacseq. Zenodo."
+    url: https://doi.org/10.5281/zenodo.2634132
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Buenrostro J.D. et al. (2013). Transposition of native chromatin for fast and sensitive epigenomic profiling of open chromatin, DNA-binding proteins and nucleosome position. Nature Methods 10:1213–1218."
+    url: https://doi.org/10.1038/nmeth.2688
+  - text: "Li H., Durbin R. (2009). Fast and accurate short read alignment with Burrows–Wheeler transform. Bioinformatics 25:1754–1760."
+    url: https://doi.org/10.1093/bioinformatics/btp324
+  - text: "Zhang Y. et al. (2008). Model-based analysis of ChIP-Seq (MACS). Genome Biology 9:R137."
+    url: https://doi.org/10.1186/gb-2008-9-9-r137
+  - text: "Liao Y., Smyth G.K., Shi W. (2014). featureCounts: an efficient general purpose program for assigning sequence reads to genomic features. Bioinformatics 30:923–930."
+    url: https://doi.org/10.1093/bioinformatics/btt656
+  - text: "Love M.I., Huber W., Anders S. (2014). Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biology 15:550."
+    url: https://doi.org/10.1186/s13059-014-0550-8
+  - text: "Muzellec B. et al. (2023). PyDESeq2: a python package for bulk RNA-seq differential expression analysis. Bioinformatics 39:btad547."
+    url: https://doi.org/10.1093/bioinformatics/btad547
+kind: [batch, interactive]
+requires: [pandas, numpy]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.dna.atac.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the libraries table. Files named like <group>_rep1_R1.fastq.gz and _R2.fastq.gz."
+    demo: fastq
+  - id: libraries
+    label: Libraries
+    type: table
+    required: true
+    help: >
+      One row per sequencing library. Group is the condition, tissue or stage (for example control or treated);
+      libraries of one group are its biological replicates, numbered 1, 2, 3… The pipeline names each library
+      <group>_REP<replicate>. Two rows with the same group and replicate are joined as one library (for example the
+      same library run on two lanes).
+    columns:
+      - {id: group, label: Group, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: replicate, label: Replicate, pattern: "[1-9][0-9]*", pattern_help: "should be a whole number from 1"}
+      - {id: fastq_1, label: Read 1 FASTQ, wide: true}
+      - {id: fastq_2, label: Read 2 FASTQ (empty if single-end), optional: true, wide: true}
+    fill: {helper: scan, from: reads_dir, label: Find libraries in the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/atacseq
+  revision: "2.1.2"
+  schema: pipeline/nextflow_schema.json
+  # Intent: the pipeline's 'sample' is the group; its replicates are numbered. The header must be in this order.
+  samplesheet:
+    from: libraries
+    param: input
+    columns: [{name: sample, from: group}, fastq_1, fastq_2, replicate]
+  profile: apptainer
+  # Everyome sets these itself, or they are about email and help screens rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, hook_url, help, version, monochrome_logs, validate_params,
+         validationShowHiddenParams, validationFailUnrecognisedParams, validationLenientMode, max_multiqc_email_size, publish_dir_mode,
+         custom_config_version, custom_config_base, config_profile_name, config_profile_description, config_profile_contact, config_profile_url]
+  # Intent: open chromatin in ATAC-seq is mostly sharp sites, so call narrow peaks; the pipeline's own default is broad.
+  defaults: {narrow_peak: true}
+  check: everyome.modules.dna.atac.helpers:check
+  demo: everyome.modules.dna.atac.demo_pipeline
+  demo_values: {fasta: genome/genome.fa, gtf: genome/genes.gtf, macs_gsize: 2000000}
+  report: everyome.modules.dna.atac.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "72:00:00", session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.dna.atac.helpers:scan
+
+interactive:
+  engine: everyome.modules.dna.atac.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: samples, title: Check libraries}
+    - {id: peaks, title: Where the peaks are}
+    - {id: compare, title: Compare groups}
+    - {id: locus, title: Look at a region}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/atac_playground.js]
+    object: AtacPlayground
+    lede: >
+      How a peak caller tells open chromatin from background, and why the fraction
+      of reads in peaks (FRiP) falls when a library is noisy, on a simulated stretch
+      of genome where the open sites are known.
+    intro:
+      - "A 20 kb stretch of genome with a few open sites. Reads fall in the open sites and, at random, everywhere else. Change the sequencing depth, how much of the library is background and the caller's threshold, and see which sites are found, which calls are false, and the FRiP."
+    caveats:
+      - "The caller here compares each 200 bp window with the average background (a Poisson test), as MACS2 does in spirit; MACS2 also uses a local background, fragment sizes and shifts reads to the cut site."
+      - "Real libraries also differ in duplicates, mitochondrial reads and fragment length; nf-core/atacseq removes duplicates and mitochondrial reads before calling peaks."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    frip: docs/guides/frip.md
+    pca: docs/guides/pca.md
+    correlation: docs/guides/correlation.md
+    peak_widths: docs/guides/peak_widths.md
+    tss_distance: docs/guides/tss_distance.md
+    da_summary: docs/guides/da_summary.md
+    volcano: docs/guides/volcano.md
+    locus: docs/guides/locus.md
+
+demo:
+  build: everyome.modules.dna.atac.demo_data:build

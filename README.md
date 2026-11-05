@@ -80,6 +80,9 @@ Modules so far:
 - **Variant and mutation calling**, DNA: nf-core/sarek maps reads to your own
   genome and calls germline variants with two callers; filter the calls, see
   where callers agree, and find variants that separate two groups of samples.
+- **Chromatin accessibility (ATAC-seq)**, DNA: nf-core/atacseq calls open
+  regions in each library; check libraries (FRiP, PCA), compare groups with
+  DESeq2 and look at any region with its peaks and nearest genes.
 - **3D genome architecture (Hi-C)**, DNA: nf-core/hic turns read pairs into
   balanced contact maps; browse the maps, see contacts fall with distance, and
   find A/B compartments and domain (TAD) boundaries.

@@ -345,6 +345,15 @@ their own. Session: frame and P-site offset per read length, metagene around sta
 anota2seq's calls alongside, one gene's view, export. The default rRNA databases are SILVA-derived (licence for
 commercial users).
 
+### DNA suite: chromatin accessibility (2026-11-04)
+
+nf-core/atacseq 2.1.2 (its newest release, written for Nextflow 23). Its samplesheet's `sample` is the group, with
+numbered replicates. Narrow peaks by default; a run is refused without a genome size (`macs_gsize`) or read length,
+which non-iGenomes references need for peak calling. Its config names nf-validation without a version, so the lock
+pins 1.1.3 (`pipelines.UNVERSIONED`) for offline runs. Session: library checks (FRiP, PCA, correlation), peak widths
+and distance to the nearest TSS (from the GTF, no HOMER), PyDESeq2 differential accessibility between groups, a
+region view with peaks (and bigWig coverage when pyBigWig is installed), export.
+
 ### DNA suite: 3D genome architecture (2026-11-04)
 
 nf-core/hic 2.1.0 (Bowtie 2 and HiC-Pro, cooler, cooltools, HiCExplorer), with the user's FASTA (`batch.fixed`). The

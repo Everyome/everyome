@@ -14,6 +14,7 @@ material from others, each under its own licence, with the licence text next to 
 | nf-core/proteinfold 2.0.0 parameter and samplesheet schemas | `everyome/modules/protein/structure/pipeline/` | MIT; `LICENSE-nf-core-proteinfold` in the same folder |
 | nf-core/sarek 3.11.0 parameter and samplesheet schemas | `everyome/modules/dna/variants/pipeline/` | MIT; `LICENSE-nf-core-sarek` in the same folder |
 | nf-core/hic 2.1.0 parameter and samplesheet schemas | `everyome/modules/dna/hic/pipeline/` | MIT; `LICENSE-nf-core-hic` in the same folder |
+| nf-core/atacseq 2.1.2 parameter and samplesheet schemas | `everyome/modules/dna/atac/pipeline/` | MIT; `LICENSE-nf-core-atacseq` in the same folder |
 | nf-core/riboseq 2.0.0 parameter and samplesheet schemas | `everyome/modules/rna/riboseq/pipeline/` | MIT; `LICENSE-nf-core-riboseq` in the same folder |
 
 Everyome runs, but does not include, other tools (for example nf-core/rnaseq,

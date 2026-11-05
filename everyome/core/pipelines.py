@@ -89,12 +89,25 @@ def _trim_and_pack(tarball: bytes, root: str) -> tuple[bytes, list[str]]:
     return gz.getvalue(), sorted(containers)
 
 
+# Intent: older pipelines name a plugin without a version, which online Nextflow resolves to the newest release. Offline,
+# Everyome must ship one, so it pins the last release of that plugin's line (nf-validation 1.1.3 is what nf-core
+# pipelines of that era pin; offline, Nextflow uses the copy it finds in the plugins folder).
+UNVERSIONED = {"nf-validation": "1.1.3"}
+
+
 def _plugins(code: bytes) -> list[tuple[str, str]]:
     """The plugins a pipeline's nextflow.config asks for, as (id, version)."""
     with tarfile.open(fileobj=io.BytesIO(code), mode="r:gz") as t:
         cfg = next(t.extractfile(m).read().decode() for m in t.getmembers() if m.name.count("/") == 1 and m.name.endswith("/nextflow.config"))
     block = re.search(r"plugins\s*\{([^}]*)\}", cfg)
-    return re.findall(r"id\s+'([\w-]+)@([\w.-]+)'", block.group(1)) if block else []
+    out = []
+    for pid, ver in (re.findall(r"id\s+'([\w-]+)(?:@([\w.-]+))?'", block.group(1)) if block else []):
+        if not ver:
+            if pid not in UNVERSIONED:
+                raise RuntimeError(f"The pipeline asks for plugin {pid} without a version; add the version to use to UNVERSIONED.")
+            ver = UNVERSIONED[pid]
+        out.append((pid, ver))
+    return out
 
 
 def _plugin_release(pid: str, version: str) -> dict:

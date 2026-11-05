@@ -62,10 +62,11 @@ def test_shipped_lock_pins_every_pipeline_module():
     found, _ = modules.available()
     used = {pipelines.key(m.nextflow["pipeline"], str(m.nextflow["revision"])) for m in found.values() if m.nextflow}
     assert used == {"nf-core/rnaseq@3.27.0", "nf-core/scrnaseq@4.2.0", "nf-core/genomeassembler@2.0.1", "nf-core/bacass@2.6.1", "nf-core/proteinfold@2.0.0",
-                    "nf-core/sarek@3.11.0", "nf-core/hic@2.1.0", "nf-core/riboseq@2.0.0"} and used <= set(lock)
+                    "nf-core/sarek@3.11.0", "nf-core/hic@2.1.0", "nf-core/riboseq@2.0.0", "nf-core/atacseq@2.1.2"} and used <= set(lock)
     for k in used:
         e = lock[k]
-        assert len(e["sha256"]) == 64 and e["plugins"] and all(len(p["sha256"]) == 64 for p in e["plugins"]) and e["containers"]
+        # Intent: nf-core/hic 2.1.0 predates nf-core's validation plugins and uses none; every other pipeline ships its own.
+        assert len(e["sha256"]) == 64 and (e["plugins"] or k == "nf-core/hic@2.1.0") and all(len(p["sha256"]) == 64 for p in e["plugins"]) and e["containers"]
 
 
 def test_trim_and_pack(bundles):
@@ -127,3 +128,19 @@ def test_run_installs_then_submits(bundles, tmp_path, monkeypatch):
         assert c.post("/api/run/preview", json={}).json()["pipeline"]["installed"] is True
     finally:
         c.post("/api/disconnect")
+
+
+def test_unversioned_plugins_are_pinned_or_refused():
+    import io
+    import tarfile
+
+    def code(cfg):
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as t:
+            data = cfg.encode()
+            info = tarfile.TarInfo("p-1.0/nextflow.config"); info.size = len(data)
+            t.addfile(info, io.BytesIO(data))
+        return buf.getvalue()
+    assert pipelines._plugins(code("plugins {\n    id 'nf-validation' // old style\n}\n")) == [("nf-validation", "1.1.3")]
+    with pytest.raises(RuntimeError, match="nf-unknown without a version"):
+        pipelines._plugins(code("plugins { id 'nf-unknown' }"))
