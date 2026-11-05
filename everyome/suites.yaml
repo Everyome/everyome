@@ -17,7 +17,7 @@ suites:
     tools:
       - {id: dna.variants, name: Variant and mutation calling, module: dna.variants}
       - {id: dna.atac, name: Chromatin accessibility (ATAC-seq)}
-      - {id: dna.hic, name: 3D genome architecture (Hi-C)}
+      - {id: dna.hic, name: 3D genome architecture (Hi-C), module: dna.hic}
       - {id: dna.assembly, name: Genome assembly (PacBio, Nanopore, Illumina), module: dna.assembly}
       - {id: dna.bacterial, name: Bacterial genome assembly and annotation, module: dna.bacterial}
       - {id: dna.annotation, name: Genome annotation (Helixer), module: dna.annotation}

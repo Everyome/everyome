@@ -55,7 +55,8 @@ def field_for(name: str, p: dict, group: str, required: bool) -> Field | None:
 
 def fields(schema: dict, skip: set[str]) -> list[Field]:
     defs = schema.get("$defs") or schema.get("definitions") or {}
-    order = [a["$ref"].split("/")[-1] for a in schema.get("allOf", []) if "$ref" in a] or list(defs)
+    # Intent: some nf-core schemas list a group twice in allOf; each group's settings appear once.
+    order = list(dict.fromkeys(a["$ref"].split("/")[-1] for a in schema.get("allOf", []) if "$ref" in a)) or list(defs)
     out = []
     for gid in order:
         g = defs.get(gid, {})

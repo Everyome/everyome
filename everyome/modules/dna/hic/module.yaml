@@ -1,0 +1,127 @@
+# 3D genome architecture: nf-core/hic turns Hi-C read pairs into balanced contact maps (with compartments, insulation
+# and TADs), then a live session shows the maps, how contacts fall with distance, A/B compartments and TAD boundaries.
+spec: 1
+id: dna.hic
+name: 3D genome architecture (Hi-C)
+suite: dna
+version: 0.1.0
+summary: >
+  Shows how the genome is folded, from Hi-C reads: nf-core/hic aligns the read
+  pairs to your genome, keeps the valid ligation products and builds balanced
+  contact maps. Then look at the maps at any resolution, check the library (valid
+  pairs, cis and trans, how contacts fall with distance), see open (A) and closed (B)
+  compartments along each chromosome, and find the boundaries of topologically
+  associating domains (TADs). Works with any genome you have as a FASTA file.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Servant N. et al. nf-core/hic. Zenodo."
+    url: https://doi.org/10.5281/zenodo.2669512
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Servant N. et al. (2015). HiC-Pro: an optimized and flexible pipeline for Hi-C data processing. Genome Biology 16:259."
+    url: https://doi.org/10.1186/s13059-015-0831-x
+  - text: "Langmead B., Salzberg S.L. (2012). Fast gapped-read alignment with Bowtie 2. Nature Methods 9:357–359."
+    url: https://doi.org/10.1038/nmeth.1923
+  - text: "Abdennur N., Mirny L.A. (2020). Cooler: scalable storage for Hi-C data and other genomically labeled arrays. Bioinformatics 36:311–316."
+    url: https://doi.org/10.1093/bioinformatics/btz540
+  - text: "Open2C et al. (2024). Cooltools: enabling high-resolution Hi-C analysis in Python. PLoS Computational Biology 20:e1012067."
+    url: https://doi.org/10.1371/journal.pcbi.1012067
+  - text: "Ramírez F. et al. (2018). High-resolution TADs reveal DNA sequences underlying genome organization in flies. Nature Communications 9:189."
+    url: https://doi.org/10.1038/s41467-017-02525-w
+  - text: "Imakaev M. et al. (2012). Iterative correction of Hi-C data reveals hallmarks of chromosome organization. Nature Methods 9:999–1003."
+    url: https://doi.org/10.1038/nmeth.2148
+  - text: "Lieberman-Aiden E. et al. (2009). Comprehensive mapping of long-range interactions reveals folding principles of the human genome. Science 326:289–293."
+    url: https://doi.org/10.1126/science.1181369
+  - text: "Crane E. et al. (2015). Condensin-driven remodelling of X chromosome topology during dosage compensation. Nature 523:240–244."
+    url: https://doi.org/10.1038/nature14450
+kind: [batch, interactive]
+requires: [numpy, h5py]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+methods: everyome.modules.dna.hic.methods:methods
+
+inputs:
+  - id: reads_dir
+    label: Reads folder
+    type: folder
+    help: "Used only to fill in the samples table. Files named like <sample>_R1.fastq.gz and _R2.fastq.gz."
+    demo: fastq
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: >
+      One row per pair of read files. Rows with the same sample name (for example several sequencing lanes) are
+      merged into one map. Hi-C needs both reads of each pair.
+    columns:
+      - {id: sample, label: Sample, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fastq_1, label: Read 1 FASTQ, wide: true}
+      - {id: fastq_2, label: Read 2 FASTQ, wide: true}
+    fill: {helper: scan, from: reads_dir, label: Find samples in the reads folder}
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/hic
+  revision: "2.1.0"
+  schema: pipeline/nextflow_schema.json
+  samplesheet: {from: samples, columns: [sample, fastq_1, fastq_2], param: input}
+  profile: apptainer
+  # Everyome sets these itself, or they are about email, help screens and logs rather than the analysis.
+  skip: [email, email_on_fail, plaintext_email, max_multiqc_email_size, hook_url, help, version, monochrome_logs,
+         validate_params, show_hidden_params, publish_dir_mode, tracedir, multiqc_config, multiqc_logo,
+         multiqc_methods_description, igenomes_base]
+  # Intent: your own genome as a FASTA file, never a built-in reference downloaded from AWS iGenomes.
+  fixed: {genome: null, igenomes_ignore: true}
+  # The pipeline already builds what the session reads (balanced maps, the .mcool, compartments, insulation and TADs),
+  # so no setting needs a different starting value.
+  demo: everyome.modules.dna.hic.demo_pipeline
+  # Intent: the demo genome is 3.5 Mb, so it uses finer maps than the pipeline's defaults (made for large genomes).
+  demo_values: {fasta: genome/genome.fa, digestion: dpnii, bin_size: "160000,40000", res_zoomify: "10000",
+                res_tads: "20000", res_compartments: "80000", res_dist_decay: "40000"}
+  report: everyome.modules.dna.hic.helpers:report
+  check: everyome.modules.dna.hic.helpers:check
+  resources: {cpus: 2, mem: 8G, time: "120:00:00", session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.dna.hic.helpers:scan
+
+interactive:
+  engine: everyome.modules.dna.hic.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: qc, title: Check libraries}
+    - {id: map, title: Look at contact maps}
+    - {id: compartments, title: Compartments}
+    - {id: tads, title: TAD boundaries}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/hic_playground.js]
+    object: HiCPlayground
+    lede: >
+      What a contact map shows, built from a simple model of a folded chromosome:
+      why contacts fall with distance, what TADs and compartments look like, and
+      what sequencing depth and balancing change.
+    intro:
+      - "A 4 Mb chromosome in 20 kb bins. It has domains (TADs) and alternating open and closed compartments; change how strong each is, how deeply it is sequenced and how uneven the bins are, and watch the map, the distance curve and the insulation score."
+    caveats:
+      - "Contacts here come from a formula (distance, domain and compartment effects, a bias per bin) with random sampling. Real chromosomes also have loops, stripes and differences between cells."
+      - "Balancing here is the same iterative correction as the pipeline's; boundaries are troughs of a diamond insulation score, one of several ways to call them."
+  guides:
+    pipeline_report: docs/guides/pipeline_report.md
+    library: docs/guides/library.md
+    decay: docs/guides/decay.md
+    contact_map: docs/guides/contact_map.md
+    balancing: docs/guides/balancing.md
+    compartments: docs/guides/compartments.md
+    insulation: docs/guides/insulation.md
+
+demo:
+  build: everyome.modules.dna.hic.demo_data:build

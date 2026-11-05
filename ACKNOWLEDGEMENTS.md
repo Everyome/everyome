@@ -48,6 +48,7 @@ hers.
   - nf-core/bacass: https://doi.org/10.5281/zenodo.2669428
   - nf-core/proteinfold: https://doi.org/10.5281/zenodo.7629996
   - nf-core/sarek: https://doi.org/10.5281/zenodo.3476425
+  - nf-core/hic: https://doi.org/10.5281/zenodo.2669512
 - **Apptainer / Singularity**: Kurtzer G.M., Sochat V., Bauer M.W. (2017). Singularity: scientific containers for
   mobility of compute. *PLoS ONE* 12:e0177459. https://doi.org/10.1371/journal.pone.0177459
 - **BioContainers**: da Veiga Leprevost F. et al. (2017). BioContainers: an open-source and community-driven
@@ -79,6 +80,14 @@ hers.
 - Garrison E., Marth G. (2012). FreeBayes. *arXiv*:1207.3907. https://arxiv.org/abs/1207.3907
 - Danecek P. et al. (2021). SAMtools and BCFtools. *GigaScience* 10:giab008. https://doi.org/10.1093/gigascience/giab008
 - Pedersen B.S., Quinlan A.R. (2018). Mosdepth. *Bioinformatics* 34:867–868. https://doi.org/10.1093/bioinformatics/btx699
+- Servant N. et al. (2015). HiC-Pro. *Genome Biology* 16:259. https://doi.org/10.1186/s13059-015-0831-x
+- Langmead B., Salzberg S.L. (2012). Bowtie 2. *Nature Methods* 9:357–359. https://doi.org/10.1038/nmeth.1923
+- Abdennur N., Mirny L.A. (2020). Cooler. *Bioinformatics* 36:311–316. https://doi.org/10.1093/bioinformatics/btz540
+- Open2C et al. (2024). Cooltools. *PLoS Computational Biology* 20:e1012067. https://doi.org/10.1371/journal.pcbi.1012067
+- Ramírez F. et al. (2018). HiCExplorer. *Nature Communications* 9:189. https://doi.org/10.1038/s41467-017-02525-w
+- Imakaev M. et al. (2012). Iterative correction (ICE). *Nature Methods* 9:999–1003. https://doi.org/10.1038/nmeth.2148
+- Lieberman-Aiden E. et al. (2009). Hi-C and A/B compartments. *Science* 326:289–293. https://doi.org/10.1126/science.1181369
+- Crane E. et al. (2015). Insulation score. *Nature* 523:240–244. https://doi.org/10.1038/nature14450
 
 ### RNA
 

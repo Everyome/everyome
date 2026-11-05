@@ -336,6 +336,14 @@ QUAL/depth distributions, filters (callers that must agree, QUAL, depth, GQ, typ
 read counts, variants separating two groups with their position along each chromosome, export (filtered VCF, CSV).
 Not in this version: somatic calling, structural variants, effect annotation (VEP/snpEff need per-species caches).
 
+### DNA suite: 3D genome architecture (2026-11-04)
+
+nf-core/hic 2.1.0 (Bowtie 2 and HiC-Pro, cooler, cooltools, HiCExplorer), with the user's FASTA (`batch.fixed`). The
+session reads the balanced maps with h5py (no cooler dependency; new `hic` extra), orients compartments by GC content
+and calls insulation boundaries, shown alongside HiCExplorer's. `nfschema.fields` now drops a group the schema lists
+twice in allOf. Demo: a 3.5 Mb genome with known TADs and compartments. Not in this version: loops, differential
+maps between conditions.
+
 ### DNA suite: genome annotation (2026-11-04)
 
 Helixer 0.3.7 (GPL-3.0; models CC BY) from sequence alone, in the image Helixer's docs point to, pinned by digest; no

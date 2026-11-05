@@ -80,6 +80,9 @@ Modules so far:
 - **Variant and mutation calling**, DNA: nf-core/sarek maps reads to your own
   genome and calls germline variants with two callers; filter the calls, see
   where callers agree, and find variants that separate two groups of samples.
+- **3D genome architecture (Hi-C)**, DNA: nf-core/hic turns read pairs into
+  balanced contact maps; browse the maps, see contacts fall with distance, and
+  find A/B compartments and domain (TAD) boundaries.
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **RNA abundance**, RNA: from an nf-core/rnaseq results folder, how much each
