@@ -284,12 +284,26 @@ def module_ui(mid: str):
     return Response("\n;\n".join((m.dir / f).read_text() for f in m.ui), media_type="text/javascript")
 
 
+def _demo_data(m):
+    """On the demo cluster, make sure this module's example data is there (built the first time it is used)."""
+    if S.demo:
+        demo.ensure(S.demo_root / "data", m)
+
+
+@app.get("/api/modules/{mid}/example")
+def module_example(mid: str):
+    """Build this module's demo data now (the inputs page asks, so Browse shows it); quick once built."""
+    _demo_data(_module(mid))
+    return {"ok": True}
+
+
 @app.post("/api/modules/{mid}/helpers/{name}")
 def module_helper(mid: str, name: str, b: dict = Body(default={})):
     """Run a helper a module declares (for example, scanning a folder to fill a table)."""
     m, be = _module(mid), _need_backend()
     if name not in m.helpers:
         raise HTTPException(404, f"{m.name} has no helper called {name}.")
+    _demo_data(m)
     try:
         return _function(m.helpers[name])(be, **b)
     except (FileNotFoundError, ValueError) as e:
@@ -353,6 +367,7 @@ def run_create(b: dict = Body(...)):
     if "local" in m.kind and not isinstance(be, LocalBackend):
         raise HTTPException(400, f"{m.name} runs on this computer. Choose 'This computer' (or the demo cluster) on the Connect page to use it.")
     res = {**(b.get("resources") or {}), "partition": (b.get("resources") or {}).get("partition") or S.conn.get("partition", "")}
+    _demo_data(m)
     try:
         S.run = runs.create(be, p, m, b.get("values") or {}, res, demo=S.demo,
                             site={k: S.conn.get(k, "") for k in ("job_prefix", "pipelines_dir")})

@@ -58,7 +58,10 @@ def test_splitseq_end_to_end(client, tmp_path):
     c = client
     ok(c.post("/api/connect", json={"mode": "demo"}))
     data = f"{tmp_path}/demo_cluster/data/{MID}"
-    assert os.path.exists(f"{data}/.demo_truth/info.json")      # demo data built on first connect
+    # Intent: connecting stays quick; a module's demo data is built the first time it is used (here, when asked for).
+    assert not os.path.exists(f"{data}/.demo_truth/info.json")
+    ok(c.get(f"/api/modules/{MID}/example"))
+    assert os.path.exists(f"{data}/.demo_truth/info.json")
     ok(c.post("/api/project/create", json={"name": "split"}))
     assert ok(c.get(f"/api/modules/{MID}/check"))["missing"] == []
 

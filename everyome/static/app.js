@@ -751,6 +751,7 @@ VIEWS.settings = async el => {
       ${[["partition", "Partition", "Leave empty for the default queue."], ["cpus", "CPUs per job", ""], ["mem", "Memory per job", "e.g. 4G"], ["time", "Time limit per job", "hours:minutes:seconds"]]
         .map(([k, l, h]) => `<label class="field"><span>${l}</span><input type="text" class="mono" name="res_${k}" value="${esc(res[k] ?? "")}">${h ? `<small>${h}</small>` : ""}</label>`).join("")}</div>` : ""}</div>
     <div class="row" style="margin-top:18px"><button class="btn primary" id="save">${run ? "Start a new run with these settings →" : "Create the run →"}</button><button class="btn" id="reset">Restore defaults</button></div>`;
+  if (s.demo && !run) api(`/api/modules/${encodeURIComponent(m.id)}/example`).catch(() => {});
   // Intent: say early if the cluster's Python lacks what this analysis needs, rather than at the session.
   if (m.requires?.length) api(`/api/modules/${encodeURIComponent(m.id)}/check`).then(c => { if (c.missing.length) $("#needs", el).innerHTML =
     `<div class="notice warn">The Python on <b>${esc(s.label)}</b> is missing ${c.missing.map(x => `<code>${esc(x)}</code>`).join(", ")}, which this analysis needs. Ask IT, or install them in that environment, before the live session.</div>`; }).catch(() => {});
