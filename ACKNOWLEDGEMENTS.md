@@ -77,6 +77,9 @@ hers.
 
 ### Single cell and spatial
 
+- Zhang K. et al. (2024). SnapATAC2. *Nature Methods* 21:217–227. https://doi.org/10.1038/s41592-023-02139-9
+- Zhang H. et al. (2021). Chromap. *Nature Communications* 12:6566. https://doi.org/10.1038/s41467-021-26865-w
+- Buenrostro J.D. et al. (2015). Single-cell chromatin accessibility. *Nature* 523:486–490. https://doi.org/10.1038/nature14590
 - Wolf F.A., Angerer P., Theis F.J. (2018). Scanpy. *Genome Biology* 19:15. https://doi.org/10.1186/s13059-017-1382-0
 - Virshup I. et al. (2024). anndata: access and store annotated data matrices. *Journal of Open Source Software*
   9:4371. https://doi.org/10.21105/joss.04371

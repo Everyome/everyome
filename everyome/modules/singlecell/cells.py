@@ -64,6 +64,7 @@ class CellsEngine(BaseEngine):
     BEFORE_QC = "loaded"      # checkpoint the first step writes
     CHECKPOINTS = ("clustered", "filtered", "loaded")
     STATUS_KEYS = ("qc", "cluster_params")
+    QC_LOW = (20, 10)         # lowest edge of the two QC histograms (counts, features per cell)
 
     def __init__(self, run_dir: str):
         super().__init__(run_dir)
@@ -111,27 +112,31 @@ class CellsEngine(BaseEngine):
     def qc_data(self):
         a = self._before_qc()
         umis, genes, mito = self._metrics(a)
-        edges = np.linspace(np.log10(20), np.log10(max(umis.max(), 100) * 1.1), 61)
-        gedges = np.linspace(np.log10(10), np.log10(max(genes.max(), 50) * 1.1), 61)
+        lo_u, lo_g = self.QC_LOW
+        edges = np.linspace(np.log10(lo_u), np.log10(max(umis.max(), lo_u * 5) * 1.1), 61)
+        gedges = np.linspace(np.log10(lo_g), np.log10(max(genes.max(), lo_g * 5) * 1.1), 61)
         medges = np.linspace(0, 100, 51)
         out = {"umi_edges": (10 ** edges).round(1).tolist(), "gene_edges": (10 ** gedges).round(1).tolist(), "groups": {},
                "mito_edges": medges.tolist() if mito is not None else None}
         grp = a.obs[self.GROUP].astype("category")
         for g in grp.cat.categories:
             m = (grp == g).values
-            out["groups"][str(g)] = {"umi": np.histogram(np.log10(np.maximum(umis[m], 20)), edges)[0].tolist(),
-                                     "gene": np.histogram(np.log10(np.maximum(genes[m], 10)), gedges)[0].tolist(),
+            out["groups"][str(g)] = {"umi": np.histogram(np.log10(np.maximum(umis[m], lo_u)), edges)[0].tolist(),
+                                     "gene": np.histogram(np.log10(np.maximum(genes[m], lo_g)), gedges)[0].tolist(),
                                      **({"mito": np.histogram(mito[m], medges)[0].tolist()} if mito is not None else {})}
         # Scatter sample for the genes-vs-UMIs plot.
         idx = np.random.default_rng(0).choice(a.n_obs, min(6000, a.n_obs), replace=False)
         out["scatter"] = {"umi": umis[idx].astype(int).tolist(), "gene": genes[idx].astype(int).tolist(),
                           "group": grp.values[idx].astype(str).tolist()}
-        default = {"min_counts": 50, "max_counts": int(np.quantile(umis, .99)) + 1, "min_genes": 50, "max_genes": int(np.quantile(genes, .99)) + 1}
+        default = self._qc_defaults(umis, genes)
         if mito is not None:
             default["max_mito"] = 20.0
             out["scatter"]["mito"] = np.round(mito[idx], 2).tolist()
         out["thresholds"] = {**default, **self.state.get("qc", {})}
         return out
+
+    def _qc_defaults(self, umis, genes):
+        return {"min_counts": 50, "max_counts": int(np.quantile(umis, .99)) + 1, "min_genes": 50, "max_genes": int(np.quantile(genes, .99)) + 1}
 
     def _keep(self, a, t):
         umis, genes, mito = self._metrics(a)

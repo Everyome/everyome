@@ -326,6 +326,16 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Single cell suite: scATAC-seq (2026-11-04)
+
+No released nf-core pipeline exists for scATAC (checked 2026-11-04), so the cluster part is one staged step: chromap
+0.3.2 (MIT, BioContainers image pinned by digest) with its ATAC preset writes fragments per sample; samples can give
+fragments instead (Cell Ranger ATAC output; Cell Ranger itself is not bundled: 10x EULA). The session builds on
+CellsEngine: SnapATAC2 reads fragments (TSS enrichment, fragment sizes), keeps a 500-bp tile matrix for clustering
+(spectral embedding, optional Harmony, Leiden, UMAP) and a gene activity matrix as X, so the shared markers, naming,
+comparison and export views work unchanged. cells_ui.js gained `words` for the counted and measured quantities.
+Not in this version: per-cluster peaks (MACS3) and motif enrichment.
+
 ### RNA suite: RNA abundance (2026-11-04)
 
 Expression across samples without a two-group test (Helen, 2026-11-04). Starts from an nf-core/rnaseq results folder

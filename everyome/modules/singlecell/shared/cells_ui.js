@@ -11,6 +11,7 @@
   // order: the session's steps, first to last, as the engine names them (state.step).
   // words: what one observation and one group are called (spatial modules say spot and region).
   const CELL = { unit: "cell", units: "cells", Units: "Cells", type: "cell type", types: "cell types", Type: "Cell type",
+    count: "UMIs", feature: "Genes", featureLow: "genes", hvg: "Highly variable genes", pcs: "Principal components",
     qc: "Remove near-empty barcodes and likely doublets. Move the thresholds and watch how many cells each sample keeps.",
     qcNote: "${W.qcNote}" };
   E.cells = ({ order, words = {} }) => {
@@ -26,27 +27,27 @@
     el.innerHTML = lede(W.qc) + `<div class="empty" id="loading">Loading QC data…</div>`;
     const d = await E.call("qc_data"), t = { ...d.thresholds }, c = COL();
     $("#loading", el).remove();
-    el.insertAdjacentHTML("beforeend", `<div class="grid g-side"><div><div class="card"><div class="label">UMIs per ${W.unit}</div><div id="h1"></div></div>
-        <div class="card" style="margin-top:18px"><div class="label">Genes per ${W.unit}</div><div id="h2"></div></div>
+    el.insertAdjacentHTML("beforeend", `<div class="grid g-side"><div><div class="card"><div class="label">${W.count} per ${W.unit}</div><div id="h1"></div></div>
+        <div class="card" style="margin-top:18px"><div class="label">${W.feature} per ${W.unit}</div><div id="h2"></div></div>
         ${d.mito_edges ? `<div class="card" style="margin-top:18px"><div class="label">Mitochondrial share of counts (%)</div><div id="h3"></div>${guide("mito")}</div>` : ""}
-        <div class="card" style="margin-top:18px"><div class="label">Genes against UMIs (sample of ${W.units})</div><div id="sc"></div>${guide("filter_cells", { open: true })}</div></div>
+        <div class="card" style="margin-top:18px"><div class="label">${W.feature} against ${W.count} (sample of ${W.units})</div><div id="sc"></div>${guide("filter_cells", { open: true })}</div></div>
       <div><div class="card"><div class="label">Thresholds</div>
-        ${[["min_counts", "Minimum UMIs"], ["max_counts", "Maximum UMIs"], ["min_genes", "Minimum genes"], ["max_genes", "Maximum genes"], ...(d.mito_edges ? [["max_mito", "Maximum mitochondrial %"]] : [])].map(([k, l]) =>
+        ${[["min_counts", `Minimum ${W.count}`], ["max_counts", `Maximum ${W.count}`], ["min_genes", `Minimum ${W.featureLow}`], ["max_genes", `Maximum ${W.featureLow}`], ...(d.mito_edges ? [["max_mito", "Maximum mitochondrial %"]] : [])].map(([k, l]) =>
           `<label class="field"><span>${l}</span><input type="number" min="0" name="${k}" value="${t[k]}"></label>`).join("")}
         <p class="small muted">${W.qcNote}${d.mito_edges ? " A high mitochondrial share marks damaged or dying cells." : ""}</p>
         <div id="kept"></div><div class="row" style="margin-top:12px"><button class="btn primary" id="apply">Apply filter</button></div><div id="qprog"></div></div></div></div>`);
     const draw = () => {
-      $("#h1", el).innerHTML = logHist(d.umi_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.umi])), { lo: t.min_counts, hi: t.max_counts, xlab: `UMIs per ${W.unit}` });
-      $("#h2", el).innerHTML = logHist(d.gene_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.gene])), { lo: t.min_genes, hi: t.max_genes, xlab: `Genes per ${W.unit}` });
+      $("#h1", el).innerHTML = logHist(d.umi_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.umi])), { lo: t.min_counts, hi: t.max_counts, xlab: `${W.count} per ${W.unit}` });
+      $("#h2", el).innerHTML = logHist(d.gene_edges, Object.fromEntries(Object.entries(d.groups).map(([k, v]) => [k, v.gene])), { lo: t.min_genes, hi: t.max_genes, xlab: `${W.feature} per ${W.unit}` });
       // Intent: a linear histogram per group, summed; cells right of the line are removed.
       if (d.mito_edges) $("#h3", el).innerHTML = H.histChart(d.mito_edges, d.mito_edges.slice(1).map((_, i) => Object.values(d.groups).reduce((n, g) => n + g.mito[i], 0)), { lo: 0, hi: t.max_mito, xlab: "Mitochondrial share (%)", digits: 0 });
       const s = d.scatter, w = 540, h = 300, L = 50, B = 30, lx = v => Math.log10(Math.max(v, 1));
       const xm = Math.max(...s.umi.map(lx)), ym = Math.max(...s.gene.map(lx)), X = v => L + lx(v) / xm * (w - L - 10), Y = v => h - B - lx(v) / ym * (h - B - 10);
       const keep = i => s.umi[i] >= t.min_counts && s.umi[i] < t.max_counts && s.gene[i] >= t.min_genes && s.gene[i] < t.max_genes && (!s.mito || s.mito[i] <= t.max_mito);
-      $("#sc", el).innerHTML = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Genes against UMIs">${s.umi.map((u, i) =>
+      $("#sc", el).innerHTML = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${W.feature} against ${W.count}">${s.umi.map((u, i) =>
         `<circle cx="${X(u).toFixed(1)}" cy="${Y(s.gene[i]).toFixed(1)}" r="1.6" fill="${keep(i) ? c.golddk : c.ox}" opacity="${keep(i) ? .45 : .9}"/>`).join("")}
         <line x1="${L}" x2="${w}" y1="${h - B}" y2="${h - B}" stroke="${c.muted}"/><line x1="${L}" x2="${L}" y1="0" y2="${h - B}" stroke="${c.muted}"/>
-        <text x="${w / 2}" y="${h - 6}" text-anchor="middle" class="ax">UMIs per ${W.unit} (log)</text><text x="14" y="${h / 2}" transform="rotate(-90 14 ${h / 2})" text-anchor="middle" class="ax">Genes per ${W.unit} (log)</text></svg>
+        <text x="${w / 2}" y="${h - 6}" text-anchor="middle" class="ax">${W.count} per ${W.unit} (log)</text><text x="14" y="${h / 2}" transform="rotate(-90 14 ${h / 2})" text-anchor="middle" class="ax">${W.feature} per ${W.unit} (log)</text></svg>
         <div class="legend"><span><i style="background:${c.golddk}"></i>kept</span><span><i style="background:${c.ox}"></i>removed</span></div>`;
     };
     let tm;
@@ -72,7 +73,7 @@
           <div class="row"><label class="small">Colour by <select id="colby" style="width:auto"></select></label><input type="text" id="gq" placeholder="Gene or name…" style="width:180px" list="gl" aria-label="Colour by gene"><datalist id="gl"></datalist></div></div>
           <div class="plotwrap"><canvas class="umap" id="cv"></canvas><div class="tip" id="tip"></div></div><div id="leg"></div>${guide("clusters")}</div></div>
         <div><div class="card"><div class="label">Settings</div>
-          ${[["n_top_genes", "Highly variable genes", 200, 5000, 100], ["n_pcs", "Principal components", 5, 50, 1], ["n_neighbors", "Neighbours", 5, 60, 1], ["resolution", "Resolution", 0.1, 4, 0.1], ["min_dist", "UMAP spacing", 0.05, 0.9, 0.05]]
+          ${[["n_top_genes", W.hvg, 200, 5000, 100], ["n_pcs", W.pcs, 5, 50, 1], ["n_neighbors", "Neighbours", 5, 60, 1], ["resolution", "Resolution", 0.1, 4, 0.1], ["min_dist", "UMAP spacing", 0.05, 0.9, 0.05]]
             .map(([k, l, a, b, s]) => `<label class="field"><span>${l} <output class="mono" style="float:right" data-o="${k}">${P[k]}</output></span><input type="range" name="${k}" min="${a}" max="${b}" step="${s}" value="${P[k]}"></label>`).join("")}
           <label class="field"><span>Correct batches by</span><select name="batch_key">${cols.map(c => `<option ${c === P.batch_key ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
           <label class="row small"><input type="checkbox" name="harmony" ${P.harmony ? "checked" : ""}> Use Harmony batch correction</label>
