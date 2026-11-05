@@ -62,6 +62,8 @@ Modules so far:
   compare methods, and export whole or trimmed models.
 - **Interaction prediction**, protein: nf-core/proteinfold multimer models; every
   interface scored (ipTM, pDockQ, interface confidence) with a plain reading.
+- **Function annotation (InterProScan)**, protein: domains, families and GO terms
+  for any set of proteins, each protein's domain architecture, and tables.
 - **Alignment and tree building**, phylogenetics: MAFFT, trimAl and IQ-TREE in
   containers pinned by digest; check the alignment, then root, collapse and colour
   the tree by your own table, and export a figure.

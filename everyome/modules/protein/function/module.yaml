@@ -1,0 +1,86 @@
+# Protein function annotation: InterProScan (pinned container) finds known domains and families in every protein on the
+# cluster; a live session shows each protein's domain architecture, the InterPro entries and GO terms, and exports tables.
+spec: 1
+id: protein.function
+name: Function annotation (InterProScan)
+suite: protein
+version: 0.1.0
+summary: >
+  Finds what is known about your proteins: InterProScan searches each one for
+  domains, families and sites from InterPro's member databases (Pfam, PANTHER,
+  CDD, SMART and others) and adds the GO terms they imply. Then see each
+  protein's domains along its sequence, which families are most common, which GO
+  terms appear, search, and export tables. Works on any set of proteins, for
+  example those predicted by Genome annotation.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Jones P. et al. (2014). InterProScan 5: genome-scale protein function classification. Bioinformatics 30:1236–1240."
+    url: https://doi.org/10.1093/bioinformatics/btu031
+  - text: "Blum M. et al. (2025). InterPro: the protein sequence classification resource in 2025. Nucleic Acids Research 53:D444–D456."
+    url: https://doi.org/10.1093/nar/gkae1082
+  - text: "The Gene Ontology Consortium (2023). The Gene Ontology knowledgebase in 2023. Genetics 224:iyad031."
+    url: https://doi.org/10.1093/genetics/iyad031
+kind: [batch, interactive]
+requires: []
+tools:
+  - {name: apptainer, version: "apptainer --version || singularity --version"}
+methods: everyome.modules.protein.function.methods:methods
+
+inputs:
+  - id: proteins
+    label: Proteins (FASTA)
+    type: file
+    required: true
+    help: "Protein sequences, one or many (a whole proteome is fine). Stop codons (*) are removed for you."
+    demo: proteins.faa
+
+params:
+  - {id: data_dir, label: InterProScan data folder, type: folder, group: InterProScan,
+     help: "The folder holding InterProScan's data (a 6.6 GB download, larger once unpacked; ask IT for the shared copy). Not needed on the demo cluster."}
+  - {id: applications, label: Databases to search, type: text, default: "", group: InterProScan,
+     help: "Leave empty for all the data folder has, or list some, for example Pfam, PANTHER, CDD, SMART."}
+  - {id: goterms, label: Add GO terms, type: bool, default: true, group: InterProScan}
+  - {id: pathways, label: Add pathways, type: bool, default: true, group: InterProScan, help: "MetaCyc and Reactome pathways linked to InterPro entries."}
+  - {id: lookup, label: Use EBI's precalculated matches, type: bool, default: false, group: InterProScan, advanced: true,
+     help: "Faster for well-known proteins, but sends each sequence's checksum to EBI. Off keeps everything on your cluster."}
+  - {id: interproscan_extra, label: Extra InterProScan options, type: text, default: "", group: InterProScan, advanced: true}
+
+batch:
+  engine: staged
+  resources: {cpus: 16, mem: 32G, time: "48:00:00", session: {cpus: 1, mem: 4G, time: "04:00:00"}}
+  report: everyome.modules.protein.function.helpers:report
+  containers:
+    interproscan: docker.io/interpro/interproscan:5.78-109.0@sha256:dc58b7c147fbbf00c2dd4f5ced42121fc1e8841fcbc7cc2c484380248ff76d11
+  stages:
+    - {id: "01", name: annotate, title: "Find domains and families (InterProScan)", run: "{python} -m everyome.modules.protein.function.stage annotate"}
+
+interactive:
+  engine: everyome.modules.protein.function.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: overview, title: What was found}
+    - {id: protein, title: Look at a protein}
+    - {id: go, title: GO terms}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    run_report: docs/guides/run_report.md
+    overview: docs/guides/overview.md
+    architecture: docs/guides/architecture.md
+    go: docs/guides/go.md
+  playground:
+    scripts: [docs/playground/domains_playground.js]
+    object: DomainsPlayground
+    lede: >
+      Why one protein gets several matches for the same domain, from different databases, and how InterPro groups
+      them into one entry.
+    intro:
+      - "A protein with two domains. Turn member databases on and off and see their signatures, and the InterPro entries that bring them together."
+    caveats:
+      - "The signatures and positions here are illustrative; each database draws its domain boundaries a little differently in real results too."
+
+demo:
+  build: everyome.modules.protein.function.demo_data:build

@@ -121,6 +121,9 @@ hers.
 - Mirdita M. et al. (2022). ColabFold. *Nature Methods* 19:679–682. https://doi.org/10.1038/s41592-022-01488-1
 - Evans R. et al. (2022). AlphaFold-Multimer. *bioRxiv*. https://doi.org/10.1101/2021.10.04.463034
 - Bryant P., Pozzati G., Elofsson A. (2022). pDockQ. *Nature Communications* 13:1265. https://doi.org/10.1038/s41467-022-28865-w
+- Jones P. et al. (2014). InterProScan 5. *Bioinformatics* 30:1236–1240. https://doi.org/10.1093/bioinformatics/btu031
+- Blum M. et al. (2025). InterPro in 2025. *Nucleic Acids Research* 53:D444–D456. https://doi.org/10.1093/nar/gkae1082
+- The Gene Ontology Consortium (2023). *Genetics* 224:iyad031. https://doi.org/10.1093/genetics/iyad031
 - Kabsch W. (1976). Kabsch superposition. *Acta Crystallographica* A32:922–923. https://doi.org/10.1107/S0567739476001873
 
 ### Molecular biology

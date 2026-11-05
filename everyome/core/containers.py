@@ -79,8 +79,15 @@ def ensure(ref: str, cache: Path) -> Path:
 def command(ref: str, cache: Path, args: list[str], binds: list[str] = ()) -> list[str]:
     """argv that runs args inside the pinned image, with the folders the tool must see bound in."""
     sif = ensure(ref, cache)
-    # Intent: bind only folders that exist; Apptainer already binds the home and working folders.
-    b = [x for d in dict.fromkeys(str(Path(p).resolve()) for p in binds) if Path(d).is_dir() for x in ("--bind", d)]
+    # Intent: bind only folders that exist; Apptainer already binds the home and working folders. "src:dst" binds a
+    # folder at a fixed place inside the image (for tools that expect their data there).
+    out = []
+    for p in binds:
+        src, _, dst = str(p).partition(":")
+        src = str(Path(src).resolve())
+        if Path(src).is_dir():
+            out.append(f"{src}:{dst}" if dst else src)
+    b = [x for d in dict.fromkeys(out) for x in ("--bind", d)]
     return [runner(), "exec", *b, str(sif), *args]
 
 

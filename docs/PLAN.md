@@ -326,6 +326,14 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Protein suite: function annotation (2026-11-04)
+
+InterProScan 5.78-109.0 (Apache-2.0) as one staged step in its official image, pinned by digest; the data folder is
+bound where the image expects it (`containers.command` now takes `src:dst` binds). InterProScan 6 needs Nextflow
+25.10.4 and is a later option; eggNOG-mapper (AGPL) and DeepFRI were not chosen. The EBI precalculated lookup is off by
+default (it sends sequence checksums off site). Session: overview, per-protein architecture with InterPro grouping,
+GO terms (names from the JSON), search, export. Not in this version: enrichment tests, KEGG/eggNOG orthology.
+
 ### Protein suite: interaction prediction (2026-11-04)
 
 Same pinned nf-core/proteinfold 2.0.0 as Structure prediction (schema shared from ../structure), with multimer

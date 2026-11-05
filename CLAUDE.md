@@ -36,6 +36,7 @@ current when decisions change.
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
 | `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |
+| `everyome/modules/protein/function/` | Function annotation: staged InterProScan 5.78-109.0 (official image pinned by digest; data folder bound at /opt/interproscan/data; EBI lookup off by default) → TSV/JSON; session for overview, domain architecture, GO terms, export |
 | `everyome/modules/protein/interactions/` | Interaction prediction: proteinfold with multimer defaults (schema from ../structure); structure Engine subclass + `interface.py` (Cα contacts, pDockQ, verdict); reuses the structure views via `E.proteinViews` |
 | `everyome/modules/spatial/hires/` | High-resolution spatial: Visium HD bins (via the Visium reader), Stereo-seq GEM summed into bins, Curio .h5ad; Visium engine subclass with a bin-size choice and thinned drawing over the image |
 | `everyome/modules/spatial/imaging/` | Imaging spatial (Xenium, MERSCOPE, CosMx readers in `readers.py`); Visium engine subclass without an image, thinned drawing; shared spatial views in `spatial/shared/spatial_ui.js` (tissue, spatial genes, neighbourhood enrichment, also used by Visium) |
