@@ -75,6 +75,7 @@
         <div><div class="card"><div class="label">Settings</div>
           ${[["n_top_genes", W.hvg, 200, 5000, 100], ["n_pcs", W.pcs, 5, 50, 1], ["n_neighbors", "Neighbours", 5, 60, 1], ["resolution", "Resolution", 0.1, 4, 0.1], ["min_dist", "UMAP spacing", 0.05, 0.9, 0.05]]
             .map(([k, l, a, b, s]) => `<label class="field"><span>${l} <output class="mono" style="float:right" data-o="${k}">${P[k]}</output></span><input type="range" name="${k}" min="${a}" max="${b}" step="${s}" value="${P[k]}"></label>`).join("")}
+          ${W.modes ? `<label class="field"><span>${W.modesLabel || "Cluster on"}</span><select name="mode">${W.modes.map(([v, l]) => `<option value="${v}" ${v === (P.mode || W.modes[0][0]) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>` : ""}
           <label class="field"><span>Correct batches by</span><select name="batch_key">${cols.map(c => `<option ${c === P.batch_key ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
           <label class="row small"><input type="checkbox" name="harmony" ${P.harmony ? "checked" : ""}> Use Harmony batch correction</label>
           <div class="row" style="margin-top:14px"><button class="btn primary" id="run">${reached("clustered") ? "Run again" : "Run"}</button></div><div id="cprog"></div></div>
@@ -105,6 +106,7 @@
       if (g.some(x => x.gene === q)) colour(q); }, 250); });
     $("#run", el).onclick = e => guarded(e.currentTarget, async () => {
       const b = {}; $$("input[type=range]", el).forEach(i => b[i.name] = Number(i.value)); b.batch_key = $("[name=batch_key]", el).value; b.harmony = $("[name=harmony]", el).checked;
+      if (W.modes) b.mode = $("[name=mode]", el).value;
       await E.call("cluster", b); await followTask($("#cprog", el)); await refresh(); S.emb = null; show();
     });
     show();

@@ -326,6 +326,14 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Single cell suite: multiome (2026-11-04)
+
+Starts from Cell Ranger ARC's `outs` (not bundled: 10x EULA), like Visium starts from Space Ranger. `kind:
+[interactive]`. CellsEngine on the RNA (shared filtering, markers, naming, export); clustering adds a choice (shared
+cluster view, `words.modes`): RNA (PCA), ATAC (TF-IDF + LSI, first component dropped) or joint (muon WNN, per-cell
+modality weights kept as `rna_weight`). Demo built so RNA alone separates two types cleanly and joint all four; the
+flow test checks both. Not in this version: peak-to-gene links, motif analysis.
+
 ### Single cell suite: scATAC-seq (2026-11-04)
 
 No released nf-core pipeline exists for scATAC (checked 2026-11-04), so the cluster part is one staged step: chromap

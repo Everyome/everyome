@@ -77,6 +77,9 @@ hers.
 
 ### Single cell and spatial
 
+- Bredikhin D., Kats I., Stegle O. (2022). MUON. *Genome Biology* 23:42. https://doi.org/10.1186/s13059-021-02577-8
+- Hao Y. et al. (2021). Integrated analysis of multimodal single-cell data (weighted nearest neighbours). *Cell* 184:3573–3587. https://doi.org/10.1016/j.cell.2021.04.048
+- Cusanovich D.A. et al. (2015). TF-IDF and LSI for single-cell ATAC. *Science* 348:910–914. https://doi.org/10.1126/science.aab1601
 - Zhang K. et al. (2024). SnapATAC2. *Nature Methods* 21:217–227. https://doi.org/10.1038/s41592-023-02139-9
 - Zhang H. et al. (2021). Chromap. *Nature Communications* 12:6566. https://doi.org/10.1038/s41467-021-26865-w
 - Buenrostro J.D. et al. (2015). Single-cell chromatin accessibility. *Nature* 523:486–490. https://doi.org/10.1038/nature14590

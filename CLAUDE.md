@@ -36,6 +36,7 @@ current when decisions change.
 | `everyome/core/demo/` | Demo cluster setup and `fake_slurm.py` |
 | `everyome/modules/<suite>/<name>/` | A module: `module.yaml`, stage code, engine, `ui.js`, `docs/manual.md`, `demo/` |
 | `everyome/modules/molbio/primers/` | Primer design (a local module): Primer3 via primer3-py, Biopython for GenBank and restriction sites, synthetic demo plasmid |
+| `everyome/modules/singlecell/multiome/` | Multiome: reads Cell Ranger ARC outs (genes + peaks); CellsEngine on the RNA with clustering on RNA, ATAC (TF-IDF/LSI) or both (muon WNN); `words.modes` adds the choice to the shared cluster view |
 | `everyome/modules/singlecell/scatac/` | Single-cell ATAC: staged chromap (pinned container) reads → fragments, then a SnapATAC2 session (tiles for clustering, gene activity for the shared CellsEngine markers/naming/export) |
 | `everyome/modules/rna/abundance/` | RNA abundance: reads an nf-core/rnaseq results folder (TPM and counts); live session for sample checks, gene look-up and k-means expression patterns; no cluster stages |
 | `everyome/modules/rna/bulk_de/` | Bulk RNA-seq: nf-core/rnaseq 3.27.0 (pinned; schemas in `pipeline/`) for reads to counts, then a PyDESeq2 live session; `demo_pipeline.py` stands in for Nextflow on the demo cluster |

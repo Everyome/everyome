@@ -1,0 +1,98 @@
+# Multiome: reads Cell Ranger ARC's joint matrices (RNA and open chromatin from the same cells), then a live session
+# filters cells, clusters them on RNA, ATAC or both together (weighted nearest neighbours) and names them.
+spec: 1
+id: singlecell.multiome
+name: Multiome (RNA and ATAC together)
+suite: singlecell
+version: 0.1.0
+summary: >
+  Explores 10x Multiome experiments, where each cell has both its RNA and its open
+  chromatin measured, from Cell Ranger ARC's output: filter cells, cluster them on
+  RNA, ATAC or both together (each cell weighting the measurement that tells it
+  apart best), find marker genes, name cell types and compare conditions.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Bredikhin D., Kats I., Stegle O. (2022). MUON: multimodal omics analysis framework. Genome Biology 23:42."
+    url: https://doi.org/10.1186/s13059-021-02577-8
+  - text: "Hao Y. et al. (2021). Integrated analysis of multimodal single-cell data. Cell 184:3573–3587 (weighted nearest neighbours)."
+    url: https://doi.org/10.1016/j.cell.2021.04.048
+  - text: "Cusanovich D.A. et al. (2015). Multiplex single-cell profiling of chromatin accessibility by combinatorial cellular indexing. Science 348:910–914 (TF-IDF and LSI)."
+    url: https://doi.org/10.1126/science.aab1601
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+  - text: "Korsunsky I. et al. (2019). Fast, sensitive and accurate integration of single-cell data with Harmony. Nature Methods 16:1289–1296."
+    url: https://doi.org/10.1038/s41592-019-0619-0
+  - text: "Traag V.A., Waltman L., van Eck N.J. (2019). From Louvain to Leiden: guaranteeing well-connected communities. Scientific Reports 9:5233."
+    url: https://doi.org/10.1038/s41598-019-41695-z
+kind: [interactive]
+requires: [muon, scanpy, anndata, harmonypy, leidenalg, igraph, sklearn, pandas, numpy, scipy, matplotlib, openpyxl]
+methods: everyome.modules.singlecell.multiome.methods:methods
+
+inputs:
+  - id: data_dir
+    label: Folder with Cell Ranger ARC results
+    type: folder
+    help: "Used only to fill in the table below: each sample's ARC output folder ('outs') inside it is found."
+    demo: "."
+  - id: samples
+    label: Samples
+    type: table
+    required: true
+    help: >
+      One row per sample: its name, Cell Ranger ARC's 'outs' folder for it, its condition (what you will compare)
+      and, if samples were prepared on different days, its batch.
+    columns:
+      - {id: sample, label: Sample, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: outs, label: ARC 'outs' folder, wide: true}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: batch, label: Batch, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: data_dir, label: Find samples in the folder}
+
+params:
+  - id: mito_genes
+    label: Mitochondrial genes
+    type: text
+    default: "^(MT-|mt-)"
+    help: "Gene names that count as mitochondrial (a regular expression). MT- for human, mt- for mouse; leave empty if your genome has none named this way."
+
+batch:
+  resources: {session: {cpus: 2, mem: 16G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.singlecell.multiome.helpers:scan
+
+interactive:
+  engine: everyome.modules.singlecell.multiome.engine:Engine
+  ui: [../shared/cells_ui.js, ui.js]
+  steps:
+    - {id: load, title: Read the matrices}
+    - {id: qc, title: Filter cells}
+    - {id: cluster, title: Integrate and cluster}
+    - {id: markers, title: Explore markers}
+    - {id: annotate, title: Name clusters}
+    - {id: compare, title: Compare and export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    matrices: docs/guides/matrices.md
+    filter_cells: ../shared/guides/filter_cells.md
+    mito: ../shared/guides/mito.md
+    clusters: docs/guides/clusters.md
+    markers: ../scrna/docs/guides/markers.md
+    dotplot: ../shared/guides/dotplot.md
+    composition: ../shared/guides/composition.md
+  playground:
+    scripts: [docs/playground/multiome_playground.js]
+    object: MultiomePlayground
+    lede: >
+      Why measuring RNA and open chromatin in the same cells can tell apart cell types that either alone cannot,
+      on four made-up cell types you can move.
+    intro:
+      - "Four cell types, each a cloud of cells. Left, as their RNA places them; middle, as their open chromatin does; right, both together. Move the types apart in one measurement or the other and watch which become separable."
+    caveats:
+      - "Here 'together' simply joins the two maps. Weighted nearest neighbours goes further and lets each cell lean on whichever measurement separates it best."
+
+demo:
+  build: everyome.modules.singlecell.multiome.demo_data:build
