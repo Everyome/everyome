@@ -50,6 +50,9 @@ Modules so far:
 - **Spatial transcriptomics (10x Visium)**, spatial: from Space Ranger's output,
   see every spot on the tissue image, find tissue regions, their markers and
   spatially variable genes, and compare regions between conditions.
+- **Imaging spatial (Xenium, MERSCOPE, CosMx)**, spatial: from the instrument's
+  output, cell types in place on the tissue, spatially variable genes and which
+  cell types are neighbours.
 - **Structure prediction**, protein: nf-core/proteinfold (AlphaFold2, ESMFold,
   ColabFold, AlphaFold 3, Boltz and more) on the cluster's GPUs; see each
   structure coloured by confidence with its predicted aligned error and domains,

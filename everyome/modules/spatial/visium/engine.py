@@ -77,9 +77,10 @@ def neighbours(xy: np.ndarray, k: int = 6) -> spm.csr_matrix:
 
 
 class Engine(CellsEngine):
-    API = ("samples_info", "load", "spots_per_sample", "tissue", "spatial_genes") + CellsEngine.SHARED_API
-    REPLAY = ("load", "spatial_genes") + CellsEngine.SHARED_REPLAY
-    STATUS_KEYS = ("loaded_from", "qc", "cluster_params", "spatial_genes")
+    API = ("samples_info", "load", "spots_per_sample", "tissue", "spatial_genes", "neighbourhood") + CellsEngine.SHARED_API
+    REPLAY = ("load", "spatial_genes", "neighbourhood") + CellsEngine.SHARED_REPLAY
+    STATUS_KEYS = ("loaded_from", "qc", "cluster_params", "spatial_genes", "neighbourhood")
+    COUNT_LABELS = {"total_counts": "UMIs per spot", "n_genes": "Genes per spot"}
 
     def __init__(self, run_dir: str):
         super().__init__(run_dir)
@@ -163,7 +164,7 @@ class Engine(CellsEngine):
                 v = a.obs[col].values[m].astype(float)
             else:
                 v = np.asarray(a.X[m].sum(1)).ravel() if key == "total_counts" else np.asarray((a.X[m] > 0).sum(1)).ravel()
-            return {"kind": "num", "values": np.round(v, 1).tolist(), "max": float(v.max() or 1), "gene": {"total_counts": "UMIs per spot", "n_genes": "Genes per spot"}[key], "label": ""}
+            return {"kind": "num", "values": np.round(v, 1).tolist(), "max": float(v.max() or 1), "gene": self.COUNT_LABELS[key], "label": ""}
         if key == "annotation":
             names = self.state.get("annotations", {})
             vals = a.obs["cluster"].astype(str).map(lambda c: names.get(c, {}).get("name") or "Unannotated").values
@@ -215,6 +216,47 @@ class Engine(CellsEngine):
         self.state["spatial_genes"] = res
         self._record("found spatially variable genes", genes_tested=int(len(cand)), top=[r["gene"] for r in res[:10]],
                      method="Moran's I on each sample's six nearest spots")
+
+
+    # ---------------------------------------------------------------- neighbourhoods
+    def neighbourhood(self, by: str = "annotation", k: int = 10, permutations: int = 200):
+        return self._background(self._neighbourhood, by, int(k), int(permutations))
+
+    def _neighbourhood(self, by, k, permutations):
+        """How often each pair of types are neighbours, against labels shuffled within each section (z-scores)."""
+        a = self.adata
+        if "cluster" not in a.obs:
+            raise ValueError("Cluster first.")
+        names = self.state.get("annotations", {})
+        lab = a.obs["cluster"].astype(str)
+        if by == "annotation":
+            lab = lab.map(lambda c: names.get(c, {}).get("name") or f"cluster {c}")
+        groups = sorted(set(lab))
+        codes = pd.Categorical(lab, categories=groups).codes
+        samples = a.obs["sample"].astype(str).values
+        rng = np.random.default_rng(0)
+        pairs, perms = np.zeros((len(groups), len(groups))), np.zeros((permutations, len(groups), len(groups)))
+        for s in sorted(set(samples)):
+            m = np.where(samples == s)[0]
+            if len(m) <= k:
+                continue
+            from scipy.spatial import cKDTree
+            _, idx = cKDTree(a.obsm["spatial"][m]).query(a.obsm["spatial"][m], k=k + 1)
+            src, dst = np.repeat(np.arange(len(m)), k), idx[:, 1:].ravel()
+            c = codes[m]
+            np.add.at(pairs, (c[src], c[dst]), 1)
+            self._prog(10, f"Shuffling labels in {s}")
+            for p in range(permutations):
+                sh = rng.permutation(c)
+                np.add.at(perms[p], (sh[src], sh[dst]), 1)
+        sd = perms.std(0)
+        z = np.where(sd > 0, (pairs - perms.mean(0)) / np.where(sd > 0, sd, 1), 0.0)
+        # Intent: z-scores grow with the number of cells; the ratio to chance (log2) is the size of the effect.
+        ratio = np.log2((pairs + 1) / (perms.mean(0) + 1))
+        res = {"groups": groups, "z": np.round(z, 1).tolist(), "log2_ratio": np.round(ratio, 2).tolist(), "by": by, "k": k,
+               "permutations": permutations}
+        self.state["neighbourhood"] = res
+        self._record("compared neighbourhoods", by=by, k=k, permutations=permutations, groups=len(groups))
 
 
 def neighbours_dist(xy: np.ndarray) -> np.ndarray:

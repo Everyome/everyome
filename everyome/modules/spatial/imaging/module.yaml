@@ -1,0 +1,103 @@
+# Imaging-based spatial transcriptomics (10x Xenium, Vizgen MERSCOPE, Bruker CosMx): reads each section's cells and
+# positions from the instrument's output, then a live session filters, clusters and names cell types, shows them in
+# place on the tissue, finds spatially variable genes and which cell types sit next to which.
+spec: 1
+id: spatial.imaging
+name: Imaging spatial (Xenium, MERSCOPE, CosMx)
+suite: spatial
+version: 0.1.0
+summary: >
+  Explores single-cell spatial data from imaging platforms (10x Xenium, Vizgen
+  MERSCOPE, Bruker CosMx), straight from the instrument's output: filter cells,
+  cluster and name cell types, see every cell in place on the tissue, find genes
+  whose expression follows the tissue's layout, and see which cell types sit next
+  to which.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Janesick A. et al. (2023). High resolution mapping of the tumor microenvironment using integrated single-cell, spatial and in situ analysis (Xenium). Nature Communications 14:8353."
+    url: https://doi.org/10.1038/s41467-023-43458-x
+  - text: "Chen K.H. et al. (2015). Spatially resolved, highly multiplexed RNA profiling in single cells (MERFISH). Science 348:aaa6090."
+    url: https://doi.org/10.1126/science.aaa6090
+  - text: "He S. et al. (2022). High-plex imaging of RNA and proteins at subcellular resolution in fixed tissue by spatial molecular imaging (CosMx). Nature Biotechnology 40:1794–1806."
+    url: https://doi.org/10.1038/s41587-022-01483-z
+  - text: "Palla G. et al. (2022). Squidpy: a scalable framework for spatial omics analysis. Nature Methods 19:171–178."
+    url: https://doi.org/10.1038/s41592-021-01358-2
+  - text: "Moran P.A.P. (1950). Notes on continuous stochastic phenomena. Biometrika 37:17–23."
+    url: https://doi.org/10.1093/biomet/37.1-2.17
+  - text: "Wolf F.A., Angerer P., Theis F.J. (2018). SCANPY: large-scale single-cell gene expression data analysis. Genome Biology 19:15."
+    url: https://doi.org/10.1186/s13059-017-1382-0
+  - text: "Traag V.A., Waltman L., van Eck N.J. (2019). From Louvain to Leiden: guaranteeing well-connected communities. Scientific Reports 9:5233."
+    url: https://doi.org/10.1038/s41598-019-41695-z
+kind: [interactive]
+requires: [scanpy, anndata, harmonypy, leidenalg, igraph, pandas, numpy, scipy, matplotlib, openpyxl]
+methods: everyome.modules.spatial.imaging.methods:methods
+
+inputs:
+  - id: data_dir
+    label: Folder with the instrument's output
+    type: folder
+    help: "Used only to fill in the table below: each section's output folder inside it is found, and which instrument made it."
+    demo: "."
+  - id: samples
+    label: Sections
+    type: table
+    required: true
+    help: >
+      One row per section: its name, its output folder (Xenium 'outs', or the MERSCOPE or CosMx export folder), the
+      platform (xenium, merscope or cosmx; filled in for you), its condition and, if sections were run on different
+      days or slides, its batch.
+    columns:
+      - {id: sample, label: Section, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: outs, label: Output folder, wide: true}
+      - {id: platform, label: Platform, pattern: "xenium|merscope|cosmx", pattern_help: "should be xenium, merscope or cosmx"}
+      - {id: condition, label: Condition, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: batch, label: Batch, optional: true, pattern: "[A-Za-z0-9_.-]*", pattern_help: "should use letters, digits, _ . or - only"}
+    fill: {helper: scan, from: data_dir, label: Find sections in the folder}
+
+batch:
+  resources: {session: {cpus: 4, mem: 32G, time: "08:00:00"}}
+
+helpers:
+  scan: everyome.modules.spatial.imaging.helpers:scan
+
+interactive:
+  engine: everyome.modules.spatial.imaging.engine:Engine
+  ui: [../../singlecell/shared/cells_ui.js, ../shared/spatial_ui.js, ui.js]
+  steps:
+    - {id: load, title: Read the sections}
+    - {id: qc, title: Filter cells}
+    - {id: cluster, title: Integrate and cluster}
+    - {id: tissue, title: See it on the tissue}
+    - {id: markers, title: Explore markers}
+    - {id: annotate, title: Name cell types}
+    - {id: neighbourhood, title: Which cell types are neighbours}
+    - {id: compare, title: Compare and export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    load: docs/guides/load.md
+    cells_per_sample: docs/guides/cells_per_section.md
+    filter_cells: docs/guides/filter_cells.md
+    mito: ../../singlecell/shared/guides/mito.md
+    clusters: ../../singlecell/shared/guides/clusters.md
+    tissue: docs/guides/tissue.md
+    spatial_genes: ../visium/docs/guides/spatial_genes.md
+    neighbourhood: ../shared/guides/neighbourhood.md
+    markers: ../../singlecell/scrna/docs/guides/markers.md
+    dotplot: ../../singlecell/shared/guides/dotplot.md
+    composition: ../../singlecell/shared/guides/composition.md
+  playground:
+    scripts: [docs/playground/neighbour_playground.js]
+    object: NeighbourPlayground
+    lede: >
+      How neighbourhood enrichment tells a real arrangement of cell types from chance, on a small tissue where you
+      choose how strongly types cluster.
+    intro:
+      - "Two cell types on a grid. Make them form patches or mix at random, and see how often they are neighbours compared with shuffled labels."
+    caveats:
+      - "Cells sit on a square grid with four neighbours each; real cells are irregular and the module uses each cell's nearest neighbours."
+
+demo:
+  build: everyome.modules.spatial.imaging.demo_data:build

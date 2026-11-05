@@ -105,6 +105,9 @@ hers.
 - FastQC (Babraham Bioinformatics). https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 - Ståhl P.L. et al. (2016). Spatial transcriptomics. *Science* 353:78–82. https://doi.org/10.1126/science.aaf2403
 - Palla G. et al. (2022). Squidpy. *Nature Methods* 19:171–178. https://doi.org/10.1038/s41592-021-01358-2
+- Janesick A. et al. (2023). Xenium. *Nature Communications* 14:8353. https://doi.org/10.1038/s41467-023-43458-x
+- Chen K.H. et al. (2015). MERFISH. *Science* 348:aaa6090. https://doi.org/10.1126/science.aaa6090
+- He S. et al. (2022). CosMx spatial molecular imaging. *Nature Biotechnology* 40:1794–1806. https://doi.org/10.1038/s41587-022-01483-z
 - Moran P.A.P. (1950). Moran's I. *Biometrika* 37:17–23. https://doi.org/10.1093/biomet/37.1-2.17
 
 ### Protein

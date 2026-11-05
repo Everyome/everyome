@@ -326,6 +326,15 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Spatial suite: imaging spatial (2026-11-04)
+
+Xenium, MERSCOPE and CosMx straight from instrument output, read with small pandas/scanpy readers (no spatialdata
+dependency; control probes dropped). Subclass of the Visium engine; tissue view without an image, thinned to 40,000
+cells for drawing only. New for all spatial modules (Visium too): neighbourhood enrichment, labels shuffled within each
+section, z-scores plus log2 ratio to chance (the heatmap colours by the ratio; z-scores grow with cell numbers).
+Visium's tissue view moved to `spatial/shared/spatial_ui.js`. Not in this version: re-segmentation (nf-core/sopa needs
+Nextflow 25.10.4 and is a later option), transcript-level views, image overlays.
+
 ### Single cell suite: multiome (2026-11-04)
 
 Starts from Cell Ranger ARC's `outs` (not bundled: 10x EULA), like Visium starts from Space Ranger. `kind:

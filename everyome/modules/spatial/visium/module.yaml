@@ -64,7 +64,7 @@ helpers:
 
 interactive:
   engine: everyome.modules.spatial.visium.engine:Engine
-  ui: [../../singlecell/shared/cells_ui.js, ui.js]
+  ui: [../../singlecell/shared/cells_ui.js, ../shared/spatial_ui.js, ui.js]
   steps:
     - {id: load, title: Load the sections}
     - {id: qc, title: Filter spots}
@@ -72,6 +72,7 @@ interactive:
     - {id: tissue, title: See it on the tissue}
     - {id: markers, title: Explore markers}
     - {id: annotate, title: Name regions}
+    - {id: neighbourhood, title: Which regions border which}
     - {id: compare, title: Compare and export}
 
 learn:
@@ -94,6 +95,7 @@ learn:
     mito: ../../singlecell/shared/guides/mito.md
     clusters: ../../singlecell/shared/guides/clusters.md
     tissue: docs/guides/tissue.md
+    neighbourhood: ../shared/guides/neighbourhood.md
     spatial_genes: docs/guides/spatial_genes.md
     markers: docs/guides/markers.md
     dotplot: ../../singlecell/shared/guides/dotplot.md
