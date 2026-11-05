@@ -233,8 +233,10 @@ try this, please tell us how it went (issues link above).
 
 To run analyses on a Slurm cluster through your own account, Everyome also needs to be installed **on the cluster**,
 in a Python environment there (the same steps, run after logging in to the cluster; or ask IT for a shared
-installation). The cluster also needs Nextflow, Java and Apptainer for the pipeline analyses. In the app, **Connect**
-then **My cluster** runs readiness checks and tells you what is missing. For pipelines and containers on clusters
+installation). The cluster also needs Nextflow 25.10.4 or newer (with Java 17 or newer) and Apptainer for the pipeline
+analyses. *Cell types in spots* also needs cell2location in that environment, on a cluster with GPUs:
+`pip install "everyome[deconvolution]"` (it brings PyTorch, a few GB, so it is not part of `everyome[all]`). In the
+app, **Connect** then **My cluster** runs readiness checks and tells you what is missing. For pipelines and containers on clusters
 (including clusters without internet), see [`PIPELINES.md`](PIPELINES.md).
 
 ## Python versions

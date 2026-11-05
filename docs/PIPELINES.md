@@ -12,7 +12,7 @@ version of Everyome runs exactly the same pipeline code.
 | The pipeline's code, at a pinned release | Yes (`everyome-pipelines`) | `<pipelines folder>/<pipeline>-<release>/` |
 | Nextflow plugins the pipeline needs | Yes (`everyome-pipelines`) | `<pipelines folder>/plugins/` |
 | Software containers (one per tool) | No: several GB per pipeline, each under its own licence | `<pipelines folder>/containers/`, downloaded once and shared |
-| Nextflow, Java and Apptainer | No: installed by your IT team | the cluster's software |
+| Nextflow 25.10.4 or newer, Java 17 or newer, and Apptainer | No: installed by your IT team | the cluster's software |
 
 Each pipeline and plugin is checked against the SHA-256 recorded in
 `everyome/pipelines.lock.json`: on your computer before it is sent, and again
@@ -26,6 +26,10 @@ pip install "everyome[all]==<version>" "everyome-pipelines==<version>"
 
 Use the same version for both. Without `everyome-pipelines`, pipeline analyses
 say so when you press Run.
+
+Most of the pinned releases need Nextflow 25.10.4 or newer (nf-core/rnaseq, scrnaseq, sarek, riboseq and
+genomeassembler). nf-core/atacseq 2.1.2 and nf-core/hic 2.1.0 are older releases, written for Nextflow 23 and 22;
+they are their newest releases and are expected to run on 25.10, but have not yet been tried on a real cluster.
 
 ## What happens when you press Run
 
@@ -73,7 +77,9 @@ Pipelines that need GPUs (structure prediction) run their GPU steps on the
 partition named in the run's *GPU partition* setting, and ask Slurm for one GPU
 each with `--gres=gpu:1` (Everyome adds this to the run's Nextflow config,
 because Slurm ignores Nextflow's own `accelerator` setting). The other steps
-stay on the run's ordinary partition. If your cluster requests GPUs differently
+stay on the run's ordinary partition. Modules that run their own stages on a GPU (genome annotation with Helixer,
+cell types in spots with cell2location) ask for one the same way, with `#SBATCH --gres=gpu:1` on the GPU partition.
+If your cluster requests GPUs differently
 (for example `--gpus=1` or a GPU type), tell the Everyome maintainers; the
 setting lives in `everyome/core/runs.py`.
 
@@ -86,6 +92,9 @@ module's `module.yaml` (`batch.containers`): a tag can later point to a
 different image, a digest cannot. The first run pulls each image into the same
 `<pipelines folder>/containers/` folder; later runs reuse it. The run record
 lists every image with its digest.
+
+One exception: cell2location (cell types in spots) has no maintained container image, so it runs in Everyome's own
+Python on the cluster, pinned to version 0.1.5 by the `deconvolution` extra (`pip install "everyome[deconvolution]"`).
 
 If compute nodes cannot reach the internet, fill the folder from a login node
 that can (Apptainer must be available there):
