@@ -64,6 +64,9 @@ hers.
 - Shumate A., Salzberg S.L. (2021). Liftoff. *Bioinformatics* 37:1639–1643. https://doi.org/10.1093/bioinformatics/btaa1016
 - Manni M. et al. (2021). BUSCO. *Molecular Biology and Evolution* 38:4647–4654. https://doi.org/10.1093/molbev/msab199
 - Gurevich A. et al. (2013). QUAST. *Bioinformatics* 29:1072–1075. https://doi.org/10.1093/bioinformatics/btt086
+- Stiehler F. et al. (2021). Helixer. *Bioinformatics* 36:5291–5298. https://doi.org/10.1093/bioinformatics/btaa1044
+- Holst F. et al. (2023). Helixer gene models (HelixerPost). *bioRxiv*. https://doi.org/10.1101/2023.02.06.527280
+- Pertea G., Pertea M. (2020). GffRead. *F1000Research* 9:304. https://doi.org/10.12688/f1000research.23297.2
 - Wick R.R. et al. (2017). Unicycler. *PLoS Computational Biology* 13:e1005595. https://doi.org/10.1371/journal.pcbi.1005595
 - Seemann T. (2014). Prokka. *Bioinformatics* 30:2068–2069. https://doi.org/10.1093/bioinformatics/btu153
 - Schwengers O. et al. (2021). Bakta. *Microbial Genomics* 7:000685. https://doi.org/10.1099/mgen.0.000685

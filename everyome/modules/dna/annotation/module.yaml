@@ -1,0 +1,96 @@
+# Genome annotation: Helixer predicts gene models from the genome sequence alone (a deep-learning model per lineage, on a
+# GPU), gffread writes the proteins and BUSCO checks how complete they are; a live session explores the gene models.
+spec: 1
+id: dna.annotation
+name: Genome annotation (Helixer)
+suite: dna
+version: 0.1.0
+summary: >
+  Predicts the genes of a eukaryotic genome from its sequence alone, with
+  Helixer (no RNA-seq or protein evidence needed), then writes each predicted
+  protein and checks completeness with BUSCO. Explore how many genes, exons and
+  how long they are, look at any gene's structure and protein, and export the
+  annotation (GFF3) and proteins, ready for Function annotation.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Stiehler F. et al. (2021). Helixer: cross-species gene annotation of large eukaryotic genomes using deep learning. Bioinformatics 36:5291–5298."
+    url: https://doi.org/10.1093/bioinformatics/btaa1044
+  - text: "Holst F. et al. (2023). Helixer–de novo prediction of primary eukaryotic gene models combining deep learning and a hidden Markov model. bioRxiv 2023.02.06.527280."
+    url: https://doi.org/10.1101/2023.02.06.527280
+  - text: "Pertea G., Pertea M. (2020). GFF Utilities: GffRead and GffCompare. F1000Research 9:304."
+    url: https://doi.org/10.12688/f1000research.23297.2
+  - text: "Manni M. et al. (2021). BUSCO update: novel and streamlined workflows along with broader and deeper phylogenetic coverage for scoring of eukaryotic, prokaryotic, and viral genomes. Molecular Biology and Evolution 38:4647–4654."
+    url: https://doi.org/10.1093/molbev/msab199
+kind: [batch, interactive]
+requires: [numpy]
+tools:
+  - {name: apptainer, version: "apptainer --version || singularity --version"}
+  - {name: nvidia-smi, version: "nvidia-smi --query-gpu=name,driver_version --format=csv,noheader"}
+methods: everyome.modules.dna.annotation.methods:methods
+
+inputs:
+  - id: genome
+    label: Genome (FASTA)
+    type: file
+    required: true
+    help: "The assembled genome to annotate, for example from Genome assembly. Soft-masked or not; Helixer reads the sequence."
+    demo: genome.fa
+
+params:
+  - {id: lineage, label: Lineage model, type: choice, choices: [invertebrate, vertebrate, land_plant, fungi], default: invertebrate, group: Helixer,
+     help: "The Helixer model trained on the closest group: invertebrate for cnidarians, insects, molluscs and other animals without a backbone."}
+  - {id: species, label: Species name (for the GFF3), type: text, default: "genome", group: Helixer}
+  - {id: models_dir, label: Helixer models folder, type: folder, group: Helixer,
+     help: "The shared folder with Helixer's lineage models (a few hundred MB; fetched once with fetch_helixer_models.py; ask IT). Not needed on the demo cluster."}
+  - {id: gpu_partition, label: GPU partition, type: text, default: "", group: Cluster,
+     help: "The Slurm partition with GPUs, for gene prediction (ask IT). Leave empty to use the run's partition."}
+  - {id: busco_lineage, label: BUSCO lineage dataset, type: text, default: "metazoa_odb12", group: BUSCO,
+     help: "The BUSCO dataset to check completeness against (metazoa_odb12 for animals; leave empty to skip the check)."}
+  - {id: busco_dir, label: BUSCO datasets folder, type: folder, group: BUSCO,
+     help: "A folder with BUSCO's lineage datasets, for clusters without internet; empty lets BUSCO download the one it needs."}
+  - {id: helixer_extra, label: Extra Helixer options, type: text, default: "", group: Helixer, advanced: true}
+
+batch:
+  engine: staged
+  resources: {cpus: 4, mem: 16G, time: "12:00:00", session: {cpus: 1, mem: 8G, time: "04:00:00"}}
+  report: everyome.modules.dna.annotation.helpers:report
+  containers:
+    helixer: docker.io/gglyptodon/helixer-docker:helixer_v0.3.7_cuda_12.2.2-cudnn8_1@sha256:ed798e8470876a7ed237c3727bd5df40acd602ceadcb3a9c4e0bfecfca5e648e
+    gffread: quay.io/biocontainers/gffread:0.12.7--h077b44d_6@sha256:f603c5f4c8fff454ab282e917068d91060794e1daa798cbde0c125ade72f189d
+    busco: quay.io/biocontainers/busco:6.1.0--pyhdfd78af_2@sha256:acf4e2f5bf6eb5c195b4165b4261e233974df5b23795319e2e4185569c9c903c
+  stages:
+    - {id: "01", name: predict, title: "Predict genes (Helixer, on a GPU)", run: "{python} -m everyome.modules.dna.annotation.stage predict",
+       resources: {gpus: 1, partition_from: gpu_partition, mem: 64G, time: "48:00:00"}}
+    - {id: "02", name: proteins, title: "Write the proteins (gffread)", run: "{python} -m everyome.modules.dna.annotation.stage proteins",
+       resources: {cpus: 1, mem: 4G, time: "02:00:00"}}
+    - {id: "03", name: busco, title: "Check completeness (BUSCO)", run: "{python} -m everyome.modules.dna.annotation.stage busco"}
+
+interactive:
+  engine: everyome.modules.dna.annotation.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: overview, title: The gene models}
+    - {id: genes, title: Look at genes}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    run_report: docs/guides/run_report.md
+    gene_models: docs/guides/gene_models.md
+    busco: ../shared/guides/busco.md
+    gene: docs/guides/gene.md
+  playground:
+    scripts: [docs/playground/genemodel_playground.js]
+    object: GeneModelPlayground
+    lede: >
+      How a gene model is read: exons, introns and the coding part, and how a predicted protein's length follows from
+      them, on one made-up gene you can change.
+    intro:
+      - "Set how many exons a gene has and how long they are; see the gene, the mature transcript and the protein it encodes."
+    caveats:
+      - "Real genes also have untranslated regions at both ends, and often several transcripts; here every exon is coding."
+
+demo:
+  build: everyome.modules.dna.annotation.demo_data:build

@@ -326,6 +326,14 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### DNA suite: genome annotation (2026-11-04)
+
+Helixer 0.3.7 (GPL-3.0; models CC BY) from sequence alone, in the image Helixer's docs point to, pinned by digest; no
+GeneMark (licence), so no BRAKER. Stages: predict (one GPU: staged stages now take `gpus` and `partition_from`),
+proteins (gffread), busco (proteins mode, optional). Session: gene-model statistics, BUSCO, any gene's structure and
+protein, export (GFF3, proteins, genes.csv). Not in this version: evidence from RNA-seq or proteins, repeat masking,
+funannotate as a CPU route.
+
 ### Protein suite: function annotation (2026-11-04)
 
 InterProScan 5.78-109.0 (Apache-2.0) as one staged step in its official image, pinned by digest; the data folder is

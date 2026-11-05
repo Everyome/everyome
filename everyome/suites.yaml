@@ -20,7 +20,7 @@ suites:
       - {id: dna.hic, name: 3D genome architecture (Hi-C)}
       - {id: dna.assembly, name: Genome assembly (PacBio, Nanopore, Illumina), module: dna.assembly}
       - {id: dna.bacterial, name: Bacterial genome assembly and annotation, module: dna.bacterial}
-      - {id: dna.annotation, name: Genome annotation}
+      - {id: dna.annotation, name: Genome annotation (Helixer), module: dna.annotation}
   - id: rna
     name: RNA
     blurb: Which genes are expressed, how much, and how they change.

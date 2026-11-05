@@ -72,6 +72,8 @@ Modules so far:
   lifted from a relative; compare strategies side by side and choose one.
 - **Bacterial genome assembly and annotation**, DNA: nf-core/bacass assembles
   Illumina, long or hybrid reads and finds genes (Prokka or Bakta).
+- **Genome annotation (Helixer)**, DNA: gene models from the genome sequence alone,
+  on a GPU; proteins and BUSCO completeness; ready for Function annotation.
 - **Bulk RNA-seq differential expression**, RNA: nf-core/rnaseq turns reads into
   gene counts on the cluster, then DESeq2 compares conditions in a live session.
 - **RNA abundance**, RNA: from an nf-core/rnaseq results folder, how much each

@@ -144,6 +144,9 @@ def trace_summary(backend, run: dict) -> dict:
 def stage_script(run: dict, m: Manifest, stage, python: str) -> str:
     d = run["dir"]
     res = {**run["resources"], **stage.resources}
+    # Intent: a stage that needs a GPU names the setting holding the GPU partition (for example gpu_partition).
+    if stage.resources.get("partition_from") and str(run["values"].get(stage.resources["partition_from"]) or "").strip():
+        res["partition"] = str(run["values"][stage.resources["partition_from"]]).strip()
     body = ["set -euo pipefail", f'echo "[$(date)] {m.id} stage {stage.id} ({stage.name}) on $(hostname)"',
             f"cd {shlex.quote(d)}",
             f"export EVERYOME_RUN_DIR={shlex.quote(d)}", f"export EVERYOME_PARAMS={shlex.quote(d + '/params.json')}",

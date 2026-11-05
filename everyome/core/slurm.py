@@ -39,6 +39,8 @@ def script(name: str, log: str, resources: dict, body: list[str]) -> str:
             f"#SBATCH --time={resources.get('time', '01:00:00')}"]
     if resources.get("partition"):
         head.append(f"#SBATCH --partition={resources['partition']}")
+    if resources.get("gpus"):
+        head.append(f"#SBATCH --gres=gpu:{int(resources['gpus'])}")
     return "\n".join(head + body) + "\n"
 
 
