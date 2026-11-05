@@ -22,7 +22,7 @@ main() {
     set -euo pipefail
 
     # Intent: kept equal to everyome.__version__ (tests/test_install_script.py checks); bumped at each release.
-    local VERSION="0.1.0a6"
+    local VERSION="0.1.0a7"
     # Intent: a pinned Miniforge with its published SHA-256 per installer, so a changed download is refused.
     local MINIFORGE="26.9.4-1"
     local ENV_NAME="${EVERYOME_ENV:-everyome}"
