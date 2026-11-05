@@ -119,6 +119,8 @@ hers.
 - Abramson J. et al. (2024). AlphaFold 3. *Nature* 630:493–500. https://doi.org/10.1038/s41586-024-07487-w
 - Lin Z. et al. (2023). ESMFold. *Science* 379:1123–1130. https://doi.org/10.1126/science.ade2574
 - Mirdita M. et al. (2022). ColabFold. *Nature Methods* 19:679–682. https://doi.org/10.1038/s41592-022-01488-1
+- Evans R. et al. (2022). AlphaFold-Multimer. *bioRxiv*. https://doi.org/10.1101/2021.10.04.463034
+- Bryant P., Pozzati G., Elofsson A. (2022). pDockQ. *Nature Communications* 13:1265. https://doi.org/10.1038/s41467-022-28865-w
 - Kabsch W. (1976). Kabsch superposition. *Acta Crystallographica* A32:922–923. https://doi.org/10.1107/S0567739476001873
 
 ### Molecular biology

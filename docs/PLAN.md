@@ -326,6 +326,15 @@ Each phase ends with a check you can see working.
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
 
+### Protein suite: interaction prediction (2026-11-04)
+
+Same pinned nf-core/proteinfold 2.0.0 as Structure prediction (schema shared from ../structure), with multimer
+defaults (AlphaFold2 multimer preset, ColabFold alphafold2_multimer_v3); one FASTA per complex. Session: the structure
+engine plus interfaces: Cα contacts within 8 Å, interface pLDDT and PAE, chain-wise ipTM, pDockQ (Bryant 2022; Cα in
+place of Cβ, noted in the methods) and a plain reading (pDockQ ≥ 0.5 or ipTM ≥ 0.8 likely; < 0.23 and < 0.6
+unlikely). Structure views are shared through `E.proteinViews`. Not in this version: bait-versus-library screens,
+complexes with nucleic acids or ligands.
+
 ### Spatial suite: high-resolution spatial (2026-11-04)
 
 Visium HD (Space Ranger `binned_outputs/square_NNNum`, read with the Visium reader), Stereo-seq (GEM summed into

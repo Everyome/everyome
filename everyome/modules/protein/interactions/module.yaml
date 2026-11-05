@@ -1,0 +1,127 @@
+# Interaction prediction: nf-core/proteinfold predicts complexes (AlphaFold2-Multimer, ColabFold multimer, Boltz and
+# others) on the cluster's GPUs; a live session scores every interface (ipTM, pDockQ, interface confidence) and shows
+# the structure, its confidence and the predicted error between chains.
+spec: 1
+id: protein.interactions
+name: Interaction prediction
+suite: protein
+version: 0.1.0
+summary: >
+  Predicts how proteins fit together, and whether they are likely to bind,
+  from their sequences: each complex (two or more chains in one FASTA file) is
+  predicted with nf-core/proteinfold's multimer models. Then see each
+  interface's scores (ipTM, pDockQ, how confident the predictor is where the
+  chains touch) with a plain-language verdict, the residues at the interface,
+  and the structure coloured by confidence.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "nf-core/proteinfold. Zenodo."
+    url: https://doi.org/10.5281/zenodo.7629996
+  - text: "Ewels P.A. et al. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology 38:276–278."
+    url: https://doi.org/10.1038/s41587-020-0439-x
+  - text: "Di Tommaso P. et al. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology 35:316–319."
+    url: https://doi.org/10.1038/nbt.3820
+  - text: "Evans R. et al. (2022). Protein complex prediction with AlphaFold-Multimer. bioRxiv 2021.10.04.463034."
+    url: https://doi.org/10.1101/2021.10.04.463034
+  - text: "Bryant P., Pozzati G., Elofsson A. (2022). Improved prediction of protein-protein interactions using AlphaFold2. Nature Communications 13:1265 (pDockQ)."
+    url: https://doi.org/10.1038/s41467-022-28865-w
+  - text: "Mirdita M. et al. (2022). ColabFold: making protein folding accessible to all. Nature Methods 19:679–682."
+    url: https://doi.org/10.1038/s41592-022-01488-1
+  - text: "Jumper J. et al. (2021). Highly accurate protein structure prediction with AlphaFold. Nature 596:583–589."
+    url: https://doi.org/10.1038/s41586-021-03819-2
+kind: [batch, interactive]
+requires: [numpy]
+tools:
+  - {name: nextflow, version: "nextflow -version | grep -i version"}
+  - {name: java, version: "java -version 2>&1"}
+  - {name: apptainer, version: "apptainer --version"}
+  - {name: nvidia-smi, version: "nvidia-smi --query-gpu=name,driver_version --format=csv,noheader"}
+methods: everyome.modules.protein.interactions.methods:methods
+
+inputs:
+  - id: fasta_dir
+    label: Complexes folder
+    type: folder
+    help: "Used only to fill in the table below: Everyome lists the FASTA files in it that hold two or more chains."
+    demo: complexes
+  - id: proteins
+    label: Complexes to predict
+    type: table
+    required: true
+    help: >
+      One row per complex: a name and a FASTA file with every chain of the complex (one > line per chain; repeat a
+      sequence for a homodimer).
+    columns:
+      - {id: id, label: Name, pattern: "[A-Za-z0-9_.-]+", pattern_help: "should use letters, digits, _ . or - only"}
+      - {id: fasta, label: FASTA file, wide: true}
+    fill: {helper: scan, from: fasta_dir, label: Find complexes in the folder}
+
+params:
+  - id: gpu_partition
+    label: GPU partition
+    type: text
+    default: ""
+    group: Cluster
+    help: "The Slurm partition with GPUs, for the prediction steps (ask IT). Leave empty to use the run's partition."
+
+batch:
+  engine: nextflow
+  pipeline: nf-core/proteinfold
+  revision: "2.0.0"
+  schema: ../structure/pipeline/nextflow_schema.json
+  samplesheet:
+    from: proteins
+    param: input
+    columns: [id, fasta]
+  profile: apptainer
+  skip: [email, email_on_fail, plaintext_email, hook_url, help, help_full, show_hidden, version, monochrome_logs, validate_params,
+         pipelines_testdata_base_path, trace_report_suffix, max_multiqc_email_size, publish_dir_mode,
+         custom_config_version, custom_config_base, config_profile_name, config_profile_description, config_profile_contact, config_profile_url]
+  # Intent: complexes need the multimer models; predictions run on GPUs.
+  defaults: {use_gpu: true, alphafold2_model_preset: multimer, colabfold_model_preset: alphafold2_multimer_v3}
+  gpu: {param: use_gpu, profile: gpu, label: process_gpu, partition: gpu_partition}
+  check: everyome.modules.protein.interactions.helpers:check
+  demo: everyome.modules.protein.interactions.demo_pipeline
+  report: everyome.modules.protein.interactions.helpers:report
+  resources: {cpus: 2, mem: 8G, time: "72:00:00", session: {cpus: 1, mem: 8G, time: "04:00:00"}}
+
+helpers:
+  scan: everyome.modules.protein.interactions.helpers:scan
+
+interactive:
+  engine: everyome.modules.protein.interactions.engine:Engine
+  ui: [../structure/ui.js, ui.js]
+  steps:
+    - {id: interfaces, title: Interfaces}
+    - {id: overview, title: Predictions}
+    - {id: structure, title: Look at a structure}
+    - {id: compare, title: Compare methods}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  guides:
+    run_report: ../structure/docs/guides/run_report.md
+    plddt: ../structure/docs/guides/plddt.md
+    pae: ../structure/docs/guides/pae.md
+    domains: ../structure/docs/guides/domains.md
+    viewer: ../structure/docs/guides/viewer.md
+    compare: ../structure/docs/guides/compare.md
+    export: ../structure/docs/guides/export.md
+    interfaces: docs/guides/interfaces.md
+    interface_detail: docs/guides/interface_detail.md
+  playground:
+    scripts: [docs/playground/pdockq_playground.js]
+    object: PdockqPlayground
+    lede: >
+      What makes a predicted interface convincing: how pDockQ combines the size of the interface with the predictor's
+      confidence there, and where ipTM agrees or not.
+    intro:
+      - "Set how many residue pairs touch across the interface and how confident the predictor is there (pLDDT); see pDockQ and what the two together suggest."
+    caveats:
+      - "pDockQ here is the published formula (Bryant et al., 2022) on the numbers you set; the module computes it from each predicted structure, using Cα atoms within 8 Å."
+      - "Neither score proves an interaction. Both say how much the predictor believes this arrangement; check against experiments."
+
+demo:
+  build: everyome.modules.protein.interactions.demo_data:build

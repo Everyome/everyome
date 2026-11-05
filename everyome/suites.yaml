@@ -48,8 +48,8 @@ suites:
     blurb: Structure, interactions and function.
     tools:
       - {id: protein.structure, name: Structure prediction, module: protein.structure}
-      - {id: protein.interactions, name: Interaction prediction}
-      - {id: protein.function, name: Function annotation}
+      - {id: protein.interactions, name: Interaction prediction, module: protein.interactions}
+      - {id: protein.function, name: Function annotation (InterProScan), module: protein.function}
   - id: molbio
     name: Molecular biology
     blurb: Design for the bench, right on your computer.

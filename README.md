@@ -60,6 +60,8 @@ Modules so far:
   ColabFold, AlphaFold 3, Boltz and more) on the cluster's GPUs; see each
   structure coloured by confidence with its predicted aligned error and domains,
   compare methods, and export whole or trimmed models.
+- **Interaction prediction**, protein: nf-core/proteinfold multimer models; every
+  interface scored (ipTM, pDockQ, interface confidence) with a plain reading.
 - **Alignment and tree building**, phylogenetics: MAFFT, trimAl and IQ-TREE in
   containers pinned by digest; check the alignment, then root, collapse and colour
   the tree by your own table, and export a figure.

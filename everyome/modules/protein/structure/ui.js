@@ -222,4 +222,6 @@
   }
 
   E.registerViews("protein.structure", { report, overview, structure: structureView, compare, export: exportView });
+  // Intent: the interactions module (../interactions/ui.js) reuses these views and the 3D drawing on its own predictions.
+  E.proteinViews = { report, overview, structure: structureView, compare, export: exportView, viewer, paeCanvas, ensure, label, bandColour, bandLegend };
 })();
