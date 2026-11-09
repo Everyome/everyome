@@ -95,6 +95,9 @@ Modules so far:
   translational efficiency between conditions with matched RNA-seq.
 - **Primer design**, molecular biology: Primer3 primers on a plasmid map, with
   checks for your own primers. Runs on your computer; no cluster needed.
+- **qPCR analysis**, molecular biology: from your instrument's results table,
+  replicate and control checks, primer efficiencies, reference-gene ranking
+  (geNorm) and fold changes with confidence intervals. Runs on your computer.
 - **Sequence summary**, getting started: a small worked example of how every
   module runs.
 

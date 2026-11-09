@@ -72,7 +72,7 @@ maturity before we commit to them.
 | **DNA** | Variant/mutation calling; chromatin accessibility; 3D genome; assembly; annotation | nf-core/sarek, nf-core/atacseq, nf-core/hic, assembly/annotation pipelines (to evaluate) | Variant table and filters; genome browser; contact-map viewer |
 | **Spatial** | Visium-style; probe-based imaging; single-cell spatial | nf-core/spatialvi, others to evaluate | Tissue overlay viewer, spatial clusters, neighbourhoods |
 | **Protein** | Structure prediction; interaction prediction; function | nf-core/proteinfold (needs GPUs) | Structure viewer with confidence colouring; interface view |
-| **Molecular biology** | Primer design; plasmid map and cloning simulation; digests | Local Python (Biopython, pydna, primer3-py) | Plasmid map editor; primer table |
+| **Molecular biology** | Primer design; qPCR analysis; plasmid map and cloning simulation; digests | Local Python (Biopython, pydna, primer3-py) | Plasmid map editor; primer table |
 | **Phylogenetics** | Align → trim → model → tree | MAFFT, trimAl, IQ-TREE / RAxML-NG (Snakemake or nf-core if available) | Tree viewer: re-root, collapse, colour by metadata |
 
 ---
@@ -325,6 +325,15 @@ Each phase ends with a check you can see working.
 | 8 | Suite roll-out | Add modules suite by suite (section 2), each with demo data and learning material | — ongoing |
 
 Phases 5 and 6 can run alongside 4 once phase 3 is done.
+
+### Molecular biology: qPCR analysis (2026-11-07)
+
+A local module (no cluster). Reads the results table from the instrument (CSV, TSV or Excel; QuantStudio, CFX and
+LightCycler column names; run details above the table skipped). Session: the plate coloured by Cq (click a well to
+leave it out), technical replicate spread with a suggested outlier, no-template controls (clean, late, contaminated),
+standard-curve efficiencies, stepwise geNorm ranking of reference genes, groups guessed from sample names, fold
+changes (efficiency-corrected NRQ as in qbase, or 2^-ΔΔCq) with Welch 95% CIs and BH-adjusted p, export. Plasmid maps
+and restriction digests stay planned.
 
 ### DNA suite: variant calling (2026-11-04)
 

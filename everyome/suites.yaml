@@ -56,6 +56,7 @@ suites:
     blurb: Design for the bench, right on your computer.
     tools:
       - {id: molbio.primers, name: Primer design, module: molbio.primers}
+      - {id: molbio.qpcr, name: qPCR analysis, module: molbio.qpcr}
       - {id: molbio.plasmids, name: Plasmid maps and cloning}
       - {id: molbio.digests, name: Restriction digests}
   - id: phylo
@@ -76,11 +77,12 @@ data_types:
   - {id: spatial, label: "Spatial transcriptomics", tools: [spatial.spots, spatial.probes, spatial.singlecell, spatial.deconvolution]}
   - {id: protein_seq, label: "Protein sequences or structures", tools: [protein.structure, protein.interactions, protein.function]}
   - {id: constructs, label: "Plasmids, constructs or primers", tools: [molbio.primers, molbio.plasmids, molbio.digests]}
+  - {id: qpcr, label: "qPCR results (Cq or Ct values)", tools: [molbio.qpcr]}
   - {id: sequences, label: "A set of DNA or protein sequences (FASTA)", tools: [phylo.tree, tutorial.sequence_summary, protein.function]}
   - {id: not_sure, label: "Not sure yet", tools: [tutorial.sequence_summary]}
 
 aims:
-  - {id: compare, label: "Compare conditions, treatments or time points", tools: [rna.bulk_de, singlecell.scrna, singlecell.splitseq, rna.riboseq]}
+  - {id: compare, label: "Compare conditions, treatments or time points", tools: [rna.bulk_de, singlecell.scrna, singlecell.splitseq, rna.riboseq, molbio.qpcr]}
   - {id: cell_types, label: "Find and name cell types", tools: [singlecell.splitseq, singlecell.scrna, singlecell.multiome, spatial.singlecell, spatial.deconvolution]}
   - {id: variants, label: "Find mutations or variants", tools: [dna.variants]}
   - {id: genome, label: "Build or annotate a genome", tools: [dna.assembly, dna.bacterial, dna.annotation]}

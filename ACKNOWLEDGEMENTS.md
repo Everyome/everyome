@@ -166,6 +166,11 @@ hers.
 - Untergasser A. et al. (2012). Primer3. *Nucleic Acids Research* 40:e115. https://doi.org/10.1093/nar/gks596
 - primer3-py (libnano). https://github.com/libnano/primer3-py
 - Cock P.J.A. et al. (2009). Biopython. *Bioinformatics* 25:1422–1423. https://doi.org/10.1093/bioinformatics/btp163
+- Hellemans J. et al. (2007). qBase relative quantification. *Genome Biology* 8:R19. https://doi.org/10.1186/gb-2007-8-2-r19
+- Vandesompele J. et al. (2002). geNorm. *Genome Biology* 3:research0034. https://doi.org/10.1186/gb-2002-3-7-research0034
+- Pfaffl M.W. (2001). Efficiency-corrected relative quantification. *Nucleic Acids Research* 29:e45. https://doi.org/10.1093/nar/29.9.e45
+- Livak K.J. & Schmittgen T.D. (2001). The 2−ΔΔCT method. *Methods* 25:402–408. https://doi.org/10.1006/meth.2001.1262
+- Bustin S.A. et al. (2009). The MIQE guidelines. *Clinical Chemistry* 55:611–622. https://doi.org/10.1373/clinchem.2008.112797
 
 ### Phylogenetics
 

@@ -1,0 +1,84 @@
+# qPCR analysis: relative expression from a plate export, on this computer. No cluster needed.
+spec: 1
+id: molbio.qpcr
+name: qPCR analysis
+suite: molbio
+version: 0.1.0
+summary: >
+  Reads the results exported from your qPCR instrument, checks technical
+  replicates and no-template controls, works out primer efficiencies from
+  standard curves, ranks reference genes by how steady they are, and gives
+  fold changes between groups with confidence intervals. Runs on this computer.
+authors: ["Helen R Horkan"]
+licence: same as Everyome
+cite:
+  - text: "Hellemans J. et al. (2007). qBase relative quantification framework and software for management and automated analysis of real-time quantitative PCR data. Genome Biology 8:R19."
+    url: https://doi.org/10.1186/gb-2007-8-2-r19
+  - text: "Vandesompele J. et al. (2002). Accurate normalization of real-time quantitative RT-PCR data by geometric averaging of multiple internal control genes. Genome Biology 3:research0034."
+    url: https://doi.org/10.1186/gb-2002-3-7-research0034
+  - text: "Pfaffl M.W. (2001). A new mathematical model for relative quantification in real-time RT-PCR. Nucleic Acids Research 29:e45."
+    url: https://doi.org/10.1093/nar/29.9.e45
+  - text: "Livak K.J. & Schmittgen T.D. (2001). Analysis of relative gene expression data using real-time quantitative PCR and the 2−ΔΔCT method. Methods 25:402–408."
+    url: https://doi.org/10.1006/meth.2001.1262
+  - text: "Bustin S.A. et al. (2009). The MIQE guidelines: minimum information for publication of quantitative real-time PCR experiments. Clinical Chemistry 55:611–622."
+    url: https://doi.org/10.1373/clinchem.2008.112797
+  - text: "Virtanen P. et al. (2020). SciPy 1.0: fundamental algorithms for scientific computing in Python. Nature Methods 17:261–272."
+    url: https://doi.org/10.1038/s41592-019-0686-2
+kind: [local]
+requires: [pandas, scipy, numpy]
+methods: everyome.modules.molbio.qpcr.methods:methods
+
+inputs:
+  - id: results_file
+    label: Results file
+    type: file
+    help: "The results table exported from your instrument: CSV, tab-separated text or Excel. It needs columns for well, sample, target (gene) and Cq or Ct; a task column (unknown, standard, NTC) and quantities for standards are used when present. QuantStudio, Bio-Rad CFX and LightCycler exports work as they are."
+    demo: demo_qpcr_plate.csv
+
+params:
+  - {id: method, label: How to calculate, type: choice, choices: [efficiency, delta_delta_cq], default: efficiency, group: Calculation,
+     help: "'efficiency' corrects for each primer pair's measured efficiency (Pfaffl; qbase). 'delta_delta_cq' assumes every pair doubles each cycle (2^-ΔΔCq)."}
+  - {id: default_efficiency, label: Efficiency when there is no standard curve (%), type: float, default: 100, min: 50, max: 130, group: Calculation,
+     help: "Used for targets without at least three standard dilutions, and for every target with delta_delta_cq."}
+  - {id: reference_genes, label: Reference genes, type: text, group: Calculation,
+     help: "Target names separated by spaces, for example EF1a GAPDH. Leave empty to choose them in the session, where they are ranked by how steady they are."}
+  - {id: control_group, label: Control group, type: text, group: Calculation,
+     help: "The group the others are compared with. Leave empty to choose it in the session."}
+  - {id: replicate_sd, label: Flag technical replicates that spread more than (Cq), type: float, default: 0.3, min: 0, group: Checks,
+     help: "Standard deviation of a set of technical replicates. 0.2–0.3 cycles is a common limit."}
+  - {id: ntc_cutoff, label: Treat no-template signals after this cycle as late (Cq), type: float, default: 35, min: 0, group: Checks,
+     help: "Earlier signal in a no-template control suggests contamination; later signal is often primer dimer."}
+
+interactive:
+  engine: everyome.modules.molbio.qpcr.engine:Engine
+  ui: ui.js
+  steps:
+    - {id: plate, title: Check the plate}
+    - {id: efficiency, title: Primer efficiency}
+    - {id: references, title: Reference genes and groups}
+    - {id: expression, title: Fold changes}
+    - {id: export, title: Export}
+
+learn:
+  manual: docs/manual.md
+  playground:
+    scripts: [docs/playground/efficiency_playground.js]
+    object: EfficiencyPlayground
+    lede: >
+      See how amplification efficiency shapes the curves, and how assuming the
+      wrong efficiency changes the fold change you report.
+    intro:
+      - "Two samples differ by a set fold change. The chart draws their amplification curves and where each crosses the threshold (its Cq). Change the true efficiency and the efficiency you assume, and compare the fold change you would report with the true one."
+    caveats:
+      - "Curves follow a simple logistic model: exponential growth at the chosen efficiency, then a plateau. Real curves also depend on the chemistry and the instrument's baseline."
+      - "The error shown is for one target against a perfect reference; real errors add up across the target and the reference genes."
+  guides:
+    plate: docs/guides/plate.md
+    replicates: docs/guides/replicates.md
+    ntc: docs/guides/ntc.md
+    efficiency: docs/guides/efficiency.md
+    references: docs/guides/references.md
+    foldchange: docs/guides/foldchange.md
+
+demo:
+  data: demo

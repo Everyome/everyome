@@ -44,8 +44,8 @@ hic = ["numpy", "h5py"]
 # Intent: cell2location for cell types in spots. It runs on the cluster's GPU nodes and brings PyTorch, scvi-tools and
 # Pyro (several GB), so IT installs it there once; it is left out of 'all', which laptops install.
 deconvolution = ["everyome[singlecell]", "cell2location==0.1.5"]
-# Intent: what the molecular biology tools need (they run on this computer).
-molbio = ["primer3-py", "biopython"]
+# Intent: what the molecular biology tools need (they run on this computer); qPCR reads plate exports with pandas.
+molbio = ["primer3-py", "biopython", "numpy", "pandas<4", "scipy", "openpyxl"]
 # Intent: the nf-core pipelines Everyome installs on clusters; always the same version as Everyome (docs/RELEASING.md).
 pipelines = ["everyome-pipelines==0.1.0a7"]
 all = ["everyome[singlecell,atac,hic,rna,molbio,pipelines]"]
